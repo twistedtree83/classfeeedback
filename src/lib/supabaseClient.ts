@@ -53,7 +53,6 @@ export const uploadLessonPlan = async (
 
     if (uploadError) {
       console.error('Error uploading file:', uploadError);
-      console.error('Error uploading file:', uploadError);
       return null;
     }
     console.log('PDF uploaded successfully');
@@ -73,7 +72,6 @@ export const uploadLessonPlan = async (
 
     if (dbError) {
       console.error('Error creating lesson plan record:', dbError);
-      console.error('Error creating lesson plan record:', dbError);
       return null;
     }
     console.log('Lesson plan record created:', { id: lessonPlan.id });
@@ -86,7 +84,6 @@ export const uploadLessonPlan = async (
 
     if (functionError) {
       console.error('Error processing lesson plan:', functionError);
-      console.error('Error processing lesson plan:', functionError);
       return null;
     }
 
@@ -95,7 +92,6 @@ export const uploadLessonPlan = async (
 
     return lessonPlan;
   } catch (err) {
-    console.error('Exception in uploadLessonPlan:', err);
     console.error('Exception in uploadLessonPlan:', err);
     return null;
   }

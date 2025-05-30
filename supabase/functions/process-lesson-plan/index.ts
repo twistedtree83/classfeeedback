@@ -1,16 +1,7 @@
 // @deno-types="npm:@types/node@20.11.25"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { PDFLoader } from 'https://esm.sh/@langchain/community@0.0.20/document_loaders/fs/pdf';
 import { OpenAI } from 'https://esm.sh/openai@4.20.1';
-
-// Helper function for consistent log formatting
-const log = (message: string, data?: any) => {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] ${message}`);
-  if (data) {
-    console.log(JSON.stringify(data, null, 2));
-  }
-};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,9 +14,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    log('Processing lesson plan request');
+    console.log('Processing lesson plan request');
     const { lessonPlanId } = await req.json();
-    log('Lesson plan ID:', lessonPlanId);
+    console.log('Lesson plan ID:', lessonPlanId);
 
     if (!lessonPlanId) {
       throw new Error('Lesson plan ID is required');
@@ -41,15 +32,15 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    log('Supabase client initialized');
+    console.log('Supabase client initialized');
 
     const openai = new OpenAI({
       apiKey: openaiKey
     });
-    log('OpenAI client initialized');
+    console.log('OpenAI client initialized');
 
     // Get lesson plan details
-    log('Fetching lesson plan details');
+    console.log('Fetching lesson plan details');
     const { data: lessonPlan, error: fetchError } = await supabase
       .from('lesson_plans')
       .select('*')
@@ -57,39 +48,39 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchError || !lessonPlan) {
-      log('Error fetching lesson plan:', { error: fetchError });
+      console.error('Error fetching lesson plan:', fetchError);
       throw new Error('Lesson plan not found');
     }
-    log('Lesson plan found:', { id: lessonPlan.id, title: lessonPlan.title });
+    console.log('Lesson plan found:', { id: lessonPlan.id, title: lessonPlan.title });
 
     // Download PDF from storage
-    log('Downloading PDF from storage:', { path: lessonPlan.pdf_path });
+    console.log('Downloading PDF from storage:', { path: lessonPlan.pdf_path });
     const { data: pdfData, error: downloadError } = await supabase
       .storage
       .from('lesson_plans')
       .download(lessonPlan.pdf_path);
 
     if (downloadError || !pdfData) {
-      log('Error downloading PDF:', { error: downloadError });
+      console.error('Error downloading PDF:', downloadError);
       throw new Error('Failed to download PDF');
     }
-    log('PDF downloaded successfully');
+    console.log('PDF downloaded successfully');
 
     // Convert PDF to text
-    log('Converting PDF to text using ArrayBuffer');
+    console.log('Converting PDF to text');
     const arrayBuffer = await pdfData.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
     const loader = new PDFLoader(blob);
     const docs = await loader.load();
     const pdfText = docs.map(doc => doc.pageContent).join('\n');
-    log('PDF converted to text successfully', { textLength: pdfText.length });
+    console.log('PDF converted to text successfully', { textLength: pdfText.length });
     
     if (!pdfText || pdfText.length === 0) {
       throw new Error('Failed to extract text from PDF');
     }
 
     // Process with OpenAI
-    log('Sending request to OpenAI');
+    console.log('Sending request to OpenAI');
     const completion = await openai.chat.completions.create({
       model: 'gpt-4-0125-preview',
       messages: [
@@ -131,22 +122,22 @@ Deno.serve(async (req) => {
       response_format: { type: 'json_object' }
     });
 
-    log('Received response from OpenAI');
+    console.log('Received response from OpenAI');
     const processedContent = JSON.parse(completion.choices[0].message.content);
-    log('Parsed processed content:', { title: processedContent.title });
+    console.log('Parsed processed content:', { title: processedContent.title });
 
     // Update lesson plan with processed content
-    log('Updating lesson plan with processed content');
+    console.log('Updating lesson plan with processed content');
     const { error: updateError } = await supabase
       .from('lesson_plans')
       .update({ processed_content: processedContent })
       .eq('id', lessonPlanId);
 
     if (updateError) {
-      log('Error updating lesson plan:', { error: updateError });
+      console.error('Error updating lesson plan:', updateError);
       throw new Error('Failed to update lesson plan');
     }
-    log('Lesson plan updated successfully');
+    console.log('Lesson plan updated successfully');
 
     return new Response(
       JSON.stringify({ success: true, data: processedContent }),
@@ -159,10 +150,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    log('Error processing lesson plan:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    console.error('Error processing lesson plan:', error);
     
     return new Response(
       JSON.stringify({ 
