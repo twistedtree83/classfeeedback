@@ -4,76 +4,23 @@ import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-
-// Mock processed lesson for development
-const mockProcessedLesson: ProcessedLesson = {
-  title: "Introduction to Photosynthesis",
-  objectives: [
-    "Define photosynthesis and its importance in nature",
-    "Identify the key components needed for photosynthesis",
-    "Explain the basic process of how plants convert light energy to chemical energy"
-  ],
-  duration: "45 minutes",
-  materials: [
-    "Plant samples",
-    "Microscope",
-    "Diagram of plant cell",
-    "Interactive whiteboard"
-  ],
-  sections: [
-    {
-      id: "1",
-      title: "Opening/Hook",
-      duration: "5 minutes",
-      content: "Begin with a demonstration using a real plant and asking students what they think the plant needs to survive.",
-      activities: []
-    },
-    {
-      id: "2",
-      title: "Main Lesson",
-      duration: "25 minutes",
-      content: "Introduce the concept of photosynthesis using visual aids and real-world examples.",
-      activities: [
-        "Group discussion about plant survival needs",
-        "Diagram labeling activity",
-        "Mini-experiment with leaves in sunlight"
-      ]
-    },
-    {
-      id: "3",
-      title: "Practice",
-      duration: "10 minutes",
-      content: "Students work in pairs to create their own simple diagram of the photosynthesis process.",
-      activities: [
-        "Pair work on diagrams",
-        "Gallery walk to view other pairs' work"
-      ]
-    },
-    {
-      id: "4",
-      title: "Closure",
-      duration: "5 minutes",
-      content: "Review key points and preview next lesson on cellular respiration.",
-      activities: [
-        "Exit ticket: 3-2-1 reflection"
-      ]
-    }
-  ]
-};
+import { useCallback } from 'react';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
 
-  const handleFileSelect = async (file: File) => {
+  const handleFileSelect = useCallback(async (file: File) => {
     setIsProcessing(true);
-    
-    // Simulate processing delay
-    setTimeout(() => {
-      setProcessedLesson(mockProcessedLesson);
+    try {
+      // Real processing will happen here through Supabase
+      setProcessedLesson(null);
+    } catch (error) {
+      console.error('Error processing file:', error);
+    } finally {
       setIsProcessing(false);
-    }, 2000);
-  };
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,7 +58,9 @@ export function LessonPlannerPage() {
           </div>
 
           <div>
-            {processedLesson && <LessonPlanDisplay lesson={processedLesson} />}
+            {processedLesson && !isProcessing && (
+              <LessonPlanDisplay lesson={processedLesson} />
+            )}
           </div>
         </div>
       </main>
