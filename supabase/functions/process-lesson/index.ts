@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { PDFLoader } from 'npm:langchain/document_loaders/web/pdf@0.0.200';
+import { PDFLoader } from 'npm:langchain@0.0.200/document_loaders/web/pdf';
 import { OpenAI } from 'npm:openai@4.20.1';
 
 const corsHeaders = {
