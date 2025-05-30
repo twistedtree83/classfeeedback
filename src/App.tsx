@@ -9,7 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<TeacherDashboard />} />
         <Route path="/join" element={<JoinPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/\" replace />} />
       </Routes>
     </BrowserRouter>
   );
