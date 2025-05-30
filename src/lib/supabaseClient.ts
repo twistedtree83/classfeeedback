@@ -89,6 +89,13 @@ export const uploadLessonPlan = async (
 
     if (!response.ok) {
       console.error('Error processing lesson plan:', await response.text());
+      return lessonPlan;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      // Update local lesson plan with processed content
+      lessonPlan.processed_content = result.data;
     }
 
     return lessonPlan;
