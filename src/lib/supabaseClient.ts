@@ -46,6 +46,11 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
+    if (!file || !title) {
+      console.error('File and title are required');
+      return null;
+    }
+
     // Upload PDF to storage
     const fileName = `${Date.now()}-${file.name}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -54,6 +59,11 @@ export const uploadLessonPlan = async (
 
     if (uploadError) {
       console.error('Error uploading file:', uploadError);
+      return null;
+    }
+
+    if (!uploadData?.path) {
+      console.error('Upload successful but file path is missing');
       return null;
     }
 
@@ -70,12 +80,12 @@ export const uploadLessonPlan = async (
       .select()
       .single();
 
-    if (dbError) {
+    if (dbError || !lessonPlan?.id) {
       console.error('Error creating lesson plan record:', dbError);
       return null;
     }
 
-    // Trigger processing
+    // Trigger processing with proper validation
     const response = await fetch(
       `${supabaseUrl}/functions/v1/process-lesson`,
       {
@@ -84,12 +94,16 @@ export const uploadLessonPlan = async (
           'Authorization': `Bearer ${supabaseKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ lessonPlanId: lessonPlan.id })
+        body: JSON.stringify({ 
+          lessonPlanId: lessonPlan.id,
+          content: uploadData.path // Add content field required by the function
+        })
       }
     );
 
     if (!response.ok) {
-      console.error('Error processing lesson plan:', await response.text());
+      const errorText = await response.text();
+      console.error('Error processing lesson plan:', errorText);
       return lessonPlan;
     }
 
