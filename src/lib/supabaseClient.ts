@@ -29,54 +29,69 @@ export const createSession = async (teacherName: string): Promise<Session | null
   // Generate a 6-character alphanumeric code
   const code = Math.random().toString(36).substring(2, 8).toUpperCase();
   
-  const { data, error } = await supabase
-    .from('sessions')
-    .insert([
-      { 
-        code, 
-        teacher_name: teacherName,
-        active: true 
-      }
-    ])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating session:', error);
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([
+        { 
+          code, 
+          teacher_name: teacherName,
+          active: true 
+        }
+      ])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating session:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception creating session:', err);
     return null;
   }
-  
-  return data;
 };
 
 export const getSessionByCode = async (code: string): Promise<Session | null> => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .eq('code', code)
-    .eq('active', true)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching session:', error);
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('code', code)
+      .eq('active', true)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching session:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception fetching session:', err);
     return null;
   }
-  
-  return data;
 };
 
 export const endSession = async (code: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('sessions')
-    .update({ active: false })
-    .eq('code', code);
-  
-  if (error) {
-    console.error('Error ending session:', error);
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .update({ active: false })
+      .eq('code', code);
+    
+    if (error) {
+      console.error('Error ending session:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Exception ending session:', err);
     return false;
   }
-  
-  return true;
 };
 
 // Helper functions for feedback
@@ -85,39 +100,49 @@ export const submitFeedback = async (
   studentName: string, 
   value: string
 ): Promise<Feedback | null> => {
-  const { data, error } = await supabase
-    .from('feedback')
-    .insert([
-      { 
-        session_code: sessionCode,
-        student_name: studentName,
-        value 
-      }
-    ])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error submitting feedback:', error);
+  try {
+    const { data, error } = await supabase
+      .from('feedback')
+      .insert([
+        { 
+          session_code: sessionCode,
+          student_name: studentName,
+          value 
+        }
+      ])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error submitting feedback:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception submitting feedback:', err);
     return null;
   }
-  
-  return data;
 };
 
 export const getFeedbackForSession = async (sessionCode: string): Promise<Feedback[]> => {
-  const { data, error } = await supabase
-    .from('feedback')
-    .select('*')
-    .eq('session_code', sessionCode)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching feedback:', error);
+  try {
+    const { data, error } = await supabase
+      .from('feedback')
+      .select('*')
+      .eq('session_code', sessionCode)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching feedback:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching feedback:', err);
     return [];
   }
-  
-  return data || [];
 };
 
 // Function to subscribe to real-time feedback for a session

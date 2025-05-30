@@ -3,6 +3,7 @@ import { ClassCodeGenerator } from '../components/ClassCodeGenerator';
 import { LiveFeedbackPanel } from '../components/LiveFeedbackPanel';
 import { SessionInfo } from '../components/SessionInfo';
 import { BookOpen } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ActiveSession {
   code: string;
@@ -13,8 +14,7 @@ export function TeacherDashboard() {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
 
   const handleCodeGenerated = (code: string) => {
-    // In a real app, we would get the teacher's name from auth or form input
-    const teacherName = 'Ms. Johnson';
+    const teacherName = 'Ms. Johnson'; // In a real app, this would come from auth or form input
     setActiveSession({ code, teacherName });
   };
 
@@ -29,7 +29,12 @@ export function TeacherDashboard() {
           <div className="flex items-center">
             <BookOpen className="h-8 w-8 text-indigo-600 mr-3" />
             <h1 className="text-2xl font-bold text-gray-900">Classroom Feedback</h1>
-            <span className="ml-auto text-sm text-gray-500">Teacher Dashboard</span>
+            <div className="ml-auto flex items-center space-x-4">
+              <Link to="/join" className="text-indigo-600 hover:text-indigo-800 font-medium">
+                Student View
+              </Link>
+              <span className="text-sm text-gray-500">Teacher Dashboard</span>
+            </div>
           </div>
         </div>
       </header>
@@ -59,7 +64,11 @@ export function TeacherDashboard() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
                 <h3 className="font-bold mb-2">Student Join Instructions</h3>
                 <p>
-                  Students can join this session by visiting the join page and entering the code: <strong>{activeSession.code}</strong>
+                  Students can join this session by visiting the{' '}
+                  <Link to="/join" className="text-blue-600 hover:text-blue-800 underline">
+                    join page
+                  </Link>{' '}
+                  and entering the code: <strong>{activeSession.code}</strong>
                 </p>
               </div>
             </>
