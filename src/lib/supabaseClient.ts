@@ -58,19 +58,6 @@ export const uploadLessonPlan = async (
       throw new Error('File and title are required');
     }
 
-    // First check if the bucket exists
-    const { data: buckets, error: bucketError } = await supabase
-      .storage
-      .listBuckets();
-
-    const lessonPlansBucketExists = buckets?.some(bucket => bucket.name === 'lessonplans');
-
-    if (bucketError || !lessonPlansBucketExists) {
-      throw new StorageError(
-        'Storage is not properly configured. Please ensure the "lessonplans" bucket exists in your Supabase project.'
-      );
-    }
-
     // Create database record first without the file
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
@@ -95,13 +82,19 @@ export const uploadLessonPlan = async (
       .upload(fileName, file);
 
     if (uploadError) {
+      if (uploadError.message.includes('storage/bucket-not-found')) {
+        throw new StorageError(
+          'Storage is not properly configured. Please ensure the "lessonplans" bucket exists.'
+        );
+      }
+
       // If upload fails, we should delete the lesson plan record
       await supabase
         .from('lesson_plans')
         .delete()
         .eq('id', lessonPlan.id);
       
-      throw new Error('Error uploading file: ' + uploadError.message);
+      throw new Error(uploadError.message);
     }
 
     if (!uploadData?.path) {
