@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { PDFLoader } from 'npm:langchain@0.0.200';
+import { PDFLoader } from 'npm:@langchain/community@0.0.20/document_loaders/fs/pdf';
 import { OpenAI } from 'npm:openai@4.20.1';
 
 // Helper function for consistent log formatting
@@ -68,10 +68,15 @@ Deno.serve(async (req) => {
     // Convert PDF to text
     log('Converting PDF to text using ArrayBuffer');
     const arrayBuffer = await pdfData.arrayBuffer();
-    const loader = new PDFLoader(new Blob([arrayBuffer], { type: 'application/pdf' }));
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+    const loader = new PDFLoader(blob);
     const docs = await loader.load();
     const pdfText = docs.map(doc => doc.pageContent).join('\n');
-    log('PDF converted to text, length:', pdfText.length);
+    log('PDF converted to text successfully', { textLength: pdfText.length });
+    
+    if (!pdfText || pdfText.length === 0) {
+      throw new Error('Failed to extract text from PDF');
+    }
 
     // Process with OpenAI
     log('Sending request to OpenAI');
