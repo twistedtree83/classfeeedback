@@ -45,52 +45,27 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
-    // Create a mock processed content structure
-    const processedContent = {
-      title: title,
-      objectives: [
-        "Understand key concepts presented in the lesson",
-        "Apply knowledge through practical exercises",
-        "Demonstrate comprehension through assessment"
-      ],
-      duration: "60 minutes",
-      materials: ["Lesson PDF"],
-      sections: [
-        {
-          id: "1",
-          title: "Introduction",
-          duration: "10 minutes",
-          content: "Overview of lesson content",
-          activities: ["Opening discussion"]
-        },
-        {
-          id: "2",
-          title: "Main Content",
-          duration: "35 minutes",
-          content: "Core lesson material",
-          activities: ["Guided practice", "Group work"]
-        },
-        {
-          id: "3",
-          title: "Conclusion",
-          duration: "15 minutes",
-          content: "Review and assessment",
-          activities: ["Summary activity", "Exit ticket"]
-        }
-      ]
-    };
+    // Read the PDF file as text
+    const text = await file.text();
+    
+    // Process the PDF content with OpenAI
+    const response = await fetch(`${supabaseUrl}/functions/v1/process-lesson`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        title,
+        content: text
+      })
+    });
 
-    const fileName = `${Date.now()}-${file.name}`;
-    console.log('Uploading PDF to storage:', { fileName });
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('lesson_plans')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error('Error uploading file:', uploadError);
-      return null;
+    if (!response.ok) {
+      throw new Error('Failed to process lesson plan');
     }
-    console.log('PDF uploaded successfully');
+
+    const { data: processedContent } = await response.json();
 
     console.log('Creating lesson plan record');
     const { data: lessonPlan, error: dbError } = await supabase
@@ -98,7 +73,6 @@ export const uploadLessonPlan = async (
       .insert([
         {
           title,
-          pdf_path: fileName,
           processed_content: processedContent
         }
       ])
