@@ -46,19 +46,19 @@ export const uploadLessonPlan = async (
 ): Promise<LessonPlan | null> => {
   try {
     const fileName = `${Date.now()}-${file.name}`;
-    log('Uploading PDF to storage:', { fileName });
+    console.log('Uploading PDF to storage:', { fileName });
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('lesson_plans')
       .upload(fileName, file);
 
     if (uploadError) {
-      log('Error uploading file:', { error: uploadError });
+      console.error('Error uploading file:', uploadError);
       console.error('Error uploading file:', uploadError);
       return null;
     }
-    log('PDF uploaded successfully');
+    console.log('PDF uploaded successfully');
 
-    log('Creating lesson plan record');
+    console.log('Creating lesson plan record');
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
       .insert([
@@ -72,20 +72,20 @@ export const uploadLessonPlan = async (
       .single();
 
     if (dbError) {
-      log('Error creating lesson plan record:', { error: dbError });
+      console.error('Error creating lesson plan record:', dbError);
       console.error('Error creating lesson plan record:', dbError);
       return null;
     }
-    log('Lesson plan record created:', { id: lessonPlan.id });
+    console.log('Lesson plan record created:', { id: lessonPlan.id });
 
-    log('Invoking process-lesson-plan function');
+    console.log('Invoking process-lesson-plan function');
     const { data: processedData, error: functionError } = await supabase.functions
       .invoke('process-lesson-plan', {
         body: { lessonPlanId: lessonPlan.id }
       });
 
     if (functionError) {
-      log('Error processing lesson plan:', { error: functionError });
+      console.error('Error processing lesson plan:', functionError);
       console.error('Error processing lesson plan:', functionError);
       return null;
     }
@@ -95,7 +95,7 @@ export const uploadLessonPlan = async (
 
     return lessonPlan;
   } catch (err) {
-    log('Exception in uploadLessonPlan:', { error: err });
+    console.error('Exception in uploadLessonPlan:', err);
     console.error('Exception in uploadLessonPlan:', err);
     return null;
   }

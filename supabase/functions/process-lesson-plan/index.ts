@@ -1,6 +1,7 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { PDFLoader } from 'npm:@langchain/community@0.0.20/document_loaders/fs/pdf';
-import { OpenAI } from 'npm:openai@4.20.1';
+// @deno-types="npm:@types/node@20.11.25"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { PDFLoader } from 'https://esm.sh/@langchain/community@0.0.20/document_loaders/fs/pdf';
+import { OpenAI } from 'https://esm.sh/openai@4.20.1';
 
 // Helper function for consistent log formatting
 const log = (message: string, data?: any) => {
@@ -26,15 +27,24 @@ Deno.serve(async (req) => {
     const { lessonPlanId } = await req.json();
     log('Lesson plan ID:', lessonPlanId);
 
+    if (!lessonPlanId) {
+      throw new Error('Lesson plan ID is required');
+    }
+
     // Initialize clients
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+
+    if (!supabaseUrl || !supabaseKey || !openaiKey) {
+      throw new Error('Missing required environment variables');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
     log('Supabase client initialized');
 
     const openai = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY')
+      apiKey: openaiKey
     });
     log('OpenAI client initialized');
 
