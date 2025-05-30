@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { PDFLoader } from 'npm:langchain/document_loaders/web/pdf';
+import { PDFLoader } from 'npm:langchain/document_loaders/fs/pdf';
 import { OpenAI } from 'npm:openai@4.20.1';
 
 const corsHeaders = {
@@ -14,7 +14,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lessonPlanId } = await req.json();
+    // Validate request body
+    const body = await req.json().catch(() => ({}));
+    const { lessonPlanId } = body;
+    
+    if (!lessonPlanId) {
+      throw new Error('lessonPlanId is required');
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -55,15 +61,26 @@ Deno.serve(async (req) => {
     // Convert PDF to text
     const arrayBuffer = await pdfData.arrayBuffer();
     let pdfText = '';
-    
+
     try {
-      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-      const loader = new PDFLoader(blob);
+      // Process PDF in chunks to prevent memory issues
+      const loader = new PDFLoader(new Blob([arrayBuffer]), {
+        splitPages: true
+      });
+      
       const docs = await loader.load();
-      pdfText = docs.map(doc => doc.pageContent).join('\n');
+      const chunkSize = 5;
+      
+      for (let i = 0; i < docs.length; i += chunkSize) {
+        const chunk = docs.slice(i, i + chunkSize);
+        pdfText += chunk.map(doc => doc.pageContent).join('\n');
+      }
     } catch (pdfError) {
       console.error('Error processing PDF:', pdfError);
-      throw new Error('Failed to process PDF file');
+      if (pdfError instanceof RangeError && pdfError.message.includes('Maximum call stack size exceeded')) {
+        throw new Error('PDF file is too complex. Please try a simpler or shorter document.');
+      }
+      throw new Error(`Failed to process PDF file: ${pdfError.message}`);
     }
 
     // Process with OpenAI
@@ -131,13 +148,24 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
+    console.error('Error in process-lesson function:', error);
+    
+    let statusCode = 500;
+    let errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('required')) {
+      statusCode = 400;
+    } else if (errorMessage.includes('too complex')) {
+      statusCode = 413;
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: errorMessage
       }),
       { 
-        status: 500,
+        status: statusCode,
         headers: {
           ...corsHeaders,
           'Content-Type': 'application/json'
