@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClassCodeGenerator } from '../components/ClassCodeGenerator';
 import { LiveFeedbackPanel } from '../components/LiveFeedbackPanel';
 import { SessionInfo } from '../components/SessionInfo';
+import { ParticipantsList } from '../components/ParticipantsList';
 import { BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -54,11 +55,12 @@ export function TeacherDashboard() {
               />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="col-span-1 lg:col-span-2">
+                <div className="lg:col-span-1">
                   <LiveFeedbackPanel sessionCode={activeSession.code} />
                 </div>
-                
-                {/* Could add more dashboard panels here in the future */}
+                <div className="lg:col-span-1">
+                  <ParticipantsList sessionCode={activeSession.code} />
+                </div>
               </div>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
