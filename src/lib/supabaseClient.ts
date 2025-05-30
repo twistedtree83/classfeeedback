@@ -45,24 +45,26 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
-    // Upload PDF to storage
     const fileName = `${Date.now()}-${file.name}`;
+    log('Uploading PDF to storage:', { fileName });
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('lesson_plans')
       .upload(fileName, file);
 
     if (uploadError) {
+      log('Error uploading file:', { error: uploadError });
       console.error('Error uploading file:', uploadError);
       return null;
     }
+    log('PDF uploaded successfully');
 
-    // Create database record
+    log('Creating lesson plan record');
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
       .insert([
         {
           title,
-          pdf_path: uploadData.path,
+          pdf_path: fileName,
           processed_content: null // Will be updated after processing
         }
       ])
@@ -70,36 +72,30 @@ export const uploadLessonPlan = async (
       .single();
 
     if (dbError) {
+      log('Error creating lesson plan record:', { error: dbError });
       console.error('Error creating lesson plan record:', dbError);
       return null;
     }
+    log('Lesson plan record created:', { id: lessonPlan.id });
 
-    // Trigger processing
-    const response = await fetch(
-      `${supabaseUrl}/functions/v1/process-lesson`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ lessonPlanId: lessonPlan.id })
-      }
-    );
+    log('Invoking process-lesson-plan function');
+    const { data: processedData, error: functionError } = await supabase.functions
+      .invoke('process-lesson-plan', {
+        body: { lessonPlanId: lessonPlan.id }
+      });
 
-    if (!response.ok) {
-      console.error('Error processing lesson plan:', await response.text());
-      return lessonPlan;
+    if (functionError) {
+      log('Error processing lesson plan:', { error: functionError });
+      console.error('Error processing lesson plan:', functionError);
+      return null;
     }
 
-    const result = await response.json();
-    if (result.success) {
-      // Update local lesson plan with processed content
-      lessonPlan.processed_content = result.data;
-    }
+    // Update local lesson plan with processed content
+    lessonPlan.processed_content = processedData;
 
     return lessonPlan;
   } catch (err) {
+    log('Exception in uploadLessonPlan:', { error: err });
     console.error('Exception in uploadLessonPlan:', err);
     return null;
   }
