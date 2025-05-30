@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
-import { PDFLoader } from 'npm:langchain@0.0.200';
+import { PDFLoader } from 'npm:langchain/document_loaders/web/pdf';
 import { OpenAI } from 'npm:openai@4.20.1';
 
 const corsHeaders = {
@@ -16,14 +16,19 @@ Deno.serve(async (req) => {
   try {
     const { lessonPlanId } = await req.json();
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+
+    if (!supabaseUrl || !supabaseKey || !openaiKey) {
+      throw new Error('Missing required environment variables');
+    }
+
     // Initialize clients
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const openai = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY')
+      apiKey: openaiKey
     });
 
     // Get lesson plan details
@@ -49,9 +54,17 @@ Deno.serve(async (req) => {
 
     // Convert PDF to text
     const arrayBuffer = await pdfData.arrayBuffer();
-    const loader = new PDFLoader(new Blob([arrayBuffer], { type: 'application/pdf' }));
-    const docs = await loader.load();
-    const pdfText = docs.map(doc => doc.pageContent).join('\n');
+    let pdfText = '';
+    
+    try {
+      const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+      const loader = new PDFLoader(blob);
+      const docs = await loader.load();
+      pdfText = docs.map(doc => doc.pageContent).join('\n');
+    } catch (pdfError) {
+      console.error('Error processing PDF:', pdfError);
+      throw new Error('Failed to process PDF file');
+    }
 
     // Process with OpenAI
     const completion = await openai.chat.completions.create({
