@@ -46,16 +46,13 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
-    // Generate a unique filename for the PDF
-    const filename = `${uuidv4()}.pdf`;
-    const filePath = `lesson_plans/${filename}`;
-
-    // Upload the PDF file to Supabase Storage
+    // Upload PDF to storage
+    const filePath = `${uuidv4()}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('lesson_plans')
       .upload(filePath, file);
 
-    if (uploadError) {
+    if (uploadError) { 
       console.error('Error uploading PDF:', uploadError);
       throw new Error('Failed to upload PDF file');
     }
@@ -67,7 +64,7 @@ export const uploadLessonPlan = async (
         {
           title,
           pdf_path: filePath,
-          processed_content: null // Will be updated by the edge function
+          processed_content: null
         }
       ])
       .select()
@@ -75,23 +72,29 @@ export const uploadLessonPlan = async (
 
     if (dbError) {
       console.error('Error creating lesson plan record:', dbError);
+      // Clean up the uploaded file if database insert fails
+      await supabase.storage
+        .from('lesson_plans')
+        .remove([filePath]);
       return null;
     }
 
     // Trigger the edge function to process the PDF asynchronously
-    fetch(`${supabaseUrl}/functions/v1/process-lesson-plan`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/process-lesson-plan`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         lessonPlanId: lessonPlan.id
       })
-    }).catch(err => {
-      console.error('Error triggering PDF processing:', err);
-      // Don't throw here as this is a fire-and-forget operation
     });
+
+    if (!response.ok) {
+      console.error('Error processing lesson plan:', await response.text());
+      return null;
+    }
 
     return lessonPlan;
   } catch (err) {
