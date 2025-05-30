@@ -63,11 +63,11 @@ export const uploadLessonPlan = async (
       .storage
       .listBuckets();
 
-    const lessonPlansBucketExists = buckets?.some(bucket => bucket.name === 'lesson_plans');
+    const lessonPlansBucketExists = buckets?.some(bucket => bucket.name === 'lessonplans');
 
     if (bucketError || !lessonPlansBucketExists) {
       throw new StorageError(
-        'Storage is not properly configured. Please ensure the "lesson_plans" bucket exists in your Supabase project.'
+        'Storage is not properly configured. Please ensure the "lessonplans" bucket exists in your Supabase project.'
       );
     }
 
@@ -91,7 +91,7 @@ export const uploadLessonPlan = async (
     // Upload PDF to storage
     const fileName = `${Date.now()}-${file.name}`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('lesson_plans')
+      .from('lessonplans')
       .upload(fileName, file);
 
     if (uploadError) {
