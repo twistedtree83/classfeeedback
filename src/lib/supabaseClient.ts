@@ -24,6 +24,13 @@ export interface Feedback {
   created_at: string;
 }
 
+export interface SessionParticipant {
+  id: string;
+  session_code: string;
+  student_name: string;
+  joined_at: string;
+}
+
 // Helper functions for sessions
 export const createSession = async (teacherName: string): Promise<Session | null> => {
   // Generate a 6-character alphanumeric code
@@ -92,6 +99,74 @@ export const endSession = async (code: string): Promise<boolean> => {
     console.error('Exception ending session:', err);
     return false;
   }
+};
+
+// Helper functions for session participants
+export const addSessionParticipant = async (
+  sessionCode: string,
+  studentName: string
+): Promise<SessionParticipant | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_participants')
+      .insert([
+        {
+          session_code: sessionCode,
+          student_name: studentName
+        }
+      ])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error adding session participant:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception adding session participant:', err);
+    return null;
+  }
+};
+
+export const getParticipantsForSession = async (sessionCode: string): Promise<SessionParticipant[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_participants')
+      .select('*')
+      .eq('session_code', sessionCode)
+      .order('joined_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching session participants:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching session participants:', err);
+    return [];
+  }
+};
+
+export const subscribeToSessionParticipants = (
+  sessionCode: string,
+  callback: (payload: SessionParticipant) => void
+) => {
+  return supabase
+    .channel('public:session_participants')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `session_code=eq.${sessionCode}`,
+      },
+      (payload) => callback(payload.new as SessionParticipant)
+    )
+    .subscribe();
 };
 
 // Helper functions for feedback

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { getSessionByCode } from '../lib/supabaseClient';
+import { getSessionByCode, addSessionParticipant } from '../lib/supabaseClient';
 import { generateRandomName } from '../lib/utils';
 
 interface JoinSessionFormProps {
@@ -34,7 +34,18 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         return;
       }
       
-      onJoinSession(sessionCode, studentName.trim());
+      const participant = await addSessionParticipant(
+        sessionCode.trim().toUpperCase(),
+        studentName.trim()
+      );
+      
+      if (!participant) {
+        setError('Failed to join session. Please try again.');
+        setIsJoining(false);
+        return;
+      }
+      
+      onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim());
       
     } catch (err) {
       console.error('Error joining session:', err);
