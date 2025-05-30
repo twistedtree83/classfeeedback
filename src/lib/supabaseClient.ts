@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { ProcessedLesson } from './types';
 
 // In a real application, use environment variables to secure these values
 const supabaseUrl = 'https://luxanhwgynfazfrzapto.supabase.co';
@@ -31,6 +32,74 @@ export interface SessionParticipant {
   joined_at: string;
 }
 
+export interface LessonPlan {
+  id: string;
+  title: string;
+  pdf_path: string;
+  processed_content: ProcessedLesson | null;
+  created_at: string;
+}
+
+export const uploadLessonPlan = async (
+  file: File,
+  title: string
+): Promise<LessonPlan | null> => {
+  try {
+    // Upload PDF to storage
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('lesson_plans')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      return null;
+    }
+
+    // Create database record
+    const { data: lessonPlan, error: dbError } = await supabase
+      .from('lesson_plans')
+      .insert([
+        {
+          title,
+          pdf_path: uploadData.path,
+          processed_content: null // Will be updated after processing
+        }
+      ])
+      .select()
+      .single();
+
+    if (dbError) {
+      console.error('Error creating lesson plan record:', dbError);
+      return null;
+    }
+
+    return lessonPlan;
+  } catch (err) {
+    console.error('Exception in uploadLessonPlan:', err);
+    return null;
+  }
+};
+
+export const getLessonPlan = async (id: string): Promise<LessonPlan | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('lesson_plans')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching lesson plan:', error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Exception in getLessonPlan:', err);
+    return null;
+  }
+};
 // Helper functions for sessions
 export const createSession = async (teacherName: string): Promise<Session | null> => {
   // Generate a 6-character alphanumeric code

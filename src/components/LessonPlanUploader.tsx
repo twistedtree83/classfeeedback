@@ -2,6 +2,8 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FileText, Upload, X } from 'lucide-react';
 import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { uploadLessonPlan } from '../lib/supabaseClient';
 
 interface LessonPlanUploaderProps {
   onFileSelect: (file: File) => void;
@@ -10,6 +12,7 @@ interface LessonPlanUploaderProps {
 
 export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [title, setTitle] = useState('');
   const [error, setError] = useState<string>('');
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -38,8 +41,36 @@ export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUpl
     setError('');
   };
 
+  const handleUpload = async () => {
+    if (!selectedFile || !title.trim()) {
+      setError('Please provide both a title and a file');
+      return;
+    }
+
+    try {
+      const result = await uploadLessonPlan(selectedFile, title.trim());
+      if (result) {
+        onFileSelect(selectedFile);
+      } else {
+        setError('Failed to upload lesson plan');
+      }
+    } catch (err) {
+      console.error('Error uploading lesson plan:', err);
+      setError('An unexpected error occurred');
+    }
+  };
+
   return (
     <div className="w-full">
+      <Input
+        label="Lesson Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Enter a title for your lesson"
+        className="mb-4"
+        disabled={isProcessing}
+      />
+
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
@@ -85,7 +116,7 @@ export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUpl
       {selectedFile && (
         <div className="mt-4">
           <Button
-            onClick={() => onFileSelect(selectedFile)}
+            onClick={handleUpload}
             disabled={isProcessing}
             className="w-full"
           >
