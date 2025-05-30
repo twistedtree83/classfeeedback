@@ -1,7 +1,5 @@
-// @deno-types="npm:@types/node@20.11.25"
-import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
-import { PDFLoader } from 'npm:@langchain/community@0.0.20/document_loaders/fs/pdf';
-import { OpenAI } from 'npm:openai@4.20.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { OpenAI } from 'https://esm.sh/openai@4.20.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,17 +65,38 @@ Deno.serve(async (req) => {
     console.log('PDF downloaded successfully');
 
     // Convert PDF to text
-    console.log('Converting PDF to text');
+    console.log('Converting PDF to text using OpenAI');
     const arrayBuffer = await pdfData.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-    const loader = new PDFLoader(blob);
-    const docs = await loader.load();
-    const pdfText = docs.map(doc => doc.pageContent).join('\n');
-    console.log('PDF converted to text successfully', { textLength: pdfText.length });
     
-    if (!pdfText || pdfText.length === 0) {
-      throw new Error('Failed to extract text from PDF');
+    // Convert ArrayBuffer to Base64
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+    
+    // Use OpenAI's vision model to extract text from PDF
+    const visionResponse = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Extract and summarize the text content from this PDF document." },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:application/pdf;base64,${base64String}`
+              }
+            }
+          ]
+        }
+      ],
+      max_tokens: 4096
+    });
+    
+    const pdfText = visionResponse.choices[0].message.content;
+    if (!pdfText) {
+      throw new Error('Failed to extract text from PDF using OpenAI Vision');
     }
+    console.log('PDF text extracted successfully');
 
     // Process with OpenAI
     console.log('Sending request to OpenAI');
