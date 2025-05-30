@@ -47,24 +47,24 @@ export const uploadLessonPlan = async (
 ): Promise<LessonPlan | null> => {
   try {
     // Upload PDF to storage
-    const filePath = `${uuidv4()}.pdf`;
-    const { error: uploadError } = await supabase.storage
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('lesson_plans')
-      .upload(filePath, file);
+      .upload(fileName, file);
 
-    if (uploadError) { 
-      console.error('Error uploading PDF:', uploadError);
-      throw new Error('Failed to upload PDF file');
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      return null;
     }
 
-    // Create the lesson plan record in the database
+    // Create database record
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
       .insert([
         {
           title,
-          pdf_path: filePath,
-          processed_content: null
+          pdf_path: uploadData.path,
+          processed_content: null // Will be updated after processing
         }
       ])
       .select()
@@ -72,28 +72,31 @@ export const uploadLessonPlan = async (
 
     if (dbError) {
       console.error('Error creating lesson plan record:', dbError);
-      // Clean up the uploaded file if database insert fails
-      await supabase.storage
-        .from('lesson_plans')
-        .remove([filePath]);
       return null;
     }
 
-    // Trigger the edge function to process the PDF asynchronously
-    const response = await fetch(`${supabaseUrl}/functions/v1/process-lesson-plan`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        lessonPlanId: lessonPlan.id
-      })
-    });
+    // Trigger processing
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/process-lesson`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lessonPlanId: lessonPlan.id })
+      }
+    );
 
     if (!response.ok) {
       console.error('Error processing lesson plan:', await response.text());
-      return null;
+      return lessonPlan;
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      // Update local lesson plan with processed content
+      lessonPlan.processed_content = result.data;
     }
 
     return lessonPlan;
