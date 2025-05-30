@@ -3,7 +3,7 @@ import { ClassCodeGenerator } from '../components/ClassCodeGenerator';
 import { LiveFeedbackPanel } from '../components/LiveFeedbackPanel';
 import { SessionInfo } from '../components/SessionInfo';
 import { ParticipantsList } from '../components/ParticipantsList';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface ActiveSession {
@@ -31,6 +31,13 @@ export function TeacherDashboard() {
             <BookOpen className="h-8 w-8 text-indigo-600 mr-3" />
             <h1 className="text-2xl font-bold text-gray-900">Classroom Feedback</h1>
             <div className="ml-auto flex items-center space-x-4">
+              <Link
+                to="/planner"
+                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                <FileText className="h-5 w-5" />
+                <span>Lesson Planner</span>
+              </Link>
               <Link to="/join" className="text-indigo-600 hover:text-indigo-800 font-medium">
                 Student View
               </Link>
