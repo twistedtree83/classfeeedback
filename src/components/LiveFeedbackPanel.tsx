@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/supabaseClient';
 import { formatTime, groupFeedbackByType } from '../lib/utils';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Users } from 'lucide-react';
 
 interface LiveFeedbackPanelProps {
   sessionCode: string;
 }
 
+interface Student {
+  name: string;
+  joinedAt: string;
+}
+
 export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [view, setView] = useState<'list' | 'chart'>('chart');
+  const [view, setView] = useState<'list' | 'chart' | 'students'>('chart');
 
   // Load initial feedback
   useEffect(() => {
@@ -29,6 +35,23 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
     
     loadFeedback();
   }, [sessionCode]);
+  
+  // Track unique students
+  useEffect(() => {
+    const uniqueStudents = new Map<string, string>();
+    feedback.forEach(item => {
+      if (!uniqueStudents.has(item.student_name)) {
+        uniqueStudents.set(item.student_name, item.created_at);
+      }
+    });
+    
+    const studentList = Array.from(uniqueStudents).map(([name, joinedAt]) => ({
+      name,
+      joinedAt
+    }));
+    
+    setStudents(studentList);
+  }, [feedback]);
   
   // Subscribe to real-time updates
   useEffect(() => {
@@ -76,6 +99,12 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
             className={`p-2 rounded-md ${view === 'list' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             List
+          </button>
+          <button
+            onClick={() => setView('students')}
+            className={`p-2 rounded-md ${view === 'students' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            <Users size={20} />
           </button>
           <button
             onClick={() => setView('chart')}
@@ -155,6 +184,34 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      
+      {view === 'students' && (
+        <div className="overflow-auto max-h-96">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined At</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {students.map((student) => (
+                <tr key={student.name} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {student.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatTime(student.joinedAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 text-center text-sm text-gray-500">
+            Total Students: {students.length}
+          </div>
         </div>
       )}
     </div>

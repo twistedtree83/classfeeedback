@@ -17,8 +17,8 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!sessionCode.trim()) {
-      setError('Please enter a class code');
+    if (!sessionCode.trim() || !studentName.trim()) {
+      setError('Please enter both class code and your name');
       return;
     }
 
@@ -34,9 +34,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         return;
       }
       
-      // Use entered name or generate a random one if empty
-      const name = studentName.trim() || generateRandomName();
-      onJoinSession(sessionCode, name);
+      onJoinSession(sessionCode, studentName.trim());
       
     } catch (err) {
       console.error('Error joining session:', err);
@@ -62,10 +60,11 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         />
 
         <Input
-          label="Your Name (Optional)"
+          label="Your Name"
+          required
           value={studentName}
           onChange={(e) => setStudentName(e.target.value)}
-          placeholder="Enter your name or leave blank"
+          placeholder="Enter your name"
           disabled={isJoining}
         />
 
