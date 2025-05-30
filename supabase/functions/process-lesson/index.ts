@@ -1,6 +1,6 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.39.8';
-import { PDFLoader } from 'npm:langchain/document_loaders/fs/pdf';
-import OpenAI from 'npm:openai@4.28.0';
+import { createClient } from 'npm:@supabase/supabase-js@2.38.4';
+import { PDFLoader } from 'npm:langchain/document_loaders/web/pdf@0.0.200';
+import { OpenAI } from 'npm:openai@4.20.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
