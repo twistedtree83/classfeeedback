@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 import type { ProcessedLesson } from './types';
 
 // In a real application, use environment variables to secure these values
@@ -45,35 +46,28 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
-    // Read the PDF file as text
-    const text = await file.text();
-    
-    // Process the PDF content with OpenAI
-    const response = await fetch(`${supabaseUrl}/functions/v1/process-lesson`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        title,
-        content: text
-      })
-    });
+    // Generate a unique filename for the PDF
+    const filename = `${uuidv4()}.pdf`;
+    const filePath = `lesson_plans/${filename}`;
 
-    if (!response.ok) {
-      throw new Error('Failed to process lesson plan');
+    // Upload the PDF file to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('lesson_plans')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error('Error uploading PDF:', uploadError);
+      throw new Error('Failed to upload PDF file');
     }
 
-    const { data: processedContent } = await response.json();
-
-    console.log('Creating lesson plan record');
+    // Create the lesson plan record in the database
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
       .insert([
         {
           title,
-          processed_content: processedContent
+          pdf_path: filePath,
+          processed_content: null // Will be updated by the edge function
         }
       ])
       .select()
@@ -83,7 +77,21 @@ export const uploadLessonPlan = async (
       console.error('Error creating lesson plan record:', dbError);
       return null;
     }
-    console.log('Lesson plan record created:', { id: lessonPlan.id });
+
+    // Trigger the edge function to process the PDF asynchronously
+    fetch(`${supabaseUrl}/functions/v1/process-lesson-plan`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        lessonPlanId: lessonPlan.id
+      })
+    }).catch(err => {
+      console.error('Error triggering PDF processing:', err);
+      // Don't throw here as this is a fire-and-forget operation
+    });
 
     return lessonPlan;
   } catch (err) {
@@ -111,6 +119,7 @@ export const getLessonPlan = async (id: string): Promise<LessonPlan | null> => {
     return null;
   }
 };
+
 // Helper functions for sessions
 export const createSession = async (teacherName: string): Promise<Session | null> => {
   // Generate a 6-character alphanumeric code
