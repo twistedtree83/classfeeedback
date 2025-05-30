@@ -36,9 +36,17 @@ export interface SessionParticipant {
 export interface LessonPlan {
   id: string;
   title: string;
-  pdf_path: string;
+  pdf_path: string | null;
   processed_content: ProcessedLesson | null;
   created_at: string;
+}
+
+// Custom error for storage bucket issues
+export class StorageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageError';
+  }
 }
 
 export const uploadLessonPlan = async (
@@ -47,8 +55,37 @@ export const uploadLessonPlan = async (
 ): Promise<LessonPlan | null> => {
   try {
     if (!file || !title) {
-      console.error('File and title are required');
-      return null;
+      throw new Error('File and title are required');
+    }
+
+    // First check if the bucket exists
+    const { data: buckets, error: bucketError } = await supabase
+      .storage
+      .listBuckets();
+
+    const lessonPlansBucketExists = buckets?.some(bucket => bucket.name === 'lesson_plans');
+
+    if (bucketError || !lessonPlansBucketExists) {
+      throw new StorageError(
+        'Storage is not properly configured. Please ensure the "lesson_plans" bucket exists in your Supabase project.'
+      );
+    }
+
+    // Create database record first without the file
+    const { data: lessonPlan, error: dbError } = await supabase
+      .from('lesson_plans')
+      .insert([
+        {
+          title,
+          pdf_path: null,
+          processed_content: null
+        }
+      ])
+      .select()
+      .single();
+
+    if (dbError || !lessonPlan?.id) {
+      throw new Error('Error creating lesson plan record: ' + dbError?.message);
     }
 
     // Upload PDF to storage
@@ -58,31 +95,29 @@ export const uploadLessonPlan = async (
       .upload(fileName, file);
 
     if (uploadError) {
-      console.error('Error uploading file:', uploadError);
-      return null;
+      // If upload fails, we should delete the lesson plan record
+      await supabase
+        .from('lesson_plans')
+        .delete()
+        .eq('id', lessonPlan.id);
+      
+      throw new Error('Error uploading file: ' + uploadError.message);
     }
 
     if (!uploadData?.path) {
-      console.error('Upload successful but file path is missing');
-      return null;
+      throw new Error('Upload successful but file path is missing');
     }
 
-    // Create database record
-    const { data: lessonPlan, error: dbError } = await supabase
+    // Update the lesson plan with the file path
+    const { data: updatedLessonPlan, error: updateError } = await supabase
       .from('lesson_plans')
-      .insert([
-        {
-          title,
-          pdf_path: uploadData.path,
-          processed_content: null // Will be updated after processing
-        }
-      ])
+      .update({ pdf_path: uploadData.path })
+      .eq('id', lessonPlan.id)
       .select()
       .single();
 
-    if (dbError || !lessonPlan?.id) {
-      console.error('Error creating lesson plan record:', dbError);
-      return null;
+    if (updateError) {
+      throw new Error('Error updating lesson plan with file path: ' + updateError.message);
     }
 
     // Trigger processing with proper validation
@@ -96,7 +131,7 @@ export const uploadLessonPlan = async (
         },
         body: JSON.stringify({ 
           lessonPlanId: lessonPlan.id,
-          content: uploadData.path // Add content field required by the function
+          content: uploadData.path
         })
       }
     );
@@ -104,19 +139,30 @@ export const uploadLessonPlan = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error processing lesson plan:', errorText);
-      return lessonPlan;
+      return updatedLessonPlan;
     }
 
     const result = await response.json();
     if (result.success) {
-      // Update local lesson plan with processed content
-      lessonPlan.processed_content = result.data;
+      // Update lesson plan with processed content
+      const { data: finalLessonPlan } = await supabase
+        .from('lesson_plans')
+        .update({ processed_content: result.data })
+        .eq('id', lessonPlan.id)
+        .select()
+        .single();
+      
+      return finalLessonPlan;
     }
 
-    return lessonPlan;
+    return updatedLessonPlan;
   } catch (err) {
-    console.error('Exception in uploadLessonPlan:', err);
-    return null;
+    if (err instanceof StorageError) {
+      console.error('Storage configuration error:', err.message);
+    } else {
+      console.error('Exception in uploadLessonPlan:', err);
+    }
+    throw err; // Re-throw to handle in the UI
   }
 };
 
