@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/node@20.11.25"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
-import { PDFLoader } from 'https://esm.sh/@langchain/community@0.0.20/document_loaders/fs/pdf';
-import { OpenAI } from 'https://esm.sh/openai@4.20.1';
+import { createClient } from 'npm:@supabase/supabase-js@2.39.0';
+import { PDFLoader } from 'npm:@langchain/community@0.0.20/document_loaders/fs/pdf';
+import { OpenAI } from 'npm:openai@4.20.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
