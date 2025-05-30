@@ -74,6 +74,23 @@ export const uploadLessonPlan = async (
       return null;
     }
 
+    // Trigger processing
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/process-lesson`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ lessonPlanId: lessonPlan.id })
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Error processing lesson plan:', await response.text());
+    }
+
     return lessonPlan;
   } catch (err) {
     console.error('Exception in uploadLessonPlan:', err);
