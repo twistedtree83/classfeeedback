@@ -57,5 +57,3 @@ export function groupFeedbackByType(feedback: Array<{ value: string }>) {
   
   return counts;
 }
-
-export { generateRandomName }
