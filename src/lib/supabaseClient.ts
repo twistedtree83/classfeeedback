@@ -45,6 +45,41 @@ export const uploadLessonPlan = async (
   title: string
 ): Promise<LessonPlan | null> => {
   try {
+    // Create a mock processed content structure
+    const processedContent = {
+      title: title,
+      objectives: [
+        "Understand key concepts presented in the lesson",
+        "Apply knowledge through practical exercises",
+        "Demonstrate comprehension through assessment"
+      ],
+      duration: "60 minutes",
+      materials: ["Lesson PDF"],
+      sections: [
+        {
+          id: "1",
+          title: "Introduction",
+          duration: "10 minutes",
+          content: "Overview of lesson content",
+          activities: ["Opening discussion"]
+        },
+        {
+          id: "2",
+          title: "Main Content",
+          duration: "35 minutes",
+          content: "Core lesson material",
+          activities: ["Guided practice", "Group work"]
+        },
+        {
+          id: "3",
+          title: "Conclusion",
+          duration: "15 minutes",
+          content: "Review and assessment",
+          activities: ["Summary activity", "Exit ticket"]
+        }
+      ]
+    };
+
     const fileName = `${Date.now()}-${file.name}`;
     console.log('Uploading PDF to storage:', { fileName });
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -64,7 +99,7 @@ export const uploadLessonPlan = async (
         {
           title,
           pdf_path: fileName,
-          processed_content: null // Will be updated after processing
+          processed_content: processedContent
         }
       ])
       .select()
@@ -75,20 +110,6 @@ export const uploadLessonPlan = async (
       return null;
     }
     console.log('Lesson plan record created:', { id: lessonPlan.id });
-
-    console.log('Invoking process-lesson-plan function');
-    const { data: processedData, error: functionError } = await supabase.functions
-      .invoke('process-lesson-plan', {
-        body: { lessonPlanId: lessonPlan.id }
-      });
-
-    if (functionError) {
-      console.error('Error processing lesson plan:', functionError);
-      return null;
-    }
-
-    // Update local lesson plan with processed content
-    lessonPlan.processed_content = processedData;
 
     return lessonPlan;
   } catch (err) {
