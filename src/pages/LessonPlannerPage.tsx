@@ -1,22 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-import { useCallback } from 'react';
+import { uploadLessonPlan } from '../lib/supabaseClient';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileSelect = useCallback(async (file: File) => {
+  const handleFileUpload = useCallback(async (file: File, title: string) => {
     setIsProcessing(true);
+    setError(null);
+    
     try {
-      // Real processing will happen here through Supabase
-      setProcessedLesson(null);
+      const lessonPlan = await uploadLessonPlan(file, title);
+      if (lessonPlan?.processed_content) {
+        setProcessedLesson(lessonPlan.processed_content);
+      }
     } catch (error) {
-      console.error('Error processing file:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while processing the file');
+      setProcessedLesson(null);
     } finally {
       setIsProcessing(false);
     }
@@ -50,15 +56,20 @@ export function LessonPlannerPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">
                 Upload Lesson Plan
               </h2>
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
+                  {error}
+                </div>
+              )}
               <LessonPlanUploader
-                onFileSelect={handleFileSelect}
+                onFileSelect={handleFileUpload}
                 isProcessing={isProcessing}
               />
             </div>
           </div>
 
           <div>
-            {processedLesson && !isProcessing && (
+            {processedLesson && (
               <LessonPlanDisplay lesson={processedLesson} />
             )}
           </div>

@@ -3,10 +3,9 @@ import { useDropzone } from 'react-dropzone';
 import { FileText, Upload, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { uploadLessonPlan } from '../lib/supabaseClient';
 
 interface LessonPlanUploaderProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File, title: string) => void;
   isProcessing: boolean;
 }
 
@@ -40,24 +39,14 @@ export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUpl
     setSelectedFile(null);
     setError('');
   };
-
-  const handleUpload = async () => {
+  
+  const handleUpload = () => {
     if (!selectedFile || !title.trim()) {
       setError('Please provide both a title and a file');
       return;
     }
-
-    try {
-      const result = await uploadLessonPlan(selectedFile, title.trim());
-      if (result) {
-        onFileSelect(selectedFile);
-      } else {
-        setError('Failed to upload lesson plan');
-      }
-    } catch (err) {
-      console.error('Error uploading lesson plan:', err);
-      setError('An unexpected error occurred');
-    }
+    
+    onFileSelect(selectedFile, title.trim());
   };
 
   return (
