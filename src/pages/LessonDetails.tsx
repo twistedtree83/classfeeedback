@@ -135,8 +135,20 @@ export function LessonDetails() {
         ])
       ];
 
+      console.log(`Transformed cards data being prepared for Supabase (count: ${teachingCards.length}, expected format: Array<{id: string}>):`, JSON.stringify(teachingCards, null, 2));
+      
+      // ADD THIS LOG: Inspect the first few card objects in detail
+      if (teachingCards.length > 0) {
+        console.log("Detailed view of the first few transformed card objects being sent:");
+        for (let i = 0; i < Math.min(teachingCards.length, 3); i++) {
+          console.log(`Card ${i}:`, JSON.stringify(teachingCards[i], null, 2));
+        }
+      }
 
-      console.log('Formatted teaching cards:', teachingCards);
+      // CRITICAL CHECK: If the database expects the 'cards' array to be non-empty.
+      if (teachingCards.length === 0) {
+        throw new Error('No cards available for teaching session');
+      }
 
       const presentation = await createLessonPresentation(
         lesson.id,
