@@ -42,29 +42,42 @@ export function CreateLesson() {
       const text = await extractTextFromFile(selectedFile);
       console.log('Extracted text:', text.slice(0, 500)); // Log first 500 chars
       
-      const analyzed = await aiAnalyzeLesson(text);
-      console.log('AI analysis result:', analyzed);
+      const analyzed = await aiAnalyzeLesson(text);      
+      if (!analyzed) {
+        throw new Error('Failed to analyze lesson plan');
+      }
       
       const processedLesson: ProcessedLesson = {
         id: crypto.randomUUID(),
         title: title.trim(),
         ...analyzed
       };
+      
+      console.log('Saving lesson plan:', processedLesson);
 
       setProcessedContent(processedLesson);
 
       const { error: saveError } = await supabase
         .from('lesson_plans')
         .insert([{
+          id: processedLesson.id,
           title: processedLesson.title,
           processed_content: processedLesson
         }]);
 
       if (saveError) {
+        console.error('Database error:', saveError);
         throw new Error(`Failed to save lesson plan: ${saveError.message}`);
       }
 
-      navigate('/planner');
+      // Show preview first
+      setProcessedContent(processedLesson);
+      
+      // Navigate after a short delay to ensure the user sees the preview
+      setTimeout(() => {
+        navigate(`/planner/${processedLesson.id}`);
+      }, 1500);
+
     } catch (err) {
       console.error('Error processing lesson:', err);
       setError(err instanceof Error ? err.message : 'Failed to process lesson plan');
@@ -119,6 +132,11 @@ export function CreateLesson() {
         <div>
           {processedContent && (
             <LessonPreview lesson={processedContent} />
+          )}
+          {isProcessing && !processedContent && (
+            <div className="flex justify-center items-center h-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
           )}
         </div>
       </div>
