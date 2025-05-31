@@ -194,8 +194,11 @@ export function LessonDetails() {
           <div className="bg-red-50 text-red-700 p-4 rounded-lg">
             {error}
           </div>
-        ) : lesson?.processed_content ? (
-          <LessonPlanDisplay lesson={lesson.processed_content} />
+        ) : lesson?.processed_content ? ( 
+          <LessonPlanDisplay 
+            lesson={lesson.processed_content}
+            onAddToTeaching={handleAddToTeaching}
+          />
         ) : (
           <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
             This lesson plan has no content.
