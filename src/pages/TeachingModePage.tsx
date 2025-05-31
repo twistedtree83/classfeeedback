@@ -55,12 +55,16 @@ export function TeachingModePage() {
   const handleNext = async () => {
     if (!presentation || presentation.current_card_index >= presentation.cards.length - 1) return;
     
+    console.log('Moving to next card:', presentation.current_card_index + 1);
     const newIndex = presentation.current_card_index + 1;
     const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
     
     if (success) {
+      console.log('Successfully updated card index');
       setPresentation({ ...presentation, current_card_index: newIndex });
       setCurrentCard(presentation.cards[newIndex]);
+    } else {
+      console.error('Failed to update card index');
     }
   };
 

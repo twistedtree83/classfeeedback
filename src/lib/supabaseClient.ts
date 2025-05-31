@@ -88,12 +88,24 @@ export const getLessonPresentationByCode = async (
   try {
     const { data, error } = await supabase
       .from('lesson_presentations')
-      .select('*, lesson_plans(*)')
+      .select(`
+        *,
+        lesson_plans (
+          id,
+          title,
+          processed_content
+        )
+      `)
       .eq('session_code', code)
       .eq('active', true)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
+    
+    console.log('Fetched presentation:', data);
     return data;
   } catch (err) {
     console.error('Error fetching lesson presentation:', err);

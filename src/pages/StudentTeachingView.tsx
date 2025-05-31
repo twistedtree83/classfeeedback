@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JoinSessionForm } from '../components/JoinSessionForm';
 import { getLessonPresentationByCode, subscribeToLessonPresentation } from '../lib/supabaseClient';
-import type { LessonPresentation, LessonCard } from '../lib/types';
+import type { LessonPresentation } from '../lib/types';
 
 export function StudentTeachingView() {
   const navigate = useNavigate();
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
-  const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
+
+  const currentCard = presentation?.cards?.[presentation.current_card_index];
 
   useEffect(() => {
     if (!presentation?.session_code) return;
@@ -20,10 +22,11 @@ export function StudentTeachingView() {
       (updatedPresentation) => {
         console.log('Received presentation update:', updatedPresentation);
         setPresentation(updatedPresentation);
-        if (updatedPresentation.cards && Array.isArray(updatedPresentation.cards)) {
-          const newCard = updatedPresentation.cards[updatedPresentation.current_card_index];
-          console.log('Setting new card:', newCard);
-          setCurrentCard(newCard);
+        
+        // If we don't have cards data, retry the full fetch
+        if (!updatedPresentation.cards || !Array.isArray(updatedPresentation.cards)) {
+          console.log('No cards data in update, retrying fetch...');
+          setRetryCount(count => count + 1);
         }
       }
     );
@@ -31,7 +34,6 @@ export function StudentTeachingView() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [presentation?.session_code]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
