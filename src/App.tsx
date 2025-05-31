@@ -8,10 +8,12 @@ import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
 import { TeachingModePage } from './pages/TeachingModePage';
 import { StudentTeachingView } from './pages/StudentTeachingView';
+import { Header } from './components/Header';
 
 function App() {
   return (
     <BrowserRouter>
+      <Header />
       <Routes>
         <Route path="/" element={<TeacherDashboard />} />
         <Route path="/join" element={<JoinPage />} />

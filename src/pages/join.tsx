@@ -13,21 +13,6 @@ export function JoinPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-indigo-600 mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">Classroom Feedback</h1>
-            <div className="ml-auto flex items-center space-x-4">
-              <Link to="/" className="text-indigo-600 hover:text-indigo-800 font-medium">
-                Teacher View
-              </Link>
-              <span className="text-sm text-gray-500">Student View</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center">
           {!sessionInfo ? (
