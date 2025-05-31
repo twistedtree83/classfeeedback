@@ -24,7 +24,7 @@ export function LessonDetails() {
       if (!id) return;
 
       try {
-        const { data, error: fetchError } = await supabase
+        const { data, fetchError } = await supabase
           .from('lesson_plans')
           .select('*')
           .eq('id', id)
@@ -70,6 +70,18 @@ export function LessonDetails() {
     setShowTeacherPrompt(true);
   };
 
+  const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
+    return {
+      id: crypto.randomUUID(),
+      type,
+      title,
+      content,
+      ...(duration !== undefined ? { duration: duration || null } : {}),
+      ...(sectionId !== undefined ? { sectionId: sectionId || null } : {}),
+      ...(activityIndex !== undefined ? { activityIndex } : {})
+    };
+  };
+
   const startTeaching = async () => {
     if (!lesson?.processed_content) return;
     if (!teacherName.trim()) {
@@ -83,47 +95,43 @@ export function LessonDetails() {
     try {
       const teachingCards = selectedCards.length > 0 ? selectedCards : [
         // Title card
-        {
-          id: crypto.randomUUID(),
-          type: 'objective',
-          title: lesson.processed_content.title,
-          content: lesson.processed_content.summary,
-          duration: lesson.processed_content.duration
-        },
+        createCard(
+          'objective',
+          lesson.processed_content.title,
+          lesson.processed_content.summary,
+          lesson.processed_content.duration || null
+        ),
         // Objectives card
-        {
-          id: crypto.randomUUID(),
-          type: 'objective',
-          title: 'Learning Objectives',
-          content: lesson.processed_content.objectives.map(obj => `• ${obj}`).join('\n')
-        },
+        createCard(
+          'objective',
+          'Learning Objectives',
+          lesson.processed_content.objectives.map(obj => `• ${obj}`).join('\n')
+        ),
         // Materials card
-        {
-          id: crypto.randomUUID(),
-          type: 'material',
-          title: 'Required Materials',
-          content: lesson.processed_content.materials.map(mat => `• ${mat}`).join('\n')
-        },
+        createCard(
+          'material',
+          'Required Materials',
+          lesson.processed_content.materials.map(mat => `• ${mat}`).join('\n')
+        ),
         // Section cards
         ...lesson.processed_content.sections.flatMap(section => [
           // Section content card
-          {
-            id: crypto.randomUUID(),
-            type: 'section',
-            title: section.title,
-            content: section.content,
-            duration: section.duration,
-            sectionId: section.id
-          },
+          createCard(
+            'section',
+            section.title,
+            section.content,
+            section.duration || null,
+            section.id
+          ),
           // Activity cards
-          ...section.activities.map((activity, index) => ({
-            id: crypto.randomUUID(),
-            type: 'activity',
-            title: `Activity: ${section.title}`,
-            content: activity,
-            sectionId: section.id,
-            activityIndex: index
-          }))
+          ...section.activities.map((activity, index) => createCard(
+            'activity',
+            `Activity: ${section.title}`,
+            activity,
+            null,
+            section.id,
+            index
+          ))
         ])
       ];
 
@@ -146,11 +154,14 @@ export function LessonDetails() {
   };
 
   const handleAddToTeaching = (type: 'objective' | 'material' | 'section' | 'activity', data: any) => {
-    const newCard: LessonCard = {
-      id: crypto.randomUUID(),
+    const newCard = createCard(
       type,
-      ...data
-    };
+      data.title,
+      data.content,
+      data.duration || null,
+      data.sectionId || null,
+      data.activityIndex !== undefined ? data.activityIndex : null
+    );
     setSelectedCards(prev => [...prev, newCard]);
   };
 

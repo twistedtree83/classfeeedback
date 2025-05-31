@@ -11,6 +11,18 @@ interface TeachingCardsManagerProps {
 export function TeachingCardsManager({ lesson, onSave }: TeachingCardsManagerProps) {
   const [selectedCards, setSelectedCards] = useState<LessonCard[]>([]);
 
+  const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
+    return {
+      id: crypto.randomUUID(),
+      type,
+      title,
+      content,
+      ...(duration !== undefined ? { duration: duration || null } : {}),
+      ...(sectionId !== undefined ? { sectionId: sectionId || null } : {}),
+      ...(activityIndex !== undefined ? { activityIndex } : {})
+    };
+  };
+
   const handleAddCard = (card: LessonCard) => {
     setSelectedCards(prev => [...prev, { ...card, id: crypto.randomUUID() }]);
   };
@@ -23,37 +35,34 @@ export function TeachingCardsManager({ lesson, onSave }: TeachingCardsManagerPro
     onSave(selectedCards);
   };
 
-  const createObjectiveCard = () => ({
-    id: crypto.randomUUID(),
-    type: 'objective',
-    title: 'Learning Objectives',
-    content: lesson.objectives.map(obj => `• ${obj}`).join('\n')
-  });
+  const createObjectiveCard = () => createCard(
+    'objective',
+    'Learning Objectives',
+    lesson.objectives.map(obj => `• ${obj}`).join('\n')
+  );
 
-  const createMaterialsCard = () => ({
-    id: crypto.randomUUID(),
-    type: 'material',
-    title: 'Required Materials',
-    content: lesson.materials.map(mat => `• ${mat}`).join('\n')
-  });
+  const createMaterialsCard = () => createCard(
+    'material',
+    'Required Materials',
+    lesson.materials.map(mat => `• ${mat}`).join('\n')
+  );
 
-  const createSectionCard = (section: LessonSection) => ({
-    id: crypto.randomUUID(),
-    type: 'section',
-    title: section.title,
-    content: section.content,
-    duration: section.duration,
-    sectionId: section.id
-  });
+  const createSectionCard = (section: LessonSection) => createCard(
+    'section',
+    section.title,
+    section.content,
+    section.duration || null,
+    section.id
+  );
 
-  const createActivityCard = (section: LessonSection, activity: string, index: number) => ({
-    id: crypto.randomUUID(),
-    type: 'activity',
-    title: `Activity: ${section.title}`,
-    content: activity,
-    sectionId: section.id,
-    activityIndex: index
-  });
+  const createActivityCard = (section: LessonSection, activity: string, index: number) => createCard(
+    'activity',
+    `Activity: ${section.title}`,
+    activity,
+    null,
+    section.id,
+    index
+  );
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
