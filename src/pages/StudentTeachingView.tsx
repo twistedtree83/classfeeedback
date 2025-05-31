@@ -146,5 +146,3 @@ export function StudentTeachingView() {
     </div>
   );
 }
-
-export { StudentTeachingView }
