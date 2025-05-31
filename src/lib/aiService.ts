@@ -39,12 +39,10 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
       .from('secrets')
       .select('value')
       .eq('name', 'OPENAI_API_KEY')
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (secretError) {
-      if (secretError.message.includes('no rows')) {
-        throw new Error('OpenAI API key not found in database. Please contact your administrator.');
-      }
       throw new Error(`Failed to retrieve API key: ${secretError.message}`);
     }
 
