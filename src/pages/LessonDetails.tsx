@@ -93,7 +93,7 @@ export function LessonDetails() {
     setError(null);
 
     try {
-      const teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
+      let teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
         // Title card
         createCard(
           'objective',
@@ -134,6 +134,23 @@ export function LessonDetails() {
           ))
         ])
       ];
+
+      console.log('Formatted teaching cards:', teachingCards);
+
+      console.log(`Transformed cards data being prepared for Supabase (count: ${teachingCards.length}, expected format: Array<{id: string}>):`, JSON.stringify(teachingCards, null, 2));
+      
+      // ADD THIS LOG: Inspect the first few card objects in detail
+      if (teachingCards.length > 0) {
+        console.log("Detailed view of the first few transformed card objects being sent:");
+        for (let i = 0; i < Math.min(teachingCards.length, 3); i++) {
+          console.log(`Card ${i}:`, JSON.stringify(teachingCards[i], null, 2));
+        }
+      }
+
+      // CRITICAL CHECK: If the database expects the 'cards' array to be non-empty.
+      if (teachingCards.length === 0) {
+        throw new Error('No cards available for teaching session');
+      }
 
       console.log(`Transformed cards data being prepared for Supabase (count: ${teachingCards.length}, expected format: Array<{id: string}>):`, JSON.stringify(teachingCards, null, 2));
       
