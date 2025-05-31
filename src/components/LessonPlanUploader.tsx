@@ -3,13 +3,15 @@ import { useDropzone } from 'react-dropzone';
 import { FileText, Upload, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { processPDF } from '../lib/pdfProcessor';
+import type { ProcessedLesson } from '../lib/types';
 
 interface LessonPlanUploaderProps {
-  onFileSelect: (file: File, title: string) => void;
+  onProcessed: (title: string, content: ProcessedLesson) => void;
   isProcessing: boolean;
 }
 
-export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUploaderProps) {
+export function LessonPlanUploader({ onProcessed, isProcessing }: LessonPlanUploaderProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [error, setError] = useState<string>('');
@@ -26,7 +28,7 @@ export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUpl
     }
     setError('');
     setSelectedFile(file);
-  }, [onFileSelect]);
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -43,13 +45,18 @@ export function LessonPlanUploader({ onFileSelect, isProcessing }: LessonPlanUpl
     setError('');
   };
   
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile || !title.trim()) {
       setError('Please provide both a title and a file');
       return;
     }
     
-    onFileSelect(selectedFile, title.trim());
+    try {
+      const processedContent = await processPDF(selectedFile);
+      onProcessed(title.trim(), processedContent);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process PDF');
+    }
   };
 
   return (

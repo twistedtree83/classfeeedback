@@ -4,22 +4,20 @@ import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-import { uploadLessonPlan } from '../lib/supabaseClient';
+import { saveLessonPlan } from '../lib/supabaseClient';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileUpload = useCallback(async (file: File, title: string) => {
+  const handleProcessed = useCallback(async (title: string, content: ProcessedLesson) => {
     setIsProcessing(true);
     setError(null);
     
     try {
-      const lessonPlan = await uploadLessonPlan(file, title);
-      if (lessonPlan?.processed_content) {
-        setProcessedLesson(lessonPlan.processed_content);
-      }
+      await saveLessonPlan(title, content);
+      setProcessedLesson(content);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred while processing the file');
       setProcessedLesson(null);
@@ -62,7 +60,7 @@ export function LessonPlannerPage() {
                 </div>
               )}
               <LessonPlanUploader
-                onFileSelect={handleFileUpload}
+                onProcessed={handleProcessed}
                 isProcessing={isProcessing}
               />
             </div>
