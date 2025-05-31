@@ -41,7 +41,7 @@ export interface LessonPlan {
 }
 
 export const saveLessonPlan = async (
-  title: string
+  title: string,
   processedContent: ProcessedLesson
 ): Promise<LessonPlan | null> => {
   try {
