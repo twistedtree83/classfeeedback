@@ -34,27 +34,17 @@ interface AIResponse {
 
 export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
   try {
-    // Get API key from Supabase with better error handling
-    const { data: secretData, error: secretError } = await supabase
-      .from('secrets')
-      .select('value')
-      .eq('name', 'OPENAI_API_KEY')
-      .limit(1)
-      .maybeSingle();
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-    if (secretError) {
-      throw new Error(`Failed to retrieve API key: ${secretError.message}`);
-    }
-
-    if (!secretData?.value) {
-      throw new Error('API key is missing or invalid. Please contact your administrator.');
+    if (!apiKey) {
+      throw new Error('OpenAI API key is missing. Please check your environment variables.');
     }
   
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${secretData.value}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
