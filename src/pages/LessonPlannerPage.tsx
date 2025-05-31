@@ -72,6 +72,14 @@ export function LessonPlannerPage() {
           <div className="flex items-center">
             <BookOpen className="h-8 w-8 text-indigo-600 mr-3" />
             <h1 className="text-2xl font-bold text-gray-900">Lesson Planner</h1>
+            <div className="ml-auto">
+              <Link
+                to="/planner/create"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                Create New Lesson
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -79,38 +87,15 @@ export function LessonPlannerPage() {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Link
-            to="/"
+            to=".."
             className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Dashboard
           </Link>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
-                Upload Lesson Plan
-              </h2>
-              {error && (
-                <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
-                  {error}
-                </div>
-              )}
-              <LessonPlanUploader
-                onProcessed={handleProcessed}
-                isProcessing={isProcessing}
-              />
-            </div>
-          </div>
-
-          <div>
-            {processedLesson && (
-              <LessonPlanDisplay lesson={processedLesson} />
-            )}
-          </div>
-        </div>
+        
+        {/* Display list of lesson plans here */}
       </main>
     </div>
   );
