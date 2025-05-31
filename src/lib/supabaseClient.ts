@@ -42,7 +42,8 @@ export interface LessonPlan {
 
 export const createLessonPresentation = async (
   lessonId: string,
-  cards: LessonCard[]
+  cards: LessonCard[],
+  teacherName: string
 ): Promise<LessonPresentation | null> => {
   try {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -52,7 +53,7 @@ export const createLessonPresentation = async (
       .from('sessions')
       .insert([{
         code,
-        teacher_name: 'Teacher', // We could make this configurable
+        teacher_name: teacherName,
         active: true
       }])
       .select()
@@ -78,6 +79,11 @@ export const createLessonPresentation = async (
     return data;
   } catch (err) {
     console.error('Error creating lesson presentation:', err);
+    // Clean up session if presentation creation fails
+    await supabase
+      .from('sessions')
+      .delete()
+      .eq('code', code);
     return null;
   }
 };
