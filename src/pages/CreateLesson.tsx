@@ -40,9 +40,13 @@ export function CreateLesson() {
 
     try {
       const text = await extractTextFromFile(selectedFile);
+      console.log('Extracted text:', text.slice(0, 500)); // Log first 500 chars
+      
       const analyzed = await aiAnalyzeLesson(text);
+      console.log('AI analysis result:', analyzed);
       
       const processedLesson: ProcessedLesson = {
+        id: crypto.randomUUID(),
         title: title.trim(),
         ...analyzed
       };
