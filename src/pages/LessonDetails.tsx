@@ -93,7 +93,7 @@ export function LessonDetails() {
     setError(null);
 
     try {
-      const teachingCards = selectedCards.length > 0 ? selectedCards : [
+      let teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
         // Title card
         createCard(
           'objective',
@@ -134,6 +134,19 @@ export function LessonDetails() {
           ))
         ])
       ];
+
+      // Ensure each card has the required format
+      teachingCards = teachingCards.map(card => ({
+        id: card.id || crypto.randomUUID(),
+        type: card.type,
+        title: card.title,
+        content: card.content,
+        duration: card.duration,
+        sectionId: card.sectionId,
+        activityIndex: card.activityIndex
+      }));
+
+      console.log('Formatted teaching cards:', teachingCards);
 
       const presentation = await createLessonPresentation(
         lesson.id,
