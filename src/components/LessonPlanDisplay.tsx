@@ -1,12 +1,14 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
-import { Clock, FileText, List, Target, CheckSquare } from 'lucide-react';
+import { Clock, FileText, List, Target, CheckSquare, Plus } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
+  onAddToTeaching?: (cardType: 'objective' | 'material' | 'section' | 'activity', data: any) => void;
 }
 
-export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
+export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplayProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-8">
       <div>
@@ -25,11 +27,27 @@ export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
           <Target className="h-5 w-5 text-indigo-600 mr-2" />
           <h3 className="text-lg font-semibold">Learning Objectives</h3>
         </div>
-        <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-          {lesson.objectives.map((objective, index) => (
-            <li key={index}>{objective}</li>
-          ))}
-        </ul>
+        <div className="space-y-4">
+          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+            {lesson.objectives.map((objective, index) => (
+              <li key={index}>{objective}</li>
+            ))}
+          </ul>
+          {onAddToTeaching && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddToTeaching('objective', {
+                title: 'Learning Objectives',
+                content: lesson.objectives.map(obj => `• ${obj}`).join('\n')
+              })}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add to Teaching
+            </Button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -37,11 +55,27 @@ export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
           <FileText className="h-5 w-5 text-indigo-600 mr-2" />
           <h3 className="text-lg font-semibold">Materials Needed</h3>
         </div>
-        <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-          {lesson.materials.map((material, index) => (
-            <li key={index}>{material}</li>
-          ))}
-        </ul>
+        <div className="space-y-4">
+          <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+            {lesson.materials.map((material, index) => (
+              <li key={index}>{material}</li>
+            ))}
+          </ul>
+          {onAddToTeaching && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddToTeaching('material', {
+                title: 'Required Materials',
+                content: lesson.materials.map(mat => `• ${mat}`).join('\n')
+              })}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add to Teaching
+            </Button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -62,12 +96,45 @@ export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
                 <span className="text-sm text-gray-500">{section.duration}</span>
               </div>
               <p className="text-gray-600 mb-4">{section.content}</p>
+              {onAddToTeaching && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onAddToTeaching('section', {
+                    title: section.title,
+                    content: section.content,
+                    duration: section.duration,
+                    sectionId: section.id
+                  })}
+                  className="flex items-center gap-2 mb-4"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Section to Teaching
+                </Button>
+              )}
               {section.activities.length > 0 && (
                 <div>
                   <h5 className="font-medium text-gray-700 mb-2">Activities:</h5>
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {section.activities.map((activity, index) => (
-                      <li key={index}>{activity}</li>
+                      <li key={index} className="flex items-start gap-2">
+                        <span>{activity}</span>
+                        {onAddToTeaching && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onAddToTeaching('activity', {
+                              title: `Activity: ${section.title}`,
+                              content: activity,
+                              sectionId: section.id,
+                              activityIndex: index
+                            })}
+                            className="text-indigo-600 hover:text-indigo-800"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>
