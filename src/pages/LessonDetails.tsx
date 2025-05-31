@@ -6,17 +6,16 @@ import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import { Button } from '../components/ui/Button';
 import type { LessonCard } from '../lib/types';
 import { createLessonPresentation, getLessonPresentationByCode } from '../lib/supabaseClient';
-import { TeachingCardsManager } from '../components/TeachingCardsManager';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [lesson, setLesson] = useState<any>(null);
+  const [selectedCards, setSelectedCards] = useState<LessonCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartingTeaching, setIsStartingTeaching] = useState(false);
-  const [showTeachingCards, setShowTeachingCards] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -65,15 +64,14 @@ export function LessonDetails() {
     }
   };
 
-  const handleStartTeaching = async (cards?: LessonCard[]) => {
+  const handleStartTeaching = async () => {
     if (!lesson?.processed_content) return;
     
     setIsStartingTeaching(true);
     setError(null);
 
     try {
-      // Use provided cards or create default ones
-      const teachingCards = cards || [
+      const teachingCards = selectedCards.length > 0 ? selectedCards : [
         // Title card
         {
           id: crypto.randomUUID(),
@@ -132,6 +130,15 @@ export function LessonDetails() {
     }
   };
 
+  const handleAddToTeaching = (type: 'objective' | 'material' | 'section' | 'activity', data: any) => {
+    const newCard: LessonCard = {
+      id: crypto.randomUUID(),
+      type,
+      ...data
+    };
+    setSelectedCards(prev => [...prev, newCard]);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,20 +153,18 @@ export function LessonDetails() {
           {lesson && (
             <div className="flex gap-2">
               <Button
-                onClick={handleStartTeaching}
+                onClick={() => handleStartTeaching()}
                 variant="outline"
                 className="flex items-center gap-2 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50"
                 disabled={isStartingTeaching}
               >
                 {isStartingTeaching ? 'Starting...' : 'Begin Teaching'}
               </Button>
-              <Button
-                onClick={() => setShowTeachingCards(!showTeachingCards)}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                {showTeachingCards ? 'Hide Teaching Cards' : 'Customize Teaching Cards'}
-              </Button>
+              {selectedCards.length > 0 && (
+                <div className="text-sm text-gray-500 flex items-center">
+                  {selectedCards.length} cards selected
+                </div>
+              )}
               <Button
                 onClick={() => navigate(`/planner/${id}/edit`)}
                 variant="outline"
@@ -194,18 +199,6 @@ export function LessonDetails() {
         ) : (
           <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
             This lesson plan has no content.
-          </div>
-        )}
-        
-        {showTeachingCards && lesson?.processed_content && (
-          <div className="mt-8">
-            <TeachingCardsManager
-              lesson={lesson.processed_content}
-              onSave={(cards) => {
-                handleStartTeaching(cards);
-                setShowTeachingCards(false);
-              }}
-            />
           </div>
         )}
       </div>
