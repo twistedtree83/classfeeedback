@@ -49,8 +49,8 @@ export function CreateLesson() {
       
       const processedLesson: ProcessedLesson = {
         id: crypto.randomUUID(),
-        title: title.trim(),
-        ...analyzed
+        ...analyzed,
+        title: title.trim() // Override the AI-generated title with user's title
       };
       
       console.log('Saving lesson plan:', processedLesson);
