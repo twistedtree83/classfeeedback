@@ -95,7 +95,7 @@ export function LessonDetails() {
     try {
       console.log('Creating teaching cards...');
       
-      let teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
+      const teachingCards = selectedCards.length > 0 ? selectedCards : [
         // Title card
         createCard(
           'objective',
@@ -155,7 +155,7 @@ export function LessonDetails() {
       }
 
       navigate(`/teach/${presentation.session_code}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error starting teaching session:', err);
       setError(err instanceof Error ? err.message : 'Failed to start teaching session');
       setIsStartingTeaching(false);

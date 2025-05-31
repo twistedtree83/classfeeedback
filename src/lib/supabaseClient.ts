@@ -57,15 +57,14 @@ export const createLessonPresentation = async (
     const validCards = cards.map(card => {
       if (!card.id || !card.type || !card.title || !card.content) {
         console.error('Invalid card:', card);
+        throw new Error('Each card must have id, type, title, and content');
       }
-      // Ensure content is a string
-      const contentString = String(card.content);
       
       return {
         id: card.id,
         type: card.type,
         title: card.title,
-        content: contentString,
+        content: String(card.content),
         duration: card.duration || null,
         sectionId: card.sectionId || null,
         activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
