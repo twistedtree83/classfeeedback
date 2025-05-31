@@ -135,6 +135,8 @@ export const getLessonPresentationByCode = async (
   code: string
 ): Promise<LessonPresentation | null> => {
   try {
+    console.log('Student requesting presentation for code:', code);
+    
     // First check if session is active
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
@@ -148,6 +150,8 @@ export const getLessonPresentationByCode = async (
       return null;
     }
 
+    console.log('Found active session:', JSON.stringify(session, null, 2));
+
     const { data, error } = await supabase
       .from('lesson_presentations')
       .select('*')
@@ -158,6 +162,13 @@ export const getLessonPresentationByCode = async (
     if (error || !data) {
       console.error('Error fetching presentation:', error);
       return null;
+    }
+    
+    console.log('Retrieved presentation data for students:', JSON.stringify(data, null, 2));
+    console.log('Presentation cards type:', typeof data.cards);
+    console.log('Presentation cards is array:', Array.isArray(data.cards));
+    if (Array.isArray(data.cards) && data.cards.length > 0) {
+      console.log('First card:', JSON.stringify(data.cards[0], null, 2));
     }
     
     // No need to parse cards - Supabase automatically handles JSONB
