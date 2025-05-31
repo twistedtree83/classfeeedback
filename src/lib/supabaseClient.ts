@@ -177,7 +177,7 @@ export const getSessionByCode = async (code: string): Promise<Session | null> =>
       .select('*')
       .eq('code', code)
       .eq('active', true)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching session:', error);
@@ -343,7 +343,7 @@ export const subscribeToSessionFeedback = (
         table: 'feedback',
         filter: `session_code=eq.${sessionCode}`,
       },
-      (payload) => callback(payload.new as Feedback)
+      (payload) => callback(payload.new as SessionParticipant)
     )
     .subscribe();
 };
