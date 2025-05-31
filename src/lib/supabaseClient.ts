@@ -50,7 +50,7 @@ export const createLessonPresentation = async (
   try {
     // Validate cards structure
     if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error('Cards must be a non-empty array');
+      throw new Error('Invalid cards data');
     }
 
     // Validate each card has required properties
@@ -74,6 +74,9 @@ export const createLessonPresentation = async (
       };
     });
 
+    // Transform cards to the format expected by the database (only IDs)
+    const cardsForDatabase = validCards.map(card => ({ id: card.id }));
+
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     // First create a session
@@ -94,10 +97,12 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards: validCards,
+      cards: cardsForDatabase, // Send only IDs to match database schema
       current_card_index: 0,
       active: true
     };
+
+    console.log('Sending to database:', JSON.stringify(presentationData, null, 2));
 
     const { data, error } = await supabase
       .from('lesson_presentations')
