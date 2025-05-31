@@ -76,8 +76,8 @@ export function LessonDetails() {
       type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
-      duration: duration && duration.trim() !== '' ? duration : null,
-      sectionId: sectionId && sectionId.trim() !== '' ? sectionId : null,
+      duration: typeof duration === 'string' && duration.trim() !== '' ? duration : null,
+      sectionId: typeof sectionId === 'string' && sectionId.trim() !== '' ? sectionId : null,
       activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
     };
   };
