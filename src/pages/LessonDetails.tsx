@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabaseClient';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import { Button } from '../components/ui/Button';
 import type { LessonCard } from '../lib/types';
-import { createLessonPresentation } from '../lib/supabaseClient';
+import { createLessonPresentation, getLessonPresentationByCode } from '../lib/supabaseClient';
+import { TeachingCardsManager } from '../components/TeachingCardsManager';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export function LessonDetails() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartingTeaching, setIsStartingTeaching] = useState(false);
+  const [showTeachingCards, setShowTeachingCards] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -63,15 +65,15 @@ export function LessonDetails() {
     }
   };
 
-  const handleStartTeaching = async () => {
+  const handleStartTeaching = async (cards?: LessonCard[]) => {
     if (!lesson?.processed_content) return;
     
     setIsStartingTeaching(true);
     setError(null);
 
     try {
-      // Create cards from lesson content
-      const cards: LessonCard[] = [
+      // Use provided cards or create default ones
+      const teachingCards = cards || [
         // Title card
         {
           id: crypto.randomUUID(),
@@ -117,7 +119,7 @@ export function LessonDetails() {
         ])
       ];
 
-      const presentation = await createLessonPresentation(lesson.id, cards);
+      const presentation = await createLessonPresentation(lesson.id, teachingCards);
       if (!presentation) {
         throw new Error('Failed to create teaching session');
       }
@@ -150,6 +152,13 @@ export function LessonDetails() {
                 disabled={isStartingTeaching}
               >
                 {isStartingTeaching ? 'Starting...' : 'Begin Teaching'}
+              </Button>
+              <Button
+                onClick={() => setShowTeachingCards(!showTeachingCards)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {showTeachingCards ? 'Hide Teaching Cards' : 'Customize Teaching Cards'}
               </Button>
               <Button
                 onClick={() => navigate(`/planner/${id}/edit`)}
@@ -185,6 +194,18 @@ export function LessonDetails() {
         ) : (
           <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
             This lesson plan has no content.
+          </div>
+        )}
+        
+        {showTeachingCards && lesson?.processed_content && (
+          <div className="mt-8">
+            <TeachingCardsManager
+              lesson={lesson.processed_content}
+              onSave={(cards) => {
+                handleStartTeaching(cards);
+                setShowTeachingCards(false);
+              }}
+            />
           </div>
         )}
       </div>
