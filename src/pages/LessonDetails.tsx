@@ -93,8 +93,6 @@ export function LessonDetails() {
     setError(null);
 
     try {
-      console.log('Creating teaching cards...');
-      
       const teachingCards = selectedCards.length > 0 ? selectedCards : [
         // Title card
         createCard(
@@ -136,13 +134,6 @@ export function LessonDetails() {
           ))
         ])
       ];
-
-      console.log('Teaching cards created:', JSON.stringify(teachingCards.map(card => ({
-        id: card.id,
-        type: card.type,
-        title: card.title,
-        contentLength: card.content.length
-      })), null, 2));
 
       const presentation = await createLessonPresentation(
         lesson.id,
