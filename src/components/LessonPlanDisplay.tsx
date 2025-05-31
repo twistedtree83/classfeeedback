@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
-import { Clock, FileText, List, Target } from 'lucide-react';
+import { Clock, FileText, List, Target, CheckSquare } from 'lucide-react';
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
@@ -11,6 +11,8 @@ export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{lesson.title}</h2>
+        
+        <p className="text-gray-700 mb-4">{lesson.summary}</p>
         
         <div className="flex items-center text-gray-600 mb-2">
           <Clock className="h-5 w-5 mr-2" />
@@ -68,6 +70,15 @@ export function LessonPlanDisplay({ lesson }: LessonPlanDisplayProps) {
                       <li key={index}>{activity}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {section.assessment && (
+                <div className="mt-4">
+                  <div className="flex items-center text-gray-700 mb-2">
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    <h5 className="font-medium">Assessment</h5>
+                  </div>
+                  <p className="text-gray-600">{section.assessment}</p>
                 </div>
               )}
             </div>

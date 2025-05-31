@@ -1,19 +1,22 @@
 const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuring them into clear, organized formats. When given lesson content, break it down into:
 
-1. Title (if not explicitly provided, derive from content)
-2. Duration (estimate based on content)
-3. Learning Objectives (3-5 key points)
-4. Required Materials
-5. Lesson Sections, each containing:
-   - Title
-   - Duration
-   - Content
-   - Activities/Exercises
+1. Title: Keep the provided title
+2. Summary: A brief 2-3 sentence overview of the lesson
+3. Duration: Estimate total lesson time based on content complexity
+4. Learning Objectives: Extract 3-5 clear, measurable objectives
+5. Required Materials: List all materials mentioned or implied
+6. Lesson Sections: Break down into logical parts, each with:
+   - Title: Clear section heading
+   - Duration: Time allocation
+   - Content: Main teaching points and explanations
+   - Activities: Specific exercises or tasks
+   - Assessment: How to check understanding
 
 Format your response as a JSON object matching the ProcessedLesson type.`;
 
 interface AIResponse {
   title: string;
+  summary: string;
   duration: string;
   objectives: string[];
   materials: string[];
@@ -23,6 +26,7 @@ interface AIResponse {
     duration: string;
     content: string;
     activities: string[];
+    assessment: string;
   }[];
 }
 
@@ -68,6 +72,7 @@ function fallbackAnalysis(content: string): AIResponse {
   
   return {
     title: 'Untitled Lesson',
+    summary: content.slice(0, 200) + '...',
     duration: '60 minutes',
     objectives: [
       'Understand key concepts from the material',
@@ -81,21 +86,24 @@ function fallbackAnalysis(content: string): AIResponse {
         title: 'Introduction',
         duration: '10 minutes',
         content: paragraphs.slice(0, Math.max(1, Math.floor(paragraphs.length * 0.2))).join('\n\n'),
-        activities: ['Class discussion']
+        activities: ['Class discussion'],
+        assessment: 'Monitor student participation and initial understanding'
       },
       {
         id: '2',
         title: 'Main Content',
         duration: '40 minutes',
         content: paragraphs.slice(Math.floor(paragraphs.length * 0.2), Math.floor(paragraphs.length * 0.8)).join('\n\n'),
-        activities: ['Group work', 'Individual practice']
+        activities: ['Group work', 'Individual practice'],
+        assessment: 'Check work completion and accuracy'
       },
       {
         id: '3',
         title: 'Conclusion',
         duration: '10 minutes',
         content: paragraphs.slice(Math.floor(paragraphs.length * 0.8)).join('\n\n'),
-        activities: ['Review', 'Assessment']
+        activities: ['Review', 'Exit ticket'],
+        assessment: 'Collect and review exit tickets'
       }
     ]
   };
