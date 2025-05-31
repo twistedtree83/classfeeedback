@@ -343,7 +343,92 @@ export const subscribeToSessionFeedback = (
         table: 'feedback',
         filter: `session_code=eq.${sessionCode}`,
       },
-      (payload) => callback(payload.new as SessionParticipant)
+      (payload) => callback(payload.new as Feedback)
+    )
+    .subscribe();
+};
+
+// Real-time teaching functions
+export const submitTeachingFeedback = async (
+  presentationId: string,
+  studentName: string,
+  feedbackType: string,
+  content?: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('teaching_feedback')
+      .insert([{
+        presentation_id: presentationId,
+        student_name: studentName,
+        feedback_type: feedbackType,
+        content
+      }]);
+    
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error submitting teaching feedback:', err);
+    return false;
+  }
+};
+
+export const submitTeachingQuestion = async (
+  presentationId: string,
+  studentName: string,
+  question: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('teaching_questions')
+      .insert([{
+        presentation_id: presentationId,
+        student_name: studentName,
+        question
+      }]);
+    
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error submitting question:', err);
+    return false;
+  }
+};
+
+export const subscribeToTeachingFeedback = (
+  presentationId: string,
+  callback: (feedback: any) => void
+) => {
+  return supabase
+    .channel('teaching_feedback')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'teaching_feedback',
+        filter: `presentation_id=eq.${presentationId}`,
+      },
+      (payload) => callback(payload.new)
+    )
+    .subscribe();
+};
+
+export const subscribeToTeachingQuestions = (
+  presentationId: string,
+  callback: (question: any) => void
+) => {
+  return supabase
+    .channel('teaching_questions')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'teaching_questions',
+        filter: `presentation_id=eq.${presentationId}`,
+      },
+      (payload) => callback(payload.new)
     )
     .subscribe();
 };
