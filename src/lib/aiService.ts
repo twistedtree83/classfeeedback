@@ -34,10 +34,12 @@ interface AIResponse {
 
 export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
   try {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    // Get the API key from environment variables
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
 
     if (!apiKey) {
-      throw new Error('OpenAI API key is missing. Please check your environment variables.');
+      console.error('OpenAI API key is missing');
+      return fallbackAnalysis(content);
     }
   
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -57,10 +59,16 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
       })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return fallbackAnalysis(content);
+    }
+
     const data = await response.json();
     
-    if (!response.ok || !data.choices?.[0]?.message?.content) {
-      console.error('AI analysis failed:', data);
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid AI response format:', data);
       return fallbackAnalysis(content);
     }
 
@@ -73,7 +81,7 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
     }
   } catch (error) {
     console.error('Error analyzing lesson:', error);
-    throw error; // Propagate the error to show the user
+    return fallbackAnalysis(content);
   }
 }
 
