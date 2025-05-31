@@ -47,11 +47,26 @@ export const createLessonPresentation = async (
   try {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
+    // First create a session
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .insert([{
+        code,
+        teacher_name: 'Teacher', // We could make this configurable
+        active: true
+      }])
+      .select()
+      .single();
+    
+    if (sessionError) throw sessionError;
+    
+    // Then create the presentation linked to the session
     const { data, error } = await supabase
       .from('lesson_presentations')
       .insert([{
         lesson_id: lessonId,
         session_code: code,
+        session_id: session.id,
         cards,
         current_card_index: 0,
         active: true
@@ -108,12 +123,30 @@ export const endLessonPresentation = async (
   presentationId: string
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    // Get the presentation first to get the session code
+    const { data: presentation, error: fetchError } = await supabase
+      .from('lesson_presentations')
+      .select('session_code')
+      .eq('id', presentationId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // End both the presentation and its associated session
+    const { error: presentationError } = await supabase
       .from('lesson_presentations')
       .update({ active: false })
       .eq('id', presentationId);
+
+    if (presentationError) throw presentationError;
+
+    const { error: sessionError } = await supabase
+      .from('sessions')
+      .update({ active: false })
+      .eq('code', presentation.session_code);
     
-    if (error) throw error;
+    if (sessionError) throw sessionError;
+
     return true;
   } catch (err) {
     console.error('Error ending presentation:', err);
