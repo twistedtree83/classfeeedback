@@ -18,7 +18,7 @@ export function JoinPage() {
           {!sessionInfo ? (
             <>
               <div className="w-full max-w-md mb-4 flex justify-start">
-                <Link to="/\" className=\"text-indigo-600 hover:text-indigo-800 flex items-center">
+                <Link to="/" className="text-indigo-600 hover:text-indigo-800 flex items-center">
                   <ArrowLeft size={16} className="mr-1" />
                   Back to Teacher View
                 </Link>
