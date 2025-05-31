@@ -88,14 +88,7 @@ export const getLessonPresentationByCode = async (
   try {
     const { data, error } = await supabase
       .from('lesson_presentations')
-      .select(`
-        *,
-        lesson_plans (
-          id,
-          title,
-          processed_content
-        )
-      `)
+      .select('*')
       .eq('session_code', code)
       .eq('active', true)
       .single();
@@ -105,7 +98,11 @@ export const getLessonPresentationByCode = async (
       throw error;
     }
     
-    console.log('Fetched presentation:', data);
+    if (!data?.cards || !Array.isArray(data.cards)) {
+      console.error('Invalid presentation data:', data);
+      return null;
+    }
+    
     return data;
   } catch (err) {
     console.error('Error fetching lesson presentation:', err);

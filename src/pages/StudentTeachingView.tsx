@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JoinSessionForm } from '../components/JoinSessionForm';
-import { getLessonPresentationByCode, subscribeToLessonPresentation } from '../lib/supabaseClient';
+import { 
+  getLessonPresentationByCode, 
+  subscribeToLessonPresentation,
+  getSessionByCode 
+} from '../lib/supabaseClient';
 import type { LessonPresentation } from '../lib/types';
 
 export function StudentTeachingView() {
@@ -10,31 +14,38 @@ export function StudentTeachingView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string>('');
-  const [retryCount, setRetryCount] = useState(0);
 
   const currentCard = presentation?.cards?.[presentation.current_card_index];
 
   useEffect(() => {
     if (!presentation?.session_code) return;
 
+    console.log('Setting up subscription for session:', presentation.session_code);
+    
     const subscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
         console.log('Received presentation update:', updatedPresentation);
-        setPresentation(updatedPresentation);
-        
-        // If we don't have cards data, retry the full fetch
-        if (!updatedPresentation.cards || !Array.isArray(updatedPresentation.cards)) {
-          console.log('No cards data in update, retrying fetch...');
-          setRetryCount(count => count + 1);
+        if (updatedPresentation.cards && Array.isArray(updatedPresentation.cards)) {
+          setPresentation(updatedPresentation);
+        } else {
+          // If we get an update without cards, fetch the full presentation
+          getLessonPresentationByCode(presentation.session_code)
+            .then(fullPresentation => {
+              if (fullPresentation?.cards) {
+                setPresentation(fullPresentation);
+              }
+            })
+            .catch(console.error);
         }
       }
     );
 
     return () => {
+      console.log('Cleaning up subscription');
       subscription.unsubscribe();
     };
-  }, [presentation?.session_code, retryCount]);
+  }, [presentation?.session_code]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
@@ -42,9 +53,17 @@ export function StudentTeachingView() {
     setStudentName(studentName);
 
     try {
+      // First check if the session exists and is active
+      const session = await getSessionByCode(code);
+      if (!session) {
+        throw new Error('Session not found or has ended');
+      }
+      
+      console.log('Found active session:', session);
+      
       const presentationData = await getLessonPresentationByCode(code);
       if (!presentationData) {
-        throw new Error('Session not found or has ended');
+        throw new Error('Presentation not found');
       }
       
       console.log('Joined presentation:', presentationData);
@@ -52,9 +71,7 @@ export function StudentTeachingView() {
         throw new Error('Invalid presentation data');
       }
       
-      const initialCard = presentationData.cards[presentationData.current_card_index];
       setPresentation(presentationData);
-      setCurrentCard(presentationData.cards[presentationData.current_card_index]);
     } catch (err) {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
@@ -93,6 +110,8 @@ export function StudentTeachingView() {
           <div className="mb-6 flex justify-between items-center">
             <div className="text-sm text-gray-500">
               Joined as: <span className="font-medium">{studentName}</span>
+              <span className="mx-2">•</span>
+              Card {presentation.current_card_index + 1} of {presentation.cards.length}
             </div>
             <div className="text-sm text-gray-500">
               Session: <span className="font-mono">{presentation.session_code}</span>
