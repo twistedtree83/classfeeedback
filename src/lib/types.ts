@@ -26,3 +26,23 @@ export interface ProcessedLesson {
   duration: string;
   materials: string[];
 }
+
+export interface LessonCard {
+  id: string;
+  type: 'objective' | 'material' | 'section' | 'activity';
+  title: string;
+  content: string;
+  duration?: string;
+  sectionId?: string;
+  activityIndex?: number;
+}
+
+export interface LessonPresentation {
+  id: string;
+  lesson_id: string;
+  session_code: string;
+  current_card_index: number;
+  cards: LessonCard[];
+  active: boolean;
+  created_at: string;
+}

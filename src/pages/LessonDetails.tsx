@@ -4,6 +4,8 @@ import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import { Button } from '../components/ui/Button';
+import type { LessonCard } from '../lib/types';
+import { createLessonPresentation } from '../lib/supabaseClient';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +14,7 @@ export function LessonDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isStartingTeaching, setIsStartingTeaching] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -60,6 +63,73 @@ export function LessonDetails() {
     }
   };
 
+  const handleStartTeaching = async () => {
+    if (!lesson?.processed_content) return;
+    
+    setIsStartingTeaching(true);
+    setError(null);
+
+    try {
+      // Create cards from lesson content
+      const cards: LessonCard[] = [
+        // Title card
+        {
+          id: crypto.randomUUID(),
+          type: 'objective',
+          title: lesson.processed_content.title,
+          content: lesson.processed_content.summary,
+          duration: lesson.processed_content.duration
+        },
+        // Objectives card
+        {
+          id: crypto.randomUUID(),
+          type: 'objective',
+          title: 'Learning Objectives',
+          content: lesson.processed_content.objectives.map(obj => `• ${obj}`).join('\n')
+        },
+        // Materials card
+        {
+          id: crypto.randomUUID(),
+          type: 'material',
+          title: 'Required Materials',
+          content: lesson.processed_content.materials.map(mat => `• ${mat}`).join('\n')
+        },
+        // Section cards
+        ...lesson.processed_content.sections.flatMap(section => [
+          // Section content card
+          {
+            id: crypto.randomUUID(),
+            type: 'section',
+            title: section.title,
+            content: section.content,
+            duration: section.duration,
+            sectionId: section.id
+          },
+          // Activity cards
+          ...section.activities.map((activity, index) => ({
+            id: crypto.randomUUID(),
+            type: 'activity',
+            title: `Activity: ${section.title}`,
+            content: activity,
+            sectionId: section.id,
+            activityIndex: index
+          }))
+        ])
+      ];
+
+      const presentation = await createLessonPresentation(lesson.id, cards);
+      if (!presentation) {
+        throw new Error('Failed to create teaching session');
+      }
+
+      navigate(`/teach/${presentation.session_code}`);
+    } catch (err) {
+      console.error('Error starting teaching session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start teaching session');
+      setIsStartingTeaching(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,6 +143,14 @@ export function LessonDetails() {
           </Link>
           {lesson && (
             <div className="flex gap-2">
+              <Button
+                onClick={handleStartTeaching}
+                variant="outline"
+                className="flex items-center gap-2 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50"
+                disabled={isStartingTeaching}
+              >
+                {isStartingTeaching ? 'Starting...' : 'Begin Teaching'}
+              </Button>
               <Button
                 onClick={() => navigate(`/planner/${id}/edit`)}
                 variant="outline"

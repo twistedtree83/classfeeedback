@@ -40,6 +40,106 @@ export interface LessonPlan {
   created_at: string;
 }
 
+export const createLessonPresentation = async (
+  lessonId: string,
+  cards: LessonCard[]
+): Promise<LessonPresentation | null> => {
+  try {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    const { data, error } = await supabase
+      .from('lesson_presentations')
+      .insert([{
+        lesson_id: lessonId,
+        session_code: code,
+        cards,
+        current_card_index: 0,
+        active: true
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error creating lesson presentation:', err);
+    return null;
+  }
+};
+
+export const getLessonPresentationByCode = async (
+  code: string
+): Promise<LessonPresentation | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('lesson_presentations')
+      .select('*, lesson_plans(*)')
+      .eq('session_code', code)
+      .eq('active', true)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error fetching lesson presentation:', err);
+    return null;
+  }
+};
+
+export const updateLessonPresentationCardIndex = async (
+  presentationId: string,
+  newIndex: number
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('lesson_presentations')
+      .update({ current_card_index: newIndex })
+      .eq('id', presentationId);
+    
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error updating card index:', err);
+    return false;
+  }
+};
+
+export const endLessonPresentation = async (
+  presentationId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('lesson_presentations')
+      .update({ active: false })
+      .eq('id', presentationId);
+    
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error ending presentation:', err);
+    return false;
+  }
+};
+
+export const subscribeToLessonPresentation = (
+  code: string,
+  callback: (payload: LessonPresentation) => void
+) => {
+  return supabase
+    .channel('lesson_presentations')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'lesson_presentations',
+        filter: `session_code=eq.${code}`,
+      },
+      (payload) => callback(payload.new as LessonPresentation)
+    )
+    .subscribe();
+};
+
 // Helper functions for sessions
 export const createSession = async (teacherName: string): Promise<Session | null> => {
   // Generate a 6-character alphanumeric code

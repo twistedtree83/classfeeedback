@@ -6,6 +6,8 @@ import { LessonPlannerPage } from './pages/LessonPlannerPage';
 import { EditLesson } from './pages/EditLesson';
 import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
+import { TeachingModePage } from './pages/TeachingModePage';
+import { StudentTeachingView } from './pages/StudentTeachingView';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/planner/create" element={<CreateLesson />} />
         <Route path="/planner/:id/edit" element={<EditLesson />} />
         <Route path="/planner/:id" element={<LessonDetails />} />
+        <Route path="/teach/:code" element={<TeachingModePage />} />
+        <Route path="/student-teach" element={<StudentTeachingView />} />
         <Route path="*" element={<Navigate to="/\" replace />} />
       </Routes>
     </BrowserRouter>
