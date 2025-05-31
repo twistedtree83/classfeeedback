@@ -71,28 +71,15 @@ export function LessonDetails() {
   };
 
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
-    // Create base card with required fields
-    const card: LessonCard = {
+    return {
       id: crypto.randomUUID(),
-      type,
+      type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
-      content
+      content,
+      duration: duration && duration.trim() !== '' ? duration : null,
+      sectionId: sectionId && sectionId.trim() !== '' ? sectionId : null,
+      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
     };
-
-    // Only add optional fields if they have valid values
-    if (typeof duration === 'string' && duration.trim() !== '') {
-      card.duration = duration;
-    }
-
-    if (typeof sectionId === 'string' && sectionId.trim() !== '') {
-      card.sectionId = sectionId;
-    }
-
-    if (typeof activityIndex === 'number' && !isNaN(activityIndex)) {
-      card.activityIndex = activityIndex;
-    }
-
-    return card;
   };
 
   const startTeaching = async () => {
@@ -112,7 +99,7 @@ export function LessonDetails() {
           'objective',
           lesson.processed_content.title,
           lesson.processed_content.summary,
-          lesson.processed_content.duration || undefined
+          lesson.processed_content.duration || null
         ),
         // Objectives card
         createCard(
@@ -133,7 +120,7 @@ export function LessonDetails() {
             'section',
             section.title,
             section.content,
-            section.duration || undefined,
+            section.duration || null,
             section.id
           ),
           // Activity cards
@@ -141,7 +128,7 @@ export function LessonDetails() {
             'activity',
             `Activity: ${section.title}`,
             activity,
-            undefined,
+            null,
             section.id,
             index
           ))
@@ -171,9 +158,9 @@ export function LessonDetails() {
       type,
       data.title,
       data.content,
-      data.duration || undefined,
-      data.sectionId || undefined,
-      typeof data.activityIndex === 'number' ? data.activityIndex : undefined
+      data.duration || null,
+      data.sectionId || null,
+      typeof data.activityIndex === 'number' ? data.activityIndex : null
     );
     setSelectedCards(prev => [...prev, newCard]);
   };

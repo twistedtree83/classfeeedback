@@ -32,9 +32,9 @@ export interface LessonCard {
   type: 'objective' | 'material' | 'section' | 'activity';
   title: string;
   content: string;
-  duration?: string;
-  sectionId?: string;
-  activityIndex?: number;
+  duration: string | null;
+  sectionId: string | null;
+  activityIndex: number | null;
 }
 
 export interface LessonPresentation {
