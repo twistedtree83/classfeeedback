@@ -34,6 +34,7 @@ export function StudentTeachingView() {
     return () => {
       subscription.unsubscribe();
     };
+  }, [presentation?.session_code, retryCount]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
