@@ -22,29 +22,21 @@ export function StudentTeachingView() {
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
 
-    console.log('Setting up subscription for session:', presentation.session_code);
-    
     const subscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
-        console.log('Received presentation update:', updatedPresentation);
-        if (updatedPresentation.cards && Array.isArray(updatedPresentation.cards)) {
-          setPresentation(updatedPresentation);
-        } else {
-          // If we get an update without cards, fetch the full presentation
-          getLessonPresentationByCode(presentation.session_code)
-            .then(fullPresentation => {
-              if (fullPresentation?.cards) {
-                setPresentation(fullPresentation);
-              }
-            })
-            .catch(console.error);
-        }
+        // Always fetch full presentation data to ensure we have properly parsed cards
+        getLessonPresentationByCode(presentation.session_code)
+          .then(fullPresentation => {
+            if (fullPresentation?.cards) {
+              setPresentation(fullPresentation);
+            }
+          })
+          .catch(console.error);
       }
     );
 
     return () => {
-      console.log('Cleaning up subscription');
       subscription.unsubscribe();
     };
   }, [presentation?.session_code, joined]);

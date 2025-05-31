@@ -46,6 +46,11 @@ export const createLessonPresentation = async (
   teacherName: string
 ): Promise<LessonPresentation | null> => {
   try {
+    // Validate cards structure
+    if (!Array.isArray(cards) || cards.length === 0) {
+      throw new Error('Invalid cards data');
+    }
+
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     // First create a session
@@ -62,16 +67,18 @@ export const createLessonPresentation = async (
     if (sessionError) throw sessionError;
     
     // Then create the presentation linked to the session
+    const presentationData = {
+      lesson_id: lessonId,
+      session_code: code,
+      session_id: session.id,
+      cards: JSON.stringify(cards), // Explicitly stringify cards
+      current_card_index: 0,
+      active: true
+    };
+
     const { data, error } = await supabase
       .from('lesson_presentations')
-      .insert([{
-        lesson_id: lessonId,
-        session_code: code,
-        session_id: session.id,
-        cards,
-        current_card_index: 0,
-        active: true
-      }])
+      .insert([presentationData])
       .select()
       .single();
     
@@ -105,6 +112,19 @@ export const getLessonPresentationByCode = async (
       return null;
     }
 
+    // First check if session is active
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('code', code)
+      .eq('active', true)
+      .single();
+
+    if (sessionError || !session) {
+      console.error('Session not found or inactive');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('lesson_presentations')
       .select('*')
@@ -112,17 +132,24 @@ export const getLessonPresentationByCode = async (
       .eq('active', true)
       .single();
     
-    if (error) {
-      console.error('Database error:', error);
+    if (error || !data) {
+      console.error('Error fetching presentation:', error);
       return null;
     }
     
-    if (!data?.cards || !Array.isArray(data.cards)) {
-      console.error('Invalid presentation data:', data);
+    // Parse cards from JSON string
+    try {
+      const cards = JSON.parse(data.cards);
+      if (!Array.isArray(cards)) throw new Error('Invalid cards format');
+      
+      return {
+        ...data,
+        cards
+      };
+    } catch (parseError) {
+      console.error('Error parsing cards:', parseError);
       return null;
     }
-    
-    return data;
   } catch (err) {
     console.error('Error fetching lesson presentation:', err);
     return null;
