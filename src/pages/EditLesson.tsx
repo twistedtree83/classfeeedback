@@ -13,6 +13,7 @@ export function EditLesson() {
   const [duration, setDuration] = useState('');
   const [objectives, setObjectives] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
+  const [sections, setSections] = useState<LessonSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,7 @@ export function EditLesson() {
         setDuration(lessonContent.duration);
         setObjectives(lessonContent.objectives);
         setMaterials(lessonContent.materials);
+        setSections(lessonContent.sections);
       } catch (err) {
         console.error('Error fetching lesson:', err);
         setError(err instanceof Error ? err.message : 'Failed to load lesson');
@@ -60,7 +62,8 @@ export function EditLesson() {
         title,
         duration,
         objectives,
-        materials
+        materials,
+        sections
       };
 
       const { error: updateError } = await supabase
@@ -106,6 +109,28 @@ export function EditLesson() {
 
   const handleRemoveMaterial = (index: number) => {
     setMaterials(materials.filter((_, i) => i !== index));
+  };
+
+  const handleAddSection = () => {
+    const newSection: LessonSection = {
+      id: crypto.randomUUID(),
+      title: '',
+      duration: '15 minutes',
+      content: '',
+      activities: [],
+      assessment: ''
+    };
+    setSections([...sections, newSection]);
+  };
+
+  const handleUpdateSection = (index: number, updatedSection: LessonSection) => {
+    const newSections = [...sections];
+    newSections[index] = updatedSection;
+    setSections(newSections);
+  };
+
+  const handleRemoveSection = (index: number) => {
+    setSections(sections.filter((_, i) => i !== index));
   };
 
   if (loading) {
@@ -208,6 +233,29 @@ export function EditLesson() {
                 Remove
               </Button>
             </div>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Lesson Sections</h2>
+            <Button
+              onClick={handleAddSection}
+              variant="outline"
+              size="sm"
+              disabled={saving}
+            >
+              Add Section
+            </Button>
+          </div>
+          {sections.map((section, index) => (
+            <SectionEditor
+              key={section.id}
+              section={section}
+              onUpdate={(updatedSection) => handleUpdateSection(index, updatedSection)}
+              onDelete={() => handleRemoveSection(index)}
+              isProcessing={saving}
+            />
           ))}
         </div>
 

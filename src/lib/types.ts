@@ -14,7 +14,7 @@ export interface LessonSection {
   duration: string;
   content: string;
   activities: string[];
-  assessment: string;
+  assessment?: string;
 }
 
 export interface ProcessedLesson {
