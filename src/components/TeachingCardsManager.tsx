@@ -14,12 +14,12 @@ export function TeachingCardsManager({ lesson, onSave }: TeachingCardsManagerPro
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
     return {
       id: crypto.randomUUID(),
-      type,
+      type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
-      ...(duration !== undefined ? { duration: duration || null } : {}),
-      ...(sectionId !== undefined ? { sectionId: sectionId || null } : {}),
-      ...(activityIndex !== undefined ? { activityIndex } : {})
+      duration: duration !== undefined ? duration : null,
+      sectionId: sectionId !== undefined ? sectionId : null,
+      activityIndex: activityIndex !== undefined ? activityIndex : null
     };
   };
 
