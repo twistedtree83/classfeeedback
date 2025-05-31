@@ -137,9 +137,24 @@ export function StudentTeachingView() {
           </div>
 
           <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-            {currentCard.content.split('\n').map((line, i) => (
-              <p key={i} className="mb-4 leading-relaxed">{line}</p>
-            ))}
+            {/* Add debugging */}
+            {console.log('Rendering card content:', currentCard.content, typeof currentCard.content)}
+            {currentCard.content ? (
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {typeof currentCard.content === 'string' 
+                  ? currentCard.content.split('\n').map((line, i) => (
+                      <p key={i} className="mb-2">{line || '\u00A0'}</p>
+                    ))
+                  : Array.isArray(currentCard.content)
+                  ? currentCard.content.map((item, i) => (
+                      <p key={i} className="mb-2">{item}</p>
+                    ))
+                  : <p>{String(currentCard.content)}</p>
+                }
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No content available</p>
+            )}
           </div>
         </div>
       </main>
