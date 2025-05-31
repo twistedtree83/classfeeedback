@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuring them into clear, organized formats. When given lesson content, break it down into:
 
 1. Title: Keep the provided title
@@ -31,14 +33,24 @@ interface AIResponse {
 }
 
 export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  // Get API key from Supabase
+  const { data: secretData, error: secretError } = await supabase
+    .from('secrets')
+    .select('value')
+    .eq('name', 'OPENAI_API_KEY')
+    .single();
+
+  if (secretError || !secretData?.value) {
+    console.error('Failed to get API key:', secretError);
+    return fallbackAnalysis(content);
+  }
   
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey || 'default-key'}`
+        'Authorization': `Bearer ${secretData.value}`
       },
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
