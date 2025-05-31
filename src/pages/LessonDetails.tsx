@@ -100,7 +100,7 @@ export function LessonDetails() {
         createCard(
           'objective',
           lesson.processed_content.title,
-          lesson.processed_content.summary,
+          lesson.processed_content.summary || '',
           lesson.processed_content.duration
         ),
         // Objectives card
@@ -121,15 +121,15 @@ export function LessonDetails() {
           createCard(
             'section',
             section.title,
-            section.content,
+            section.content || '',
             section.duration,
             section.id
           ),
           // Activity cards
           ...section.activities.map((activity, index) => createCard(
             'activity',
-            `Activity: ${section.title}`,
-            activity,
+            `Activity: ${section.title || 'Untitled Section'}`,
+            activity || '',
             null,
             section.id,
             index

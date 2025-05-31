@@ -14,13 +14,11 @@ export function TeachingCardsManager({ lesson, onSave }: TeachingCardsManagerPro
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
     return {
       id: crypto.randomUUID(),
-      type: type === 'objective' || type === 'material' || type === 'section' || type === 'activity' 
-        ? type 
-        : 'section',
+      type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
-      duration: duration && duration.trim() !== '' ? duration : null,
-      sectionId: sectionId && sectionId.trim() !== '' ? sectionId : null,
+      duration: duration || null,
+      sectionId: sectionId || null,
       activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
     };
   };

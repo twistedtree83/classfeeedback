@@ -56,8 +56,11 @@ export const createLessonPresentation = async (
     // Validate each card has required properties
     const validCards = cards.map(card => {
       if (!card.id || !card.type || !card.title || !card.content) {
-        console.error('Invalid card:', card);
         throw new Error('Each card must have id, type, title, and content');
+      }
+      
+      if (!['objective', 'material', 'section', 'activity'].includes(card.type)) {
+        throw new Error(`Invalid card type: ${card.type}`);
       }
       
       return {
@@ -66,7 +69,7 @@ export const createLessonPresentation = async (
         title: card.title,
         content: String(card.content),
         duration: card.duration || null,
-        sectionId: card.sectionId || null,
+        sectionId: typeof card.sectionId === 'string' ? card.sectionId : null,
         activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
       };
     });
