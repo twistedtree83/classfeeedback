@@ -53,6 +53,17 @@ export const createLessonPresentation = async (
       throw new Error('Invalid cards data');
     }
 
+    // Validate each card has required properties
+    const validCards = cards.map(card => ({
+      id: card.id,
+      type: card.type,
+      title: card.title,
+      content: card.content,
+      duration: card.duration || null,
+      sectionId: card.sectionId || null,
+      activityIndex: card.activityIndex || null
+    }));
+
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     // First create a session
@@ -73,7 +84,7 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards, // Pass cards directly without stringifying
+      cards: validCards,
       current_card_index: 0,
       active: true
     };

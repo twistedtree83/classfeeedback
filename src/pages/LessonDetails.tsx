@@ -76,9 +76,9 @@ export function LessonDetails() {
       type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
-      duration: typeof duration === 'string' ? duration.trim() : '',
-      sectionId: typeof sectionId === 'string' ? sectionId.trim() : '',
-      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : -1
+      duration: typeof duration === 'string' && duration.trim() !== '' ? duration.trim() : null,
+      sectionId: typeof sectionId === 'string' && sectionId.trim() !== '' ? sectionId.trim() : null,
+      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
     };
   };
 
@@ -99,7 +99,7 @@ export function LessonDetails() {
           'objective',
           lesson.processed_content.title,
           lesson.processed_content.summary,
-          lesson.processed_content.duration || ''
+          lesson.processed_content.duration
         ),
         // Objectives card
         createCard(
@@ -120,7 +120,7 @@ export function LessonDetails() {
             'section',
             section.title,
             section.content,
-            section.duration || '',
+            section.duration,
             section.id
           ),
           // Activity cards
@@ -128,23 +128,13 @@ export function LessonDetails() {
             'activity',
             `Activity: ${section.title}`,
             activity,
-            '',
+            null,
             section.id,
             index
           ))
         ])
       ];
 
-      // Ensure each card has the required format
-      teachingCards = teachingCards.map(card => ({
-        id: card.id || crypto.randomUUID(),
-        type: card.type,
-        title: card.title,
-        content: card.content,
-        duration: card.duration || '',
-        sectionId: card.sectionId || '',
-        activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : -1
-      }));
 
       console.log('Formatted teaching cards:', teachingCards);
 
