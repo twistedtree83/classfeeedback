@@ -4,32 +4,36 @@ import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-import { saveLessonPlan, subscribeLessonPlanUpdates } from '../lib/firebaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentLessonPlanId, setCurrentLessonPlanId] = useState<string | null>(null);
 
   useEffect(() => {
-    let subscription: any;
-
-    if (currentLessonPlanId) {
-      subscription = subscribeLessonPlanUpdates(currentLessonPlanId, (lessonPlan) => {
-        if (lessonPlan.processed_content) {
-          setProcessedLesson(lessonPlan.processed_content);
-          setIsProcessing(false);
+    const channel = supabase
+      .channel('lesson_plans')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lesson_plans'
+        },
+        (payload) => {
+          if (payload.new && payload.new.processed_content) {
+            setProcessedLesson(payload.new.processed_content);
+            setIsProcessing(false);
+          }
         }
-      });
-    }
+      )
+      .subscribe();
 
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      channel.unsubscribe();
     };
-  }, [currentLessonPlanId]);
+  }, []);
 
   const handleProcessed = useCallback(async (title: string, pdfFile: File) => {
     setIsProcessing(true);
@@ -37,8 +41,24 @@ export function LessonPlannerPage() {
     setProcessedLesson(null);
     
     try {
-      const lessonPlanId = await saveLessonPlan(title, pdfFile);
-      setCurrentLessonPlanId(lessonPlanId);
+      const { data, error: uploadError } = await supabase.storage
+        .from('lessonplans')
+        .upload(`${Date.now()}-${pdfFile.name}`, pdfFile);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { error: insertError } = await supabase
+        .from('lesson_plans')
+        .insert([{
+          title,
+          pdf_path: data.path
+        }]);
+
+      if (insertError) {
+        throw insertError;
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred while processing the file');
       setIsProcessing(false);
