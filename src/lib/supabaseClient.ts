@@ -79,9 +79,9 @@ export const createLessonPresentation = async (
     });
 
     // Transform cards to the format expected by the database (only IDs)
-    const cardsForDatabase = validCards.map(card => ({ id: card.id }));
+    // const cardsForDatabase = validCards.map(card => ({ id: card.id }));
 
-    console.log('Transformed cards for database:', JSON.stringify(cardsForDatabase, null, 2));
+    // console.log('Transformed cards for database:', JSON.stringify(cardsForDatabase, null, 2));
 
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
@@ -103,7 +103,7 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards: cardsForDatabase, // Send only IDs to match database schema
+      cards: validCards, // Store full card objects instead of cardsForDatabase
       current_card_index: 0,
       active: true
     };
