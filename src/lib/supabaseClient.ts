@@ -42,32 +42,47 @@ export interface LessonPlan {
 
 export const saveLessonPlan = async (
   title: string,
-  processedContent: ProcessedLesson
-): Promise<LessonPlan | null> => {
+  pdfFile: File
+): Promise<string> => {
   try {
-    if (!title || !processedContent) {
-      throw new Error('Title and processed content are required');
+    if (!title || !pdfFile) {
+      throw new Error('Title and PDF file are required');
     }
 
+    // First, create the lesson plan record
     const { data: lessonPlan, error: dbError } = await supabase
       .from('lesson_plans')
-      .insert([
-        {
-          title,
-          processed_content: processedContent
-        }
-      ])
+      .insert([{ title }])
       .select()
       .single();
 
     if (dbError || !lessonPlan?.id) {
-      throw new Error('Error saving lesson plan: ' + dbError?.message);
+      throw new Error('Error creating lesson plan: ' + dbError?.message);
     }
 
-    return lessonPlan;
+    // Upload the PDF file to storage
+    const filePath = `lesson-plans/${lessonPlan.id}/${pdfFile.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from('lesson-plans')
+      .upload(filePath, pdfFile);
+
+    if (uploadError) {
+      throw new Error('Error uploading PDF: ' + uploadError.message);
+    }
+
+    // Trigger the edge function to process the PDF
+    const { error: functionError } = await supabase.functions.invoke('process-lesson-plan', {
+      body: { lessonPlanId: lessonPlan.id, filePath }
+    });
+
+    if (functionError) {
+      throw new Error('Error processing PDF: ' + functionError.message);
+    }
+
+    return lessonPlan.id;
   } catch (err) {
     console.error('Exception in saveLessonPlan:', err);
-    throw err; // Re-throw to handle in the UI
+    throw err;
   }
 };
 
@@ -89,6 +104,25 @@ export const getLessonPlan = async (id: string): Promise<LessonPlan | null> => {
     console.error('Exception in getLessonPlan:', err);
     return null;
   }
+};
+
+export const subscribeLessonPlanUpdates = (
+  lessonPlanId: string,
+  callback: (lessonPlan: LessonPlan) => void
+) => {
+  return supabase
+    .channel('lesson_plan_updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'lesson_plans',
+        filter: `id=eq.${lessonPlanId}`,
+      },
+      (payload) => callback(payload.new as LessonPlan)
+    )
+    .subscribe();
 };
 
 // Helper functions for sessions

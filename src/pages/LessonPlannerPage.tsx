@@ -1,27 +1,46 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-import { saveLessonPlan } from '../lib/supabaseClient';
+import { saveLessonPlan, subscribeLessonPlanUpdates } from '../lib/supabaseClient';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentLessonPlanId, setCurrentLessonPlanId] = useState<string | null>(null);
 
-  const handleProcessed = useCallback(async (title: string, content: ProcessedLesson) => {
+  useEffect(() => {
+    let subscription: any;
+
+    if (currentLessonPlanId) {
+      subscription = subscribeLessonPlanUpdates(currentLessonPlanId, (lessonPlan) => {
+        if (lessonPlan.processed_content) {
+          setProcessedLesson(lessonPlan.processed_content);
+          setIsProcessing(false);
+        }
+      });
+    }
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [currentLessonPlanId]);
+
+  const handleProcessed = useCallback(async (title: string, pdfFile: File) => {
     setIsProcessing(true);
     setError(null);
+    setProcessedLesson(null);
     
     try {
-      await saveLessonPlan(title, content);
-      setProcessedLesson(content);
+      const lessonPlanId = await saveLessonPlan(title, pdfFile);
+      setCurrentLessonPlanId(lessonPlanId);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred while processing the file');
-      setProcessedLesson(null);
-    } finally {
       setIsProcessing(false);
     }
   }, []);

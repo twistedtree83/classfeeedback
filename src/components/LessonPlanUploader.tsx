@@ -3,11 +3,9 @@ import { useDropzone } from 'react-dropzone';
 import { FileText, Upload, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { processPDF } from '../lib/pdfProcessor';
-import type { ProcessedLesson } from '../lib/types';
 
 interface LessonPlanUploaderProps {
-  onProcessed: (title: string, content: ProcessedLesson) => void;
+  onProcessed: (title: string, lessonPlanId: string) => void;
   isProcessing: boolean;
 }
 
@@ -52,8 +50,7 @@ export function LessonPlanUploader({ onProcessed, isProcessing }: LessonPlanUplo
     }
     
     try {
-      const processedContent = await processPDF(selectedFile);
-      onProcessed(title.trim(), processedContent);
+      onProcessed(title.trim(), selectedFile);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process PDF');
     }
