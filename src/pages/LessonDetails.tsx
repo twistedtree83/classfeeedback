@@ -165,7 +165,6 @@ export function LessonDetails() {
       console.error('Error starting teaching session:', err);
       setError(err instanceof Error ? err.message : 'Failed to start teaching session');
       setIsStartingTeaching(false);
-    }
   };
     } catch (err) {
       console.error('Error starting teaching session:', err);
