@@ -73,14 +73,12 @@ export function LessonDetails() {
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
     return {
       id: crypto.randomUUID(),
-      type: (type === 'objective' || type === 'material' || type === 'section' || type === 'activity') 
-        ? type 
-        : 'section',
+      type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
       duration: duration || null,
       sectionId: sectionId || null,
-      activityIndex: (typeof activityIndex === 'number' && !isNaN(activityIndex)) ? activityIndex : null
+      activityIndex: typeof activityIndex === 'number' ? activityIndex : null
     };
   };
 
@@ -95,13 +93,13 @@ export function LessonDetails() {
     setError(null);
 
     try {
-      let teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
+      const teachingCards = selectedCards.length > 0 ? [...selectedCards] : [
         // Title card
         createCard(
           'objective',
           lesson.processed_content.title,
           lesson.processed_content.summary,
-          lesson.processed_content.duration
+          lesson.processed_content.duration || null
         ),
         // Objectives card
         createCard(
@@ -122,7 +120,7 @@ export function LessonDetails() {
             'section',
             section.title,
             section.content,
-            section.duration,
+            section.duration || null,
             section.id
           ),
           // Activity cards

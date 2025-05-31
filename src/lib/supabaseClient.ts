@@ -50,21 +50,29 @@ export const createLessonPresentation = async (
   try {
     // Validate cards structure
     if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error('Invalid cards data');
+      throw new Error('Cards must be a non-empty array');
     }
 
     // Validate each card has required properties
-    const validCards = cards.map(card => ({
-      id: card.id,
-      type: (card.type === 'objective' || card.type === 'material' || card.type === 'section' || card.type === 'activity')
-        ? card.type
-        : 'section',
-      title: card.title,
-      content: card.content,
-      duration: card.duration || null,
-      sectionId: card.sectionId || null,
-      activityIndex: (typeof card.activityIndex === 'number' && !isNaN(card.activityIndex)) ? card.activityIndex : null
-    }));
+    const validCards = cards.map(card => {
+      if (!card.id || !card.type || !card.title || !card.content) {
+        throw new Error('Each card must have id, type, title, and content');
+      }
+      
+      if (!['objective', 'material', 'section', 'activity'].includes(card.type)) {
+        throw new Error(`Invalid card type: ${card.type}`);
+      }
+      
+      return {
+        id: card.id,
+        type: card.type,
+        title: card.title,
+        content: card.content,
+        duration: card.duration || null,
+        sectionId: card.sectionId || null,
+        activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
+      };
+    });
 
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
