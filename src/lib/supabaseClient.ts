@@ -112,19 +112,6 @@ export const getLessonPresentationByCode = async (
       return null;
     }
 
-    // First check if session is active
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('code', code)
-      .eq('active', true)
-      .single();
-
-    if (sessionError || !session) {
-      console.error('Session not found or inactive');
-      return null;
-    }
-
     const { data, error } = await supabase
       .from('lesson_presentations')
       .select('*')
