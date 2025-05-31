@@ -56,12 +56,14 @@ export const createLessonPresentation = async (
     // Validate each card has required properties
     const validCards = cards.map(card => ({
       id: card.id,
-      type: card.type,
+      type: (card.type === 'objective' || card.type === 'material' || card.type === 'section' || card.type === 'activity')
+        ? card.type
+        : 'section',
       title: card.title,
       content: card.content,
       duration: card.duration || null,
       sectionId: card.sectionId || null,
-      activityIndex: card.activityIndex || null
+      activityIndex: (typeof card.activityIndex === 'number' && !isNaN(card.activityIndex)) ? card.activityIndex : null
     }));
 
     code = Math.random().toString(36).substring(2, 8).toUpperCase();

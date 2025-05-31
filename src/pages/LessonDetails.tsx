@@ -73,12 +73,14 @@ export function LessonDetails() {
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
     return {
       id: crypto.randomUUID(),
-      type: type as 'objective' | 'material' | 'section' | 'activity',
+      type: (type === 'objective' || type === 'material' || type === 'section' || type === 'activity') 
+        ? type 
+        : 'section',
       title,
       content,
-      duration: typeof duration === 'string' && duration.trim() !== '' ? duration.trim() : null,
-      sectionId: typeof sectionId === 'string' && sectionId.trim() !== '' ? sectionId.trim() : null,
-      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
+      duration: duration || null,
+      sectionId: sectionId || null,
+      activityIndex: (typeof activityIndex === 'number' && !isNaN(activityIndex)) ? activityIndex : null
     };
   };
 
@@ -161,9 +163,9 @@ export function LessonDetails() {
       type,
       data.title,
       data.content,
-      data.duration || '',
-      data.sectionId || '',
-      typeof data.activityIndex === 'number' ? data.activityIndex : -1
+      data.duration || null,
+      data.sectionId || null,
+      typeof data.activityIndex === 'number' ? data.activityIndex : null
     );
     setSelectedCards(prev => [...prev, newCard]);
   };
