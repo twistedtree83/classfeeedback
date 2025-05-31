@@ -31,18 +31,20 @@ export interface LessonCard {
   id: string;
   type: 'objective' | 'material' | 'section' | 'activity';
   title: string;
-  content: string;
-  duration?: string | null;
-  sectionId?: string | null;
-  activityIndex?: number | null;
+  content: string | string[];
+  duration: string | null;
+  sectionId: string | null;
+  activityIndex: number | null;
 }
 
 export interface LessonPresentation {
   id: string;
   lesson_id: string;
   session_code: string;
+  session_id: string;
   current_card_index: number;
   cards: LessonCard[];
   active: boolean;
   created_at: string;
+  realtime_enabled: boolean;
 }
