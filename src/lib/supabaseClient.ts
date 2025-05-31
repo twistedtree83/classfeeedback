@@ -50,10 +50,8 @@ export const createLessonPresentation = async (
   try {
     // Validate cards structure
     if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error('Cards must be a non-empty array');
+      throw new Error('Invalid cards data');
     }
-
-    console.log('Received cards:', JSON.stringify(cards, null, 2));
 
     // Validate each card has required properties
     const validCards = cards.map(card => {
@@ -66,20 +64,23 @@ export const createLessonPresentation = async (
         console.error('Invalid card type:', card.type);
         throw new Error(`Invalid card type: ${card.type}`);
       }
-
+      
       // Convert content to string if it's an array
       let contentString: string;
       if (Array.isArray(card.content)) {
-        contentString = card.content.map(item => `• ${item}`).join('\n');
+        contentString = card.content.join('\n• ');
+        if (contentString && !contentString.startsWith('•')) {
+          contentString = '• ' + contentString;
+        }
       } else {
         contentString = String(card.content);
       }
-
+      
       return {
         id: card.id,
         type: card.type,
         title: card.title,
-        content: contentString,
+        content: contentString, // Ensure content is always a string
         duration: card.duration || null,
         sectionId: card.sectionId || null,
         activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
@@ -106,12 +107,10 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards: validCards,
+      cards: validCards, // Use validated cards
       current_card_index: 0,
       active: true
     };
-
-    console.log('Final presentation data being sent:', JSON.stringify(presentationData, null, 2));
 
     const { data, error } = await supabase
       .from('lesson_presentations')
