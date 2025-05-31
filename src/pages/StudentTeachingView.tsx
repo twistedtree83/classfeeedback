@@ -18,16 +18,22 @@ export function StudentTeachingView() {
   const [joined, setJoined] = useState(false);
 
   const currentCard = presentation?.cards?.[presentation.current_card_index];
+  console.log('Current card for student:', JSON.stringify(currentCard, null, 2));
 
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
 
+    console.log('Setting up subscription for session code:', presentation.session_code);
+    
     const subscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
+        console.log('Student received presentation update:', JSON.stringify(updatedPresentation, null, 2));
+        
         // Always fetch full presentation data to ensure we have properly parsed cards
         getLessonPresentationByCode(presentation.session_code)
           .then(fullPresentation => {
+            console.log('Student received full presentation data:', JSON.stringify(fullPresentation, null, 2));
             if (fullPresentation?.cards) {
               setPresentation(fullPresentation);
             }
@@ -46,6 +52,8 @@ export function StudentTeachingView() {
     setError(null);
     setStudentName(studentName);
 
+    console.log('Student attempting to join session with code:', code);
+
     try {
       // First check if the session exists and is active
       const session = await getSessionByCode(code);
@@ -59,14 +67,14 @@ export function StudentTeachingView() {
         throw new Error('Failed to join session');
       }
       
-      console.log('Found active session:', session);
+      console.log('Found active session:', JSON.stringify(session, null, 2));
       
       const presentationData = await getLessonPresentationByCode(code);
       if (!presentationData) {
         throw new Error('Presentation not found');
       }
       
-      console.log('Joined presentation:', presentationData);
+      console.log('Joined presentation:', JSON.stringify(presentationData, null, 2));
       if (!presentationData.cards || !Array.isArray(presentationData.cards)) {
         throw new Error('Invalid presentation data');
       }
