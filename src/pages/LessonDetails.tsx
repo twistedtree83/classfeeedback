@@ -76,9 +76,9 @@ export function LessonDetails() {
       type: type as 'objective' | 'material' | 'section' | 'activity',
       title,
       content,
-      duration: typeof duration === 'string' && duration.trim() !== '' ? duration : null,
-      sectionId: typeof sectionId === 'string' && sectionId.trim() !== '' ? sectionId : null,
-      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : null
+      duration: duration && duration.trim() !== '' ? duration : '',
+      sectionId: sectionId && sectionId.trim() !== '' ? sectionId : '',
+      activityIndex: typeof activityIndex === 'number' && !isNaN(activityIndex) ? activityIndex : -1
     };
   };
 
@@ -99,7 +99,7 @@ export function LessonDetails() {
           'objective',
           lesson.processed_content.title,
           lesson.processed_content.summary,
-          lesson.processed_content.duration || null
+          lesson.processed_content.duration || ''
         ),
         // Objectives card
         createCard(
@@ -120,7 +120,7 @@ export function LessonDetails() {
             'section',
             section.title,
             section.content,
-            section.duration || null,
+            section.duration || '',
             section.id
           ),
           // Activity cards
@@ -128,7 +128,7 @@ export function LessonDetails() {
             'activity',
             `Activity: ${section.title}`,
             activity,
-            null,
+            '',
             section.id,
             index
           ))
@@ -141,9 +141,9 @@ export function LessonDetails() {
         type: card.type,
         title: card.title,
         content: card.content,
-        duration: card.duration,
-        sectionId: card.sectionId,
-        activityIndex: card.activityIndex
+        duration: card.duration || '',
+        sectionId: card.sectionId || '',
+        activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : -1
       }));
 
       console.log('Formatted teaching cards:', teachingCards);
@@ -171,9 +171,9 @@ export function LessonDetails() {
       type,
       data.title,
       data.content,
-      data.duration || null,
-      data.sectionId || null,
-      typeof data.activityIndex === 'number' ? data.activityIndex : null
+      data.duration || '',
+      data.sectionId || '',
+      typeof data.activityIndex === 'number' ? data.activityIndex : -1
     );
     setSelectedCards(prev => [...prev, newCard]);
   };
