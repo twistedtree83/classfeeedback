@@ -7,15 +7,24 @@ interface FileUploadProps {
   selectedFile: File | null;
   onRemoveFile: () => void;
   isProcessing: boolean;
+  maxSize?: number;
 }
 
-export function FileUpload({ onFileUpload, selectedFile, onRemoveFile, isProcessing }: FileUploadProps) {
+export function FileUpload({ 
+  onFileUpload, 
+  selectedFile, 
+  onRemoveFile, 
+  isProcessing,
+  maxSize = 10 * 1024 * 1024 // 10MB default
+}: FileUploadProps) {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (file) {
+    if (file && file.size <= maxSize) {
       onFileUpload(file);
+    } else if (file) {
+      alert(`File size must be less than ${maxSize / 1024 / 1024}MB`);
     }
-  }, [onFileUpload]);
+  }, [onFileUpload, maxSize]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -60,9 +69,10 @@ export function FileUpload({ onFileUpload, selectedFile, onRemoveFile, isProcess
             <p className="text-lg font-medium text-gray-700">
               Drop your lesson plan here
             </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Supports PDF, DOCX, and TXT files
-            </p>
+            <div className="text-sm text-gray-500 mt-1">
+              <p>Supports PDF, DOCX, and TXT files</p>
+              <p>Maximum size: {maxSize / 1024 / 1024}MB</p>
+            </div>
           </div>
         </div>
       )}
