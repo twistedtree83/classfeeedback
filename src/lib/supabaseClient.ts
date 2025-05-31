@@ -45,13 +45,15 @@ export const createLessonPresentation = async (
   cards: LessonCard[],
   teacherName: string
 ): Promise<LessonPresentation | null> => {
+  let code: string;
+  
   try {
     // Validate cards structure
     if (!Array.isArray(cards) || cards.length === 0) {
       throw new Error('Invalid cards data');
     }
 
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     // First create a session
     const { data: session, error: sessionError } = await supabase
@@ -71,7 +73,7 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards: JSON.stringify(cards), // Explicitly stringify cards
+      cards, // Pass cards directly without stringifying
       current_card_index: 0,
       active: true
     };
@@ -87,10 +89,12 @@ export const createLessonPresentation = async (
   } catch (err) {
     console.error('Error creating lesson presentation:', err);
     // Clean up session if presentation creation fails
-    await supabase
-      .from('sessions')
-      .delete()
-      .eq('code', code);
+    if (code) {
+      await supabase
+        .from('sessions')
+        .delete()
+        .eq('code', code);
+    }
     return null;
   }
 };
@@ -124,19 +128,8 @@ export const getLessonPresentationByCode = async (
       return null;
     }
     
-    // Parse cards from JSON string
-    try {
-      const cards = JSON.parse(data.cards);
-      if (!Array.isArray(cards)) throw new Error('Invalid cards format');
-      
-      return {
-        ...data,
-        cards
-      };
-    } catch (parseError) {
-      console.error('Error parsing cards:', parseError);
-      return null;
-    }
+    // No need to parse cards - Supabase automatically handles JSONB
+    return data;
   } catch (err) {
     console.error('Error fetching lesson presentation:', err);
     return null;
