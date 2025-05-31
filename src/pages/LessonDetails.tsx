@@ -80,11 +80,11 @@ export function LessonDetails() {
     };
 
     // Only add optional fields if they have valid values
-    if (duration && duration.trim() !== '') {
+    if (typeof duration === 'string' && duration.trim() !== '') {
       card.duration = duration;
     }
 
-    if (sectionId && sectionId.trim() !== '') {
+    if (typeof sectionId === 'string' && sectionId.trim() !== '') {
       card.sectionId = sectionId;
     }
 
