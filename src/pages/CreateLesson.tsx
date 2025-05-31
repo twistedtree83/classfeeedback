@@ -61,13 +61,14 @@ export function CreateLesson() {
         }]);
 
       if (saveError) {
-        throw saveError;
+        throw new Error(`Failed to save lesson plan: ${saveError.message}`);
       }
 
       navigate('/planner');
     } catch (err) {
       console.error('Error processing lesson:', err);
       setError(err instanceof Error ? err.message : 'Failed to process lesson plan');
+      setProcessedContent(null);
     } finally {
       setIsProcessing(false);
     }

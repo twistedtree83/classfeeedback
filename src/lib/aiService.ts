@@ -33,19 +33,25 @@ interface AIResponse {
 }
 
 export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
-  // Get API key from Supabase
-  const { data: secretData, error: secretError } = await supabase
-    .from('secrets')
-    .select('value')
-    .eq('name', 'OPENAI_API_KEY')
-    .single();
-
-  if (secretError || !secretData?.value) {
-    console.error('Failed to get API key:', secretError);
-    return fallbackAnalysis(content);
-  }
-  
   try {
+    // Get API key from Supabase with better error handling
+    const { data: secretData, error: secretError } = await supabase
+      .from('secrets')
+      .select('value')
+      .eq('name', 'OPENAI_API_KEY')
+      .single();
+
+    if (secretError) {
+      if (secretError.message.includes('no rows')) {
+        throw new Error('OpenAI API key not found in database. Please contact your administrator.');
+      }
+      throw new Error(`Failed to retrieve API key: ${secretError.message}`);
+    }
+
+    if (!secretData?.value) {
+      throw new Error('API key is missing or invalid. Please contact your administrator.');
+    }
+  
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -79,7 +85,7 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
     }
   } catch (error) {
     console.error('Error analyzing lesson:', error);
-    return fallbackAnalysis(content);
+    throw error; // Propagate the error to show the user
   }
 }
 
