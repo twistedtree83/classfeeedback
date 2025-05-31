@@ -17,7 +17,12 @@ export function LessonPlannerPage() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setLessons(data.map(lesson => lesson.processed_content));
+        // Filter out lessons with null processed_content before mapping
+        setLessons(
+          data
+            .filter(lesson => lesson.processed_content !== null)
+            .map(lesson => lesson.processed_content)
+        );
       }
       setLoading(false);
     };
