@@ -71,15 +71,28 @@ export function LessonDetails() {
   };
 
   const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
-    return {
+    // Create base card with required fields
+    const card: LessonCard = {
       id: crypto.randomUUID(),
       type,
       title,
-      content,
-      ...(duration !== undefined ? { duration: duration || null } : {}),
-      ...(sectionId !== undefined ? { sectionId: sectionId || null } : {}),
-      ...(activityIndex !== undefined ? { activityIndex } : {})
+      content
     };
+
+    // Only add optional fields if they have valid values
+    if (duration && duration.trim() !== '') {
+      card.duration = duration;
+    }
+
+    if (sectionId && sectionId.trim() !== '') {
+      card.sectionId = sectionId;
+    }
+
+    if (typeof activityIndex === 'number' && !isNaN(activityIndex)) {
+      card.activityIndex = activityIndex;
+    }
+
+    return card;
   };
 
   const startTeaching = async () => {
@@ -99,7 +112,7 @@ export function LessonDetails() {
           'objective',
           lesson.processed_content.title,
           lesson.processed_content.summary,
-          lesson.processed_content.duration || null
+          lesson.processed_content.duration || undefined
         ),
         // Objectives card
         createCard(
@@ -120,7 +133,7 @@ export function LessonDetails() {
             'section',
             section.title,
             section.content,
-            section.duration || null,
+            section.duration || undefined,
             section.id
           ),
           // Activity cards
@@ -128,7 +141,7 @@ export function LessonDetails() {
             'activity',
             `Activity: ${section.title}`,
             activity,
-            null,
+            undefined,
             section.id,
             index
           ))
@@ -158,9 +171,9 @@ export function LessonDetails() {
       type,
       data.title,
       data.content,
-      data.duration || null,
-      data.sectionId || null,
-      data.activityIndex !== undefined ? data.activityIndex : null
+      data.duration || undefined,
+      data.sectionId || undefined,
+      typeof data.activityIndex === 'number' ? data.activityIndex : undefined
     );
     setSelectedCards(prev => [...prev, newCard]);
   };
