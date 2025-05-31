@@ -4,7 +4,8 @@ import { JoinSessionForm } from '../components/JoinSessionForm';
 import { 
   getLessonPresentationByCode, 
   subscribeToLessonPresentation,
-  getSessionByCode 
+  getSessionByCode,
+  addSessionParticipant
 } from '../lib/supabaseClient';
 import type { LessonPresentation } from '../lib/types';
 
@@ -14,11 +15,12 @@ export function StudentTeachingView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studentName, setStudentName] = useState<string>('');
+  const [joined, setJoined] = useState(false);
 
   const currentCard = presentation?.cards?.[presentation.current_card_index];
 
   useEffect(() => {
-    if (!presentation?.session_code) return;
+    if (!presentation?.session_code || !joined) return;
 
     console.log('Setting up subscription for session:', presentation.session_code);
     
@@ -45,7 +47,7 @@ export function StudentTeachingView() {
       console.log('Cleaning up subscription');
       subscription.unsubscribe();
     };
-  }, [presentation?.session_code]);
+  }, [presentation?.session_code, joined]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
@@ -57,6 +59,12 @@ export function StudentTeachingView() {
       const session = await getSessionByCode(code);
       if (!session) {
         throw new Error('Session not found or has ended');
+      }
+
+      // Add participant to session
+      const participant = await addSessionParticipant(code, studentName);
+      if (!participant) {
+        throw new Error('Failed to join session');
       }
       
       console.log('Found active session:', session);
@@ -72,6 +80,7 @@ export function StudentTeachingView() {
       }
       
       setPresentation(presentationData);
+      setJoined(true);
     } catch (err) {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
