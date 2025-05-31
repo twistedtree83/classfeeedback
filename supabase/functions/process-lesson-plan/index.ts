@@ -16,11 +16,12 @@ Deno.serve(async (req) => {
 
   try {
     console.log('Processing lesson plan request');
-    const { lessonPlanId } = await req.json();
+    const { lessonPlanId, filePath } = await req.json();
     console.log('Lesson plan ID:', lessonPlanId);
+    console.log('File path:', filePath);
 
-    if (!lessonPlanId) {
-      throw new Error('Lesson plan ID is required');
+    if (!lessonPlanId || !filePath) {
+      throw new Error('Lesson plan ID and file path are required');
     }
 
     // Initialize clients
@@ -55,11 +56,11 @@ Deno.serve(async (req) => {
     console.log('Lesson plan found:', { id: lessonPlan.id, title: lessonPlan.title });
 
     // Download PDF from storage
-    console.log('Downloading PDF from storage:', { path: lessonPlan.pdf_path });
+    console.log('Downloading PDF from storage:', { path: filePath });
     const { data: pdfData, error: downloadError } = await supabase
       .storage
       .from('lesson_plans')
-      .download(lessonPlan.pdf_path);
+      .download(filePath);
 
     if (downloadError || !pdfData) {
       console.error('Error downloading PDF:', downloadError);
