@@ -66,22 +66,25 @@ export const createLessonPresentation = async (
         console.error('Invalid card type:', card.type);
         throw new Error(`Invalid card type: ${card.type}`);
       }
-      
+
+      // Convert content to string if it's an array
+      let contentString: string;
+      if (Array.isArray(card.content)) {
+        contentString = card.content.map(item => `• ${item}`).join('\n');
+      } else {
+        contentString = String(card.content);
+      }
+
       return {
         id: card.id,
         type: card.type,
         title: card.title,
-        content: card.content,
+        content: contentString,
         duration: card.duration || null,
         sectionId: card.sectionId || null,
         activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
       };
     });
-
-    // Transform cards to the format expected by the database (only IDs)
-    // const cardsForDatabase = validCards.map(card => ({ id: card.id }));
-
-    // console.log('Transformed cards for database:', JSON.stringify(cardsForDatabase, null, 2));
 
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
@@ -103,7 +106,7 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       session_code: code,
       session_id: session.id,
-      cards: validCards, // Store full card objects instead of cardsForDatabase
+      cards: validCards,
       current_card_index: 0,
       active: true
     };
