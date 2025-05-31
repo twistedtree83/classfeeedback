@@ -1,17 +1,30 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ArrowLeft } from 'lucide-react';
-import { LessonPlanUploader } from '../components/LessonPlanUploader';
-import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
 import { supabase } from '../lib/supabaseClient';
 
 export function LessonPlannerPage() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processedLesson, setProcessedLesson] = useState<ProcessedLesson | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [lessons, setLessons] = useState<ProcessedLesson[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Load existing lesson plans
+    const fetchLessons = async () => {
+      const { data, error } = await supabase
+        .from('lesson_plans')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setLessons(data.map(lesson => lesson.processed_content));
+      }
+      setLoading(false);
+    };
+
+    fetchLessons();
+
+    // Subscribe to real-time updates
     const channel = supabase
       .channel('lesson_plans')
       .on(
@@ -22,9 +35,8 @@ export function LessonPlannerPage() {
           table: 'lesson_plans'
         },
         (payload) => {
-          if (payload.new && payload.new.processed_content) {
-            setProcessedLesson(payload.new.processed_content);
-            setIsProcessing(false);
+          if (payload.eventType === 'INSERT' && payload.new.processed_content) {
+            setLessons(prev => [payload.new.processed_content, ...prev]);
           }
         }
       )
@@ -33,36 +45,6 @@ export function LessonPlannerPage() {
     return () => {
       channel.unsubscribe();
     };
-  }, []);
-
-  const handleProcessed = useCallback(async (title: string, pdfFile: File) => {
-    setIsProcessing(true);
-    setError(null);
-    setProcessedLesson(null);
-    
-    try {
-      const { data, error: uploadError } = await supabase.storage
-        .from('lessonplans')
-        .upload(`${Date.now()}-${pdfFile.name}`, pdfFile);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { error: insertError } = await supabase
-        .from('lesson_plans')
-        .insert([{
-          title,
-          pdf_path: data.path
-        }]);
-
-      if (insertError) {
-        throw insertError;
-      }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred while processing the file');
-      setIsProcessing(false);
-    }
   }, []);
 
   return (
@@ -95,7 +77,40 @@ export function LessonPlannerPage() {
           </Link>
         </div>
         
-        {/* Display list of lesson plans here */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : lessons.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No lesson plans yet.</p>
+            <Link
+              to="/planner/create"
+              className="inline-block mt-4 text-indigo-600 hover:text-indigo-800"
+            >
+              Create your first lesson plan
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {lessons.map((lesson, index) => (
+              <div key={index} className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold mb-2">{lesson.title}</h3>
+                <p className="text-gray-600 mb-4">{lesson.duration}</p>
+                <div className="space-y-2">
+                  {lesson.objectives.slice(0, 2).map((objective, i) => (
+                    <p key={i} className="text-sm text-gray-500">• {objective}</p>
+                  ))}
+                  {lesson.objectives.length > 2 && (
+                    <p className="text-sm text-gray-400">
+                      +{lesson.objectives.length - 2} more objectives
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
