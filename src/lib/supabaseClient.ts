@@ -174,12 +174,16 @@ export const getSessionByCode = async (code: string): Promise<Session | null> =>
   try {
     const { data, error } = await supabase
       .from('sessions')
-      .select('*')
+      .select()
       .eq('code', code)
       .eq('active', true)
-      .maybeSingle();
+      .single();
     
     if (error) {
+      if (error.code === 'PGRST116') {
+        // No session found - this is not an error case
+        return null;
+      }
       console.error('Error fetching session:', error);
       return null;
     }
