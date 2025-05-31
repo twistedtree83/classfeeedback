@@ -50,16 +50,20 @@ export const createLessonPresentation = async (
   try {
     // Validate cards structure
     if (!Array.isArray(cards) || cards.length === 0) {
-      throw new Error('Invalid cards data');
+      throw new Error('Cards must be a non-empty array');
     }
+
+    console.log('Received cards:', JSON.stringify(cards, null, 2));
 
     // Validate each card has required properties
     const validCards = cards.map(card => {
       if (!card.id || !card.type || !card.title || !card.content) {
+        console.error('Invalid card:', card);
         throw new Error('Each card must have id, type, title, and content');
       }
       
       if (!['objective', 'material', 'section', 'activity'].includes(card.type)) {
+        console.error('Invalid card type:', card.type);
         throw new Error(`Invalid card type: ${card.type}`);
       }
       
@@ -76,6 +80,8 @@ export const createLessonPresentation = async (
 
     // Transform cards to the format expected by the database (only IDs)
     const cardsForDatabase = validCards.map(card => ({ id: card.id }));
+
+    console.log('Transformed cards for database:', JSON.stringify(cardsForDatabase, null, 2));
 
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
@@ -102,7 +108,7 @@ export const createLessonPresentation = async (
       active: true
     };
 
-    console.log('Sending to database:', JSON.stringify(presentationData, null, 2));
+    console.log('Final presentation data being sent:', JSON.stringify(presentationData, null, 2));
 
     const { data, error } = await supabase
       .from('lesson_presentations')
