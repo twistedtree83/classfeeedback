@@ -136,12 +136,23 @@ export function LessonDetails() {
       ];
 
       console.log('Formatted teaching cards:', teachingCards);
-      
-      console.log('Teaching cards being sent to Supabase:', JSON.stringify(teachingCards, null, 2));
+
+      // Transform the full card objects into the format expected by the database: Array<{id: string}>
+      const transformedCards = teachingCards.map(card => ({ id: card.id }));
+
+      console.log('Transformed cards data being prepared for Supabase (count: ' + transformedCards.length + ', expected format: Array<{id: string}>):', JSON.stringify(transformedCards, null, 2));
+
+      // Add detailed view of the first few transformed card objects
+      if (transformedCards.length > 0) {
+        console.log("Detailed view of the first few transformed card objects being sent:");
+        for (let i = 0; i < Math.min(transformedCards.length, 3); i++) {
+          console.log(`Card ${i}:`, JSON.stringify(transformedCards[i], null, 2));
+        }
+      }
 
       const presentation = await createLessonPresentation(
         lesson.id,
-        teachingCards, // Send the full card objects
+        transformedCards, // Send only the IDs, not the full card objects
         teacherName.trim()
       );
 
