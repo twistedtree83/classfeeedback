@@ -4,6 +4,7 @@ import TeacherDashboard from './pages/index';
 import JoinPage from './pages/join';
 import { LessonPlannerPage } from './pages/LessonPlannerPage';
 import { CreateLesson } from './pages/CreateLesson';
+import { LessonDetails } from './pages/LessonDetails';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/join" element={<JoinPage />} />
         <Route path="/planner" element={<LessonPlannerPage />} />
         <Route path="/planner/create" element={<CreateLesson />} />
+        <Route path="/planner/:id" element={<LessonDetails />} />
         <Route path="*" element={<Navigate to="/\" replace />} />
       </Routes>
     </BrowserRouter>

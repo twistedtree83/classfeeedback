@@ -17,12 +17,8 @@ export function LessonPlannerPage() {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        // Filter out lessons with null processed_content before mapping
-        setLessons(
-          data
-            .filter(lesson => lesson.processed_content !== null)
-            .map(lesson => lesson.processed_content)
-        );
+        // Keep the full lesson data including ID
+        setLessons(data.filter(lesson => lesson.processed_content !== null));
       }
       setLoading(false);
     };
@@ -99,20 +95,24 @@ export function LessonPlannerPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {lessons.map((lesson, index) => (
-              <div key={index} className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold mb-2">{lesson.title}</h3>
-                <p className="text-gray-600 mb-4">{lesson.duration}</p>
+              <Link
+                key={lesson.id}
+                to={`/planner/${lesson.id}`}
+                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+              >
+                <h3 className="text-lg font-semibold mb-2">{lesson.processed_content.title}</h3>
+                <p className="text-gray-600 mb-4">{lesson.processed_content.duration}</p>
                 <div className="space-y-2">
-                  {lesson.objectives.slice(0, 2).map((objective, i) => (
+                  {lesson.processed_content.objectives.slice(0, 2).map((objective, i) => (
                     <p key={i} className="text-sm text-gray-500">• {objective}</p>
                   ))}
-                  {lesson.objectives.length > 2 && (
+                  {lesson.processed_content.objectives.length > 2 && (
                     <p className="text-sm text-gray-400">
-                      +{lesson.objectives.length - 2} more objectives
+                      +{lesson.processed_content.objectives.length - 2} more objectives
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
