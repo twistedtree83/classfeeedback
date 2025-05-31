@@ -17,7 +17,10 @@ export function StudentTeachingView() {
   const [studentName, setStudentName] = useState<string>('');
   const [joined, setJoined] = useState(false);
 
+  console.log('Student current card index:', presentation?.current_card_index);
   const currentCard = presentation?.cards?.[presentation.current_card_index];
+  console.log('Student current card:', JSON.stringify(currentCard, null, 2));
+  console.log('Student presentation cards:', JSON.stringify(presentation?.cards, null, 2));
 
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
@@ -52,6 +55,7 @@ export function StudentTeachingView() {
       if (!session) {
         throw new Error('Session not found or has ended');
       }
+      console.log('Found active session:', JSON.stringify(session, null, 2));
 
       // Add participant to session
       const participant = await addSessionParticipant(code, studentName);
@@ -63,6 +67,7 @@ export function StudentTeachingView() {
       if (!presentationData) {
         throw new Error('Presentation not found');
       }
+      console.log('Joined presentation:', JSON.stringify(presentationData, null, 2));
       
       if (!presentationData.cards || !Array.isArray(presentationData.cards)) {
         throw new Error('Invalid presentation data');
