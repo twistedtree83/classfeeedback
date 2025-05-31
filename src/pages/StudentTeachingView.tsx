@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { JoinSessionForm } from '../components/JoinSessionForm';
 import { getLessonPresentationByCode, subscribeToLessonPresentation } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard } from '../lib/types';
 
 export function StudentTeachingView() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
   const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
   const [loading, setLoading] = useState(false);
@@ -14,20 +13,25 @@ export function StudentTeachingView() {
   const [studentName, setStudentName] = useState<string>('');
 
   useEffect(() => {
-    if (!presentation) return;
+    if (!presentation?.session_code) return;
 
     const subscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
+        console.log('Received presentation update:', updatedPresentation);
         setPresentation(updatedPresentation);
-        setCurrentCard(updatedPresentation.cards[updatedPresentation.current_card_index]);
+        if (updatedPresentation.cards && Array.isArray(updatedPresentation.cards)) {
+          const newCard = updatedPresentation.cards[updatedPresentation.current_card_index];
+          console.log('Setting new card:', newCard);
+          setCurrentCard(newCard);
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [presentation?.session_code, presentation?.current_card_index]);
+  }, [presentation?.session_code]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
@@ -39,7 +43,13 @@ export function StudentTeachingView() {
       if (!presentationData) {
         throw new Error('Session not found or has ended');
       }
-
+      
+      console.log('Joined presentation:', presentationData);
+      if (!presentationData.cards || !Array.isArray(presentationData.cards)) {
+        throw new Error('Invalid presentation data');
+      }
+      
+      const initialCard = presentationData.cards[presentationData.current_card_index];
       setPresentation(presentationData);
       setCurrentCard(presentationData.cards[presentationData.current_card_index]);
     } catch (err) {
@@ -77,7 +87,7 @@ export function StudentTeachingView() {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-lg p-8">
-          <div className="mb-4 flex justify-between items-center">
+          <div className="mb-6 flex justify-between items-center">
             <div className="text-sm text-gray-500">
               Joined as: <span className="font-medium">{studentName}</span>
             </div>
@@ -86,7 +96,7 @@ export function StudentTeachingView() {
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {currentCard.title}
             </h2>
@@ -95,9 +105,9 @@ export function StudentTeachingView() {
             )}
           </div>
 
-          <div className="prose max-w-none whitespace-pre-wrap">
+          <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
             {currentCard.content.split('\n').map((line, i) => (
-              <p key={i} className="mb-2">{line}</p>
+              <p key={i} className="mb-4 leading-relaxed">{line}</p>
             ))}
           </div>
         </div>
