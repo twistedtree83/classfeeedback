@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { SectionEditor } from '../components/SectionEditor';
 import type { ProcessedLesson } from '../lib/types';
 
 export function EditLesson() {
