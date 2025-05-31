@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { JoinSessionForm } from '../components/JoinSessionForm';
 import { getLessonPresentationByCode, subscribeToLessonPresentation } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard } from '../lib/types';
 
 export function StudentTeachingView() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
   const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [studentName, setStudentName] = useState<string>('');
 
   useEffect(() => {
     if (!presentation) return;
@@ -25,11 +27,12 @@ export function StudentTeachingView() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [presentation?.session_code]);
+  }, [presentation?.session_code, presentation?.current_card_index]);
 
   const handleJoinSession = async (code: string, studentName: string) => {
     setLoading(true);
     setError(null);
+    setStudentName(studentName);
 
     try {
       const presentationData = await getLessonPresentationByCode(code);
@@ -74,6 +77,15 @@ export function StudentTeachingView() {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="mb-4 flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              Joined as: <span className="font-medium">{studentName}</span>
+            </div>
+            <div className="text-sm text-gray-500">
+              Session: <span className="font-mono">{presentation.session_code}</span>
+            </div>
+          </div>
+
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {currentCard.title}
@@ -83,8 +95,10 @@ export function StudentTeachingView() {
             )}
           </div>
 
-          <div className="prose max-w-none">
-            {currentCard.content}
+          <div className="prose max-w-none whitespace-pre-wrap">
+            {currentCard.content.split('\n').map((line, i) => (
+              <p key={i} className="mb-2">{line}</p>
+            ))}
           </div>
         </div>
       </main>
