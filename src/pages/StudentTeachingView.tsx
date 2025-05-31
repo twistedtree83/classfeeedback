@@ -131,19 +131,9 @@ export function StudentTeachingView() {
           </div>
 
           <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-            {!currentCard.content ? (
-              <p className="text-gray-500 italic">No content available</p>
-            ) : (
-              <div className="whitespace-pre-wrap leading-relaxed">
-                {currentCard.content
-                  .split('\n')
-                  .filter(line => line.trim())
-                  .map((line, i) => (
-                    <p key={i} className="mb-4">{line}</p>
-                  ))
-                }
-              </div>
-            )}
+            {currentCard.content.split('\n').map((line, i) => (
+              <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+            ))}
           </div>
         </div>
       </main>

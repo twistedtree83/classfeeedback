@@ -31,7 +31,7 @@ export interface LessonCard {
   id: string;
   type: 'objective' | 'material' | 'section' | 'activity';
   title: string;
-  content: string | string[];
+  content: string;
   duration: string | null;
   sectionId: string | null;
   activityIndex: number | null;

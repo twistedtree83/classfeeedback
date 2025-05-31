@@ -65,22 +65,14 @@ export const createLessonPresentation = async (
         throw new Error(`Invalid card type: ${card.type}`);
       }
       
-      // Convert content to string if it's an array
-      let contentString: string;
-      if (Array.isArray(card.content)) {
-        contentString = card.content.join('\n• ');
-        if (contentString && !contentString.startsWith('•')) {
-          contentString = '• ' + contentString;
-        }
-      } else {
-        contentString = String(card.content);
-      }
+      // Ensure content is a string
+      const contentString = String(card.content);
       
       return {
         id: card.id,
         type: card.type,
         title: card.title,
-        content: contentString, // Ensure content is always a string
+        content: contentString,
         duration: card.duration || null,
         sectionId: card.sectionId || null,
         activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
