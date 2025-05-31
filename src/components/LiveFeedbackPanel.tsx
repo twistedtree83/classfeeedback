@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/firebaseClient';
+import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/supabaseClient';
 import { formatTime, groupFeedbackByType } from '../lib/utils';
 import { BarChart3, Users } from 'lucide-react';
 

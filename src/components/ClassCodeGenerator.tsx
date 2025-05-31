@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { createSession } from '../lib/firebaseClient';
+import { createSession } from '../lib/supabaseClient';
 
 interface ClassCodeGeneratorProps {
   onCodeGenerated: (code: string) => void;
