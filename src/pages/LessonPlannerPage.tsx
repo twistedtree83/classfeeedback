@@ -4,7 +4,7 @@ import { BookOpen, ArrowLeft } from 'lucide-react';
 import { LessonPlanUploader } from '../components/LessonPlanUploader';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import type { ProcessedLesson } from '../lib/types';
-import { saveLessonPlan, subscribeLessonPlanUpdates } from '../lib/supabaseClient';
+import { saveLessonPlan, subscribeLessonPlanUpdates } from '../lib/firebaseClient';
 
 export function LessonPlannerPage() {
   const [isProcessing, setIsProcessing] = useState(false);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
-import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants } from '../lib/supabaseClient';
+import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants } from '../lib/firebaseClient';
 import { formatTime } from '../lib/utils';
 
 interface ParticipantsListProps {

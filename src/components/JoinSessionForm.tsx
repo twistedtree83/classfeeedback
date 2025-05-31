@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { getSessionByCode, addSessionParticipant } from '../lib/supabaseClient';
+import { getSessionByCode, addSessionParticipant } from '../lib/firebaseClient';
 import { generateRandomName } from '../lib/utils';
 
 interface JoinSessionFormProps {

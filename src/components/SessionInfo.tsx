@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from './ui/Button';
 import { ClipboardCopy, LogOut } from 'lucide-react';
-import { endSession } from '../lib/supabaseClient';
+import { endSession } from '../lib/firebaseClient';
 
 interface SessionInfoProps {
   sessionCode: string;
