@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   getSessionByCode, 
@@ -7,12 +7,29 @@ import {
   getLessonPresentationByCode,
   subscribeToLessonPresentation,
   submitTeachingQuestion,
-  submitTeachingFeedback
+  submitTeachingFeedback,
+  getTeacherMessagesForPresentation,
+  subscribeToTeacherMessages,
+  TeacherMessage
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { MessagePanel } from '../components/MessagePanel';
 import { generateRandomName } from '../lib/utils';
-import { BookOpen, ThumbsUp, ThumbsDown, HelpCircle, Send, MessageSquare } from 'lucide-react';
+import { 
+  BookOpen, 
+  ThumbsUp, 
+  ThumbsDown, 
+  HelpCircle, 
+  Send, 
+  MessageSquare, 
+  Bell, 
+  X, 
+  Clock, 
+  MessageSquareText, 
+  CheckCircle2,
+  User 
+} from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
 export function StudentView() {
@@ -28,6 +45,13 @@ export function StudentView() {
   const [question, setQuestion] = useState('');
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  
+  // New state variables for teacher messages
+  const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
+  const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
+  const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
   useEffect(() => {
@@ -38,27 +62,137 @@ export function StudentView() {
     }
   }, [location]);
 
-  // Subscribe to presentation updates
+  // Load past teacher messages when joining a session
   useEffect(() => {
-    if (!presentation?.session_code) return;
+    if (!presentation?.id || step !== 'teaching') return;
+
+    const loadTeacherMessages = async () => {
+      try {
+        console.log("Loading teacher messages for presentation:", presentation.id);
+        const messages = await getTeacherMessagesForPresentation(presentation.id);
+        console.log("Loaded teacher messages:", messages);
+        
+        if (messages && Array.isArray(messages)) {
+          setAllMessages(messages);
+          
+          // If there are messages, show a notification for the most recent one
+          if (messages.length > 0) {
+            setNewMessageCount(messages.length);
+            setTeacherMessage(messages[messages.length - 1]);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading teacher messages:', err);
+      }
+    };
+
+    loadTeacherMessages();
+  }, [presentation?.id, step]);
+
+  // Subscribe to teacher messages
+  useEffect(() => {
+    if (!presentation?.id || step !== 'teaching') return;
     
-    const subscription = subscribeToLessonPresentation(
-      presentation.session_code,
-      (updatedPresentation) => {
-        setPresentation(updatedPresentation);
+    console.log("Setting up message subscription for presentation:", presentation.id);
+    
+    // Create a new audio element for notification sounds
+    const notificationSound = new Audio('/notification.mp3');
+    notificationSound.volume = 0.5;
+    
+    const messageSubscription = subscribeToTeacherMessages(
+      presentation.id,
+      (newMessage) => {
+        console.log("Received new teacher message:", newMessage);
+        
+        // Play sound
+        try {
+          notificationSound.play().catch(e => {
+            console.warn("Audio play prevented:", e);
+          });
+        } catch (err) {
+          console.error("Error playing notification sound:", err);
+        }
+        
+        // Update messages list
+        setAllMessages(prevMessages => {
+          // Check for duplicates
+          const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
+          if (isDuplicate) {
+            console.log("Duplicate message detected, skipping");
+            return prevMessages;
+          }
+          return [...prevMessages, newMessage]; 
+        });
+        
+        // Show toast notification
+        setTeacherMessage(newMessage);
+        
+        // Increment counter if panel is closed
+        if (!showMessagePanel) {
+          setNewMessageCount(prev => prev + 1);
+        }
       }
     );
 
     return () => {
-      subscription.unsubscribe();
+      console.log("Cleaning up teacher messages subscription");
+      messageSubscription.unsubscribe();
+    };
+  }, [presentation?.id, step, showMessagePanel]);
+
+  // Reset message count when panel is opened
+  useEffect(() => {
+    if (showMessagePanel) {
+      setNewMessageCount(0);
+    }
+  }, [showMessagePanel]);
+
+  // Subscribe to presentation updates
+  useEffect(() => {
+    if (!presentation?.session_code) return;
+    
+    const presentationSubscription = subscribeToLessonPresentation(
+      presentation.session_code,
+      (updatedPresentation) => {
+        console.log("Received presentation update");
+        
+        // Get the full presentation data to ensure we have parsed cards
+        getLessonPresentationByCode(presentation.session_code)
+          .then(fullPresentation => {
+            if (fullPresentation) {
+              setPresentation(fullPresentation);
+            }
+          })
+          .catch(err => console.error('Error refreshing presentation:', err));
+      }
+    );
+
+    return () => {
+      console.log("Cleaning up presentation subscription");
+      presentationSubscription.unsubscribe();
     };
   }, [presentation?.session_code]);
+
+  const toggleMessagePanel = () => {
+    console.log("Toggling message panel - Current state:", showMessagePanel, "Messages:", allMessages.length);
+    setShowMessagePanel(prev => !prev);
+    if (!showMessagePanel) {
+      setNewMessageCount(0);
+      // Dismiss the toast notification when opening the panel
+      setTeacherMessage(null);
+    }
+  };
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!sessionCode.trim()) {
-      setError('Please enter a class code');
+      setError('Please enter a session code');
+      return;
+    }
+
+    if (!studentName.trim()) {
+      setError('Please enter your name');
       return;
     }
 
@@ -66,53 +200,55 @@ export function StudentView() {
     setError('');
     
     try {
-      const formattedCode = sessionCode.trim().toUpperCase();
-      const session = await getSessionByCode(formattedCode);
-      
+      console.log("Joining session with code:", sessionCode.trim().toUpperCase());
+      const session = await getSessionByCode(sessionCode.trim().toUpperCase());
       if (!session) {
-        setError('Invalid class code or expired session');
-        setIsJoining(false);
-        return;
-      }
-      
-      // Use entered name or generate a random one if empty
-      const name = studentName.trim() || generateRandomName();
-      
-      const participant = await addSessionParticipant(formattedCode, name);
-      
-      if (!participant) {
-        setError('Failed to join session. Please try again.');
-        setIsJoining(false);
-        return;
+        throw new Error('Session not found or has ended');
       }
 
-      setStudentName(name);
-      
-      // Check if this is a teaching session
-      const presentationData = await getLessonPresentationByCode(formattedCode);
-      if (presentationData) {
+      console.log("Session found:", session);
+      const participant = await addSessionParticipant(
+        sessionCode.trim().toUpperCase(),
+        studentName.trim()
+      );
+
+      if (!participant) {
+        throw new Error('Failed to join session');
+      }
+
+      console.log("Added as participant:", participant);
+      const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
+      if (!presentationData) {
+        // If there's no presentation, this is just a regular feedback session
+        console.log("No presentation found, joining standard feedback session");
+        setStep('feedback');
+      } else {
+        // If there's a presentation, this is a teaching session
+        console.log("Presentation data retrieved:", presentationData);
         setPresentation(presentationData);
         setStep('teaching');
-      } else {
-        setStep('feedback');
       }
-      
+
+      // Update URL with session code for easy rejoining
+      const url = new URL(window.location.href);
+      url.searchParams.set('code', sessionCode.trim().toUpperCase());
+      window.history.pushState({}, '', url);
     } catch (err) {
       console.error('Error joining session:', err);
-      setError('An unexpected error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to join session');
     } finally {
       setIsJoining(false);
     }
   };
 
-  const handleSendFeedback = async (feedbackValue: string) => {
-    if (!sessionCode || !studentName) return;
+  const handleFeedback = async (type: string) => {
+    if (!sessionCode || !studentName || isSendingFeedback) return;
     
     setIsSendingFeedback(true);
     setError('');
     
     try {
-      const result = await submitFeedback(sessionCode, studentName, feedbackValue);
+      const result = await submitFeedback(sessionCode, studentName, type);
       if (result) {
         setSuccessMessage('Feedback sent successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
@@ -129,7 +265,7 @@ export function StudentView() {
 
   const handleSendQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim() || !presentation?.id || !studentName) return;
+    if (!question.trim() || !presentation?.id || !studentName || isSendingFeedback) return;
     
     setIsSendingFeedback(true);
     setError('');
@@ -158,7 +294,7 @@ export function StudentView() {
   };
 
   const handleTeachingFeedback = async (feedbackType: string) => {
-    if (!presentation?.id || !studentName) return;
+    if (!presentation?.id || !studentName || isSendingFeedback) return;
     
     setIsSendingFeedback(true);
     setError('');
@@ -267,7 +403,7 @@ export function StudentView() {
             
             <div className="grid grid-cols-3 gap-4">
               <button
-                onClick={() => handleSendFeedback('👍')}
+                onClick={() => handleFeedback('👍')}
                 disabled={isSendingFeedback}
                 className="flex flex-col items-center justify-center p-6 rounded-xl bg-green-50 border-2 border-green-100 hover:bg-green-100 transition-colors"
               >
@@ -276,7 +412,7 @@ export function StudentView() {
               </button>
               
               <button
-                onClick={() => handleSendFeedback('😕')}
+                onClick={() => handleFeedback('😕')}
                 disabled={isSendingFeedback}
                 className="flex flex-col items-center justify-center p-6 rounded-xl bg-yellow-50 border-2 border-yellow-100 hover:bg-yellow-100 transition-colors"
               >
@@ -285,7 +421,7 @@ export function StudentView() {
               </button>
               
               <button
-                onClick={() => handleSendFeedback('❓')}
+                onClick={() => handleFeedback('❓')}
                 disabled={isSendingFeedback}
                 className="flex flex-col items-center justify-center p-6 rounded-xl bg-blue-50 border-2 border-blue-100 hover:bg-blue-100 transition-colors"
               >
@@ -323,13 +459,54 @@ export function StudentView() {
               <span className="text-sm text-gray-500">Joined as</span>
               <h1 className="text-lg font-medium">{studentName}</h1>
             </div>
-            <div>
-              <span className="text-sm text-gray-500">Class Code</span>
-              <div className="font-mono font-medium">{sessionCode}</div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleMessagePanel}
+                className="relative p-2 rounded-full hover:bg-gray-100"
+                title="View messages"
+              >
+                <MessageSquare className="h-5 w-5 text-indigo-600" />
+                {newMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {newMessageCount}
+                  </span>
+                )}
+              </button>
+              <div>
+                <span className="text-sm text-gray-500">Class Code</span>
+                <div className="font-mono font-medium">{sessionCode}</div>
+              </div>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Teacher Message Toast */}
+      {teacherMessage && (
+        <div 
+          ref={messageToastRef}
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-md border border-blue-200"
+        >
+          <MessageSquareText className="h-6 w-6 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold">{teacherMessage.teacher_name}:</p>
+            <p className="text-sm">{teacherMessage.message_content}</p>
+            <button 
+              onClick={toggleMessagePanel}
+              className="text-xs text-blue-600 hover:underline mt-1"
+            >
+              View all messages
+            </button>
+          </div>
+          <button 
+            onClick={() => setTeacherMessage(null)}
+            className="p-1 text-blue-500 hover:bg-blue-100 rounded-full"
+            title="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       
       <main className="flex-1 flex flex-col p-6">
         <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
@@ -439,6 +616,26 @@ export function StudentView() {
           </div>
         </div>
       </main>
+
+      {/* Message indicator button that's always visible when there are new messages */}
+      {newMessageCount > 0 && !showMessagePanel && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={toggleMessagePanel}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+          >
+            <Bell className="h-5 w-5" />
+            <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Message Panel */}
+      <MessagePanel
+        messages={allMessages}
+        isOpen={showMessagePanel}
+        onClose={() => setShowMessagePanel(false)}
+      />
     </div>
   );
 }
