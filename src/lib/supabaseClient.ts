@@ -501,20 +501,21 @@ export const submitTeachingQuestion = async (
       question: question
     });
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('teaching_questions')
       .insert([{
         presentation_id: presentationId,
         student_name: studentName,
         question
-      }]);
+      }])
+      .select();
     
     if (error) {
       console.error('Database error submitting question:', error);
       throw error;
     }
     
-    console.log('Question submitted successfully');
+    console.log('Question submitted successfully, response:', data);
     return true;
   } catch (err) {
     console.error('Error submitting question:', err);
@@ -634,20 +635,21 @@ export const sendTeacherMessage = async (
       message_content: messageContent
     });
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('teacher_messages')
       .insert([{
         presentation_id: presentationId,
         teacher_name: teacherName,
         message_content: messageContent
-      }]);
+      }])
+      .select();
 
     if (error) {
       console.error('Error inserting teacher message:', error);
       throw error;
     }
     
-    console.log('Teacher message sent successfully');
+    console.log('Teacher message sent successfully, response:', data);
     return true;
   } catch (err) {
     console.error('Error sending teacher message:', err);
@@ -671,7 +673,7 @@ export const getTeacherMessagesForPresentation = async (
       return [];
     }
     
-    console.log(`Retrieved ${data?.length || 0} teacher messages`);
+    console.log(`Retrieved ${data?.length || 0} teacher messages:`, data);
     return data || [];
   } catch (err) {
     console.error('Exception fetching teacher messages:', err);
@@ -689,7 +691,9 @@ export const subscribeToTeacherMessages = (
     // Create a unique channel ID to prevent conflicts
     const channelId = `teacher_messages_${presentationId}_${Math.random().toString(36).substring(2, 9)}`;
     
-    const channel = supabase
+    console.log(`Creating realtime subscription channel: ${channelId}`);
+    
+    const subscription = supabase
       .channel(channelId)
       .on(
         'postgres_changes',
@@ -700,7 +704,7 @@ export const subscribeToTeacherMessages = (
           filter: `presentation_id=eq.${presentationId}`,
         },
         (payload) => {
-          console.log('Received new teacher message via subscription:', payload.new);
+          console.log('REALTIME: Received new teacher message via subscription:', payload);
           callback(payload.new as TeacherMessage);
         }
       )
@@ -711,7 +715,7 @@ export const subscribeToTeacherMessages = (
     return {
       unsubscribe: () => {
         console.log(`Unsubscribing from teacher messages channel ${channelId}`);
-        channel.unsubscribe();
+        subscription.unsubscribe();
       }
     };
   } catch (error) {

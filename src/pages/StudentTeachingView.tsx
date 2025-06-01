@@ -51,6 +51,7 @@ export function StudentTeachingView() {
   const messageToastRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioLoaded, setAudioLoaded] = useState(false);
+  const [isMessagePanelVisible, setIsMessagePanelVisible] = useState(false); // Debug state
 
   // Create audio element for notifications
   useEffect(() => {
@@ -107,7 +108,7 @@ export function StudentTeachingView() {
       try {
         console.log("Loading teacher messages for presentation:", presentation.id);
         const messages = await getTeacherMessagesForPresentation(presentation.id);
-        console.log("Loaded messages:", messages.length);
+        console.log("Loaded messages:", messages);
         
         if (messages && Array.isArray(messages)) {
           setAllMessages(messages);
@@ -167,20 +168,23 @@ export function StudentTeachingView() {
     const messageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
-        console.log("Received new teacher message:", newMessage);
+        console.log("DEBUG: Received new teacher message:", newMessage);
         
         // Add message to the messages array
         setAllMessages(prevMessages => {
           // Check if this message is already in the array to prevent duplicates
           const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
           if (isDuplicate) {
+            console.log("DEBUG: Duplicate message detected, skipping");
             return prevMessages;
           }
+          console.log("DEBUG: Adding new message to state", newMessage);
           return [...prevMessages, newMessage];
         });
         
         // Show toast notification
         setTeacherMessage(newMessage);
+        console.log("DEBUG: Set teacher message for toast", newMessage);
         
         // Play notification sound
         if (audioRef.current && audioLoaded) {
@@ -200,11 +204,6 @@ export function StudentTeachingView() {
           console.warn("Audio element not ready yet");
         }
         
-        // Clear toast after 5 seconds
-        setTimeout(() => {
-          setTeacherMessage(null);
-        }, 5000);
-        
         // Increment new message counter if panel is not open
         if (!showMessagePanel) {
           setNewMessageCount(count => count + 1);
@@ -222,6 +221,11 @@ export function StudentTeachingView() {
   useEffect(() => {
     if (showMessagePanel) {
       setNewMessageCount(0);
+      setIsMessagePanelVisible(true); // Debug: confirm panel visibility
+      console.log("DEBUG: Message panel opened, resetting count and setting visible flag");
+    } else {
+      setIsMessagePanelVisible(false); // Debug: confirm panel visibility
+      console.log("DEBUG: Message panel closed, setting visible flag to false");
     }
   }, [showMessagePanel]);
 
@@ -315,24 +319,33 @@ export function StudentTeachingView() {
 
     try {
       console.log("Submitting question:", question);
-      await submitTeachingQuestion(
+      const success = await submitTeachingQuestion(
         presentation.id,
         studentName,
         question.trim()
       );
 
-      setQuestion('');
-      setShowSuccessMessage(true);
+      console.log("Question submission result:", success);
+      
+      if (success) {
+        setQuestion('');
+        setShowSuccessMessage(true);
 
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 2000);
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 2000);
+      } else {
+        console.error("Failed to submit question");
+        setError("Failed to submit question. Please try again.");
+      }
     } catch (err) {
       console.error('Error submitting question:', err);
+      setError('Error submitting question. Please try again.');
     }
   };
 
   const toggleMessagePanel = () => {
+    console.log("DEBUG: Toggling message panel, current state:", showMessagePanel);
     setShowMessagePanel(!showMessagePanel);
     if (!showMessagePanel) {
       setNewMessageCount(0);
@@ -469,17 +482,17 @@ export function StudentTeachingView() {
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
           {/* Success Message Toast */}
           {showSuccessMessage && (
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2 animate-fade-in-out">
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5" />
               <span>Successfully sent to teacher!</span>
             </div>
           )}
 
-          {/* Teacher Message Toast */}
+          {/* Teacher Message Toast - Removed animation for debugging */}
           {teacherMessage && (
             <div 
               ref={messageToastRef}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm animate-fade-in-out"
+              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm"
             >
               <MessageSquareText className="h-6 w-6 flex-shrink-0" />
               <div>
@@ -494,6 +507,15 @@ export function StudentTeachingView() {
               </div>
             </div>
           )}
+
+          {/* Debug information - for development only */}
+          <div className="bg-red-50 p-3 mb-4 rounded-md text-sm">
+            <p>DEBUG INFO:</p>
+            <p>Messages Count: {allMessages.length}</p>
+            <p>Message Panel Visible: {isMessagePanelVisible ? 'Yes' : 'No'}</p>
+            <p>New Message Count: {newMessageCount}</p>
+            <p>Current Card Index: {presentation.current_card_index}</p>
+          </div>
 
           <div className="flex justify-between items-center lg:hidden">
             <Button
