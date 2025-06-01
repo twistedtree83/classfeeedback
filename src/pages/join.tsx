@@ -1,53 +1,30 @@
-import React, { useState } from 'react';
-import { JoinSessionForm } from '../components/JoinSessionForm';
-import { FeedbackButtons } from '../components/FeedbackButtons';
-import { BookOpen, ArrowLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 export function JoinPage() {
-  const [sessionInfo, setSessionInfo] = useState<{ code: string; studentName: string } | null>(null);
+  const navigate = useNavigate();
 
-  const handleJoinSession = (code: string, studentName: string) => {
-    setSessionInfo({ code, studentName });
-  };
+  // Redirect to the new student view
+  React.useEffect(() => {
+    navigate('/student');
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center">
-          {!sessionInfo ? (
-            <>
-              <div className="w-full max-w-md mb-4 flex justify-start">
-                <Link to="/\" className="text-indigo-600 hover:text-indigo-800 flex items-center">
-                  <ArrowLeft size={16} className="mr-1" />
-                  Back to Teacher View
-                </Link>
-              </div>
-              <JoinSessionForm onJoinSession={handleJoinSession} />
-            </>
-          ) : (
-            <>
-              <div className="w-full max-w-md mb-8 bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-gray-500">Joined as</div>
-                  <div className="font-medium">{sessionInfo.studentName}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Class Code</div>
-                  <div className="font-mono font-medium">{sessionInfo.code}</div>
-                </div>
-              </div>
-              
-              <FeedbackButtons 
-                sessionCode={sessionInfo.code} 
-                studentName={sessionInfo.studentName}
-              />
-              
-              <p className="mt-8 text-center text-gray-500">
-                Your feedback is sent anonymously to the teacher in real-time.
-              </p>
-            </>
-          )}
+          <div className="w-full max-w-md mb-4 flex justify-start">
+            <Link to="/" className="text-indigo-600 hover:text-indigo-800 flex items-center">
+              <ArrowLeft size={16} className="mr-1" />
+              Back to Teacher View
+            </Link>
+          </div>
+          <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

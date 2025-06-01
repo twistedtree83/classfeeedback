@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Users, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, BarChart3, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ParticipantsList } from '../components/ParticipantsList';
+import { TeachingFeedbackPanel } from '../components/TeachingFeedbackPanel';
 import { 
   getLessonPresentationByCode,
   updateLessonPresentationCardIndex,
@@ -18,6 +19,7 @@ export function TeachingModePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showParticipants, setShowParticipants] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     const loadPresentation = async () => {
@@ -55,16 +57,12 @@ export function TeachingModePage() {
   const handleNext = async () => {
     if (!presentation || presentation.current_card_index >= presentation.cards.length - 1) return;
     
-    console.log('Moving to next card:', presentation.current_card_index + 1);
     const newIndex = presentation.current_card_index + 1;
     const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
     
     if (success) {
-      console.log('Successfully updated card index');
       setPresentation({ ...presentation, current_card_index: newIndex });
       setCurrentCard(presentation.cards[newIndex]);
-    } else {
-      console.error('Failed to update card index');
     }
   };
 
@@ -110,10 +108,18 @@ export function TeachingModePage() {
                 {presentation.session_code}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <Button
-                variant="outline"
+                variant={showFeedback ? "primary" : "outline"}
+                onClick={() => setShowFeedback(!showFeedback)}
+                size="sm"
+              >
+                <BarChart3 className="h-5 w-5" />
+              </Button>
+              <Button
+                variant={showParticipants ? "primary" : "outline"}
                 onClick={() => setShowParticipants(!showParticipants)}
+                size="sm"
               >
                 <Users className="h-5 w-5" />
               </Button>
@@ -130,8 +136,9 @@ export function TeachingModePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className={`lg:col-span-${showParticipants ? '3' : '4'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Main content area */}
+          <div className={`lg:col-span-${showParticipants || showFeedback ? '8' : '12'}`}>
             <div className="bg-white rounded-xl shadow-lg p-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -142,8 +149,15 @@ export function TeachingModePage() {
                 )}
               </div>
 
-              <div className="prose max-w-none mb-8">
-                {currentCard.content}
+              <div className="prose max-w-none mb-8 whitespace-pre-wrap">
+                {typeof currentCard.content === 'string' ? 
+                  currentCard.content.split('\n').map((line, i) => (
+                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                  )) : 
+                  (currentCard.content as string[]).map((line, i) => (
+                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                  ))
+                }
               </div>
 
               <div className="flex justify-between items-center">
@@ -167,11 +181,28 @@ export function TeachingModePage() {
                 </Button>
               </div>
             </div>
+            
+            {/* Student join instructions */}
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+              <h3 className="font-bold mb-2">Student Join Instructions</h3>
+              <p>
+                Students can join this session by visiting{' '}
+                <span className="font-medium">/student?code={presentation.session_code}</span>{' '}
+                or by entering the code: <strong>{presentation.session_code}</strong>
+              </p>
+            </div>
           </div>
 
-          {showParticipants && (
-            <div className="lg:col-span-1">
-              <ParticipantsList sessionCode={presentation.session_code} />
+          {/* Sidebar panels */}
+          {(showParticipants || showFeedback) && (
+            <div className="lg:col-span-4 space-y-6">
+              {showFeedback && (
+                <TeachingFeedbackPanel presentationId={presentation.id} />
+              )}
+              
+              {showParticipants && (
+                <ParticipantsList sessionCode={presentation.session_code} />
+              )}
             </div>
           )}
         </div>
