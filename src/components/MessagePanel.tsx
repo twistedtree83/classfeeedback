@@ -14,17 +14,13 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   
   // Debug logging to verify props
-  console.log("MessagePanel render:", { 
-    isOpen, 
-    messagesCount: messages.length, 
-    firstMessage: messages[0]?.message_content?.substring(0, 20)
-  });
-
   useEffect(() => {
-    if (isOpen) {
-      console.log("MessagePanel opened with", messages.length, "messages");
-    }
-  }, [isOpen, messages.length]);
+    console.log("MessagePanel mounted/updated:", { 
+      isOpen, 
+      messagesCount: messages.length, 
+      messages: messages
+    });
+  }, [isOpen, messages]);
 
   if (!isOpen) {
     return null;
