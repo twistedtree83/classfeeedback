@@ -48,6 +48,7 @@ export function StudentTeachingView() {
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  const messageToastRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -73,8 +74,15 @@ export function StudentTeachingView() {
       if (!presentation?.id) return;
 
       try {
+        console.log("Loading teacher messages for presentation:", presentation.id);
         const messages = await getTeacherMessagesForPresentation(presentation.id);
-        setAllMessages(messages);
+        console.log("Loaded messages:", messages);
+        setAllMessages(messages || []);
+        
+        // If there are unread messages, set the count
+        if (messages && messages.length > 0) {
+          setNewMessageCount(messages.length);
+        }
       } catch (err) {
         console.error('Error loading teacher messages:', err);
       }
@@ -105,14 +113,36 @@ export function StudentTeachingView() {
       }
     );
 
+    return () => {
+      presentationSubscription.unsubscribe();
+    };
+  }, [presentation?.session_code, presentation?.current_card_index, joined]);
+
+  // Separate subscription for teacher messages
+  useEffect(() => {
+    if (!presentation?.id || !joined) return;
+    
+    console.log("Setting up teacher message subscription for presentation:", presentation.id);
     const teacherMessageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
+        console.log("Received new teacher message:", newMessage);
+        
         // Add message to the messages array
         setAllMessages(prevMessages => [...prevMessages, newMessage]);
         
         // Show toast notification
         setTeacherMessage(newMessage);
+        
+        // Play a notification sound
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.log("Audio play prevented by browser policy"));
+        } catch (err) {
+          console.error("Error playing notification sound:", err);
+        }
+        
+        // Clear toast after 5 seconds
         setTimeout(() => {
           setTeacherMessage(null);
         }, 5000);
@@ -125,10 +155,10 @@ export function StudentTeachingView() {
     );
 
     return () => {
-      presentationSubscription.unsubscribe();
+      console.log("Unsubscribing from teacher messages");
       teacherMessageSubscription.unsubscribe();
     };
-  }, [presentation?.session_code, presentation?.id, presentation?.current_card_index, joined, showMessagePanel]);
+  }, [presentation?.id, joined, showMessagePanel]);
 
   // Reset new message count when opening the message panel
   useEffect(() => {
@@ -369,6 +399,7 @@ export function StudentTeachingView() {
 
       <main className="flex-grow overflow-auto">
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+          {/* Success Message Toast */}
           {showSuccessMessage && (
             <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2 animate-fade-in-out">
               <CheckCircle2 className="h-5 w-5" />
@@ -376,8 +407,12 @@ export function StudentTeachingView() {
             </div>
           )}
 
+          {/* Teacher Message Toast */}
           {teacherMessage && (
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 animate-fade-in-out max-w-sm">
+            <div 
+              ref={messageToastRef}
+              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm animate-fade-in-out"
+            >
               <MessageSquareText className="h-6 w-6 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Message from {teacherMessage.teacher_name}:</p>

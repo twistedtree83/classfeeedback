@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatTime } from '../lib/utils';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, X } from 'lucide-react';
 import type { TeacherMessage } from '../lib/types';
 
 interface MessagePanelProps {
@@ -13,7 +13,7 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg transform transition-transform z-40 overflow-hidden flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-40 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-indigo-600" />
@@ -22,10 +22,9 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
         <button 
           onClick={onClose}
           className="p-1 rounded-full hover:bg-gray-100"
+          aria-label="Close messages panel"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-5 w-5 text-gray-500" />
         </button>
       </div>
       

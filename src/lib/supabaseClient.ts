@@ -616,6 +616,12 @@ export const sendTeacherMessage = async (
   messageContent: string
 ): Promise<boolean> => {
   try {
+    console.log('Sending teacher message:', {
+      presentation_id: presentationId,
+      teacher_name: teacherName,
+      message_content: messageContent
+    });
+    
     const { error } = await supabase
       .from('teacher_messages')
       .insert([{
@@ -624,7 +630,12 @@ export const sendTeacherMessage = async (
         message_content: messageContent
       }]);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting teacher message:', error);
+      throw error;
+    }
+    
+    console.log('Teacher message sent successfully');
     return true;
   } catch (err) {
     console.error('Error sending teacher message:', err);
@@ -636,6 +647,7 @@ export const getTeacherMessagesForPresentation = async (
   presentationId: string
 ): Promise<TeacherMessage[]> => {
   try {
+    console.log('Fetching teacher messages for presentation:', presentationId);
     const { data, error } = await supabase
       .from('teacher_messages')
       .select('*')
@@ -647,6 +659,7 @@ export const getTeacherMessagesForPresentation = async (
       return [];
     }
     
+    console.log(`Retrieved ${data?.length || 0} teacher messages`);
     return data || [];
   } catch (err) {
     console.error('Exception fetching teacher messages:', err);
@@ -658,6 +671,8 @@ export const subscribeToTeacherMessages = (
   presentationId: string,
   callback: (message: TeacherMessage) => void
 ) => {
+  console.log('Setting up subscription for teacher messages on presentation:', presentationId);
+  
   return supabase
     .channel('teacher_messages_channel')
     .on(
@@ -668,7 +683,12 @@ export const subscribeToTeacherMessages = (
         table: 'teacher_messages',
         filter: `presentation_id=eq.${presentationId}`,
       },
-      (payload) => callback(payload.new as TeacherMessage)
+      (payload) => {
+        console.log('Received new teacher message via subscription:', payload.new);
+        callback(payload.new as TeacherMessage);
+      }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('Teacher messages subscription status:', status);
+    });
 };
