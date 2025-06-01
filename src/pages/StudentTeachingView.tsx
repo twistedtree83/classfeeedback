@@ -27,7 +27,8 @@ import {
   BookOpen,
   MessageSquareText,
   MessageSquare,
-  Bell
+  Bell,
+  X
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
