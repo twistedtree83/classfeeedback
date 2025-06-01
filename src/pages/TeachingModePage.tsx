@@ -137,7 +137,7 @@ export function TeachingModePage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main content area */}
+          {/* Main content area - adjust column span based on sidebar visibility */}
           <div className={`lg:col-span-${showParticipants || showFeedback ? '8' : '12'}`}>
             <div className="bg-white rounded-xl shadow-lg p-8">
               <div className="mb-6">
@@ -149,12 +149,13 @@ export function TeachingModePage() {
                 )}
               </div>
 
-              {/* Content area with proper width and formatting */}
-              <div className="mb-8 text-base text-gray-700">
+              {/* Content area with proper width and text formatting */}
+              <div className="mb-8 text-base text-gray-700 w-full">
                 {typeof currentCard.content === 'string' && 
                   currentCard.content.split('\n').map((line, i) => (
-                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                  ))}
+                    <p key={i} className="mb-4 leading-relaxed w-full">{line || '\u00A0'}</p>
+                  ))
+                }
               </div>
 
               <div className="flex justify-between items-center">
