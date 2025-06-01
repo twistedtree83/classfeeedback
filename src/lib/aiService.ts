@@ -36,6 +36,23 @@ interface AIResponse {
   }[];
 }
 
+/**
+ * Converts plaintext URLs in a string to HTML hyperlinks
+ */
+function convertUrlsToHyperlinks(text: string): string {
+  if (!text) return text;
+  
+  // Regex to match URLs (handles http, https, ftp, www)
+  const urlRegex = /(https?:\/\/|www\.)[^\s<>]+\.[^\s<>]+/g;
+  
+  // Replace URLs with hyperlinks
+  return text.replace(urlRegex, (url) => {
+    // Add protocol if missing
+    const href = url.startsWith('www.') ? `https://${url}` : url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline">${url}</a>`;
+  });
+}
+
 export async function aiAnalyzeLesson(content: string, level: string = ''): Promise<AIResponse> {
   try {
     // Get the API key from environment variables
@@ -93,19 +110,19 @@ function validateAndCleanResponse(response: any, level: string = ''): AIResponse
   // Ensure all required fields exist
   const cleaned: AIResponse = {
     title: response.title || 'Untitled Lesson',
-    summary: response.summary || 'No summary provided',
+    summary: convertUrlsToHyperlinks(response.summary || 'No summary provided'),
     duration: response.duration || '60 minutes',
     level: response.level || level || 'All Levels',
     objectives: Array.isArray(response.objectives) ? response.objectives : [],
     materials: Array.isArray(response.materials) ? response.materials : [],
-    topic_background: response.topic_background || generateDefaultTopicBackground(response.title, level),
+    topic_background: convertUrlsToHyperlinks(response.topic_background || generateDefaultTopicBackground(response.title, level)),
     sections: Array.isArray(response.sections) ? response.sections.map((section: any, index: number) => ({
       id: section.id || String(index + 1),
       title: section.title || `Section ${index + 1}`,
       duration: section.duration || '15 minutes',
-      content: section.content || 'No content provided',
+      content: convertUrlsToHyperlinks(section.content || 'No content provided'),
       activities: Array.isArray(section.activities) ? section.activities : [],
-      assessment: section.assessment || 'Monitor student progress and understanding'
+      assessment: convertUrlsToHyperlinks(section.assessment || 'Monitor student progress and understanding')
     })) : []
   };
 
@@ -222,7 +239,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
       return defaultStudentFriendlyContent(content, cardType);
     }
 
-    return data.choices[0].message.content.trim();
+    return convertUrlsToHyperlinks(data.choices[0].message.content.trim());
   } catch (error) {
     console.error('Error making content student-friendly:', error);
     return defaultStudentFriendlyContent(content, cardType);
@@ -367,7 +384,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
       return defaultDifferentiatedContent(content, cardType);
     }
 
-    return data.choices[0].message.content.trim();
+    return convertUrlsToHyperlinks(data.choices[0].message.content.trim());
   } catch (error) {
     console.error('Error generating differentiated content:', error);
     return defaultDifferentiatedContent(content, cardType);

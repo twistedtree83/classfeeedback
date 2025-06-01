@@ -2,6 +2,7 @@ import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
 import { Clock, FileText, List, Target, CheckSquare, Plus, GraduationCap, BookOpen } from 'lucide-react';
 import { Button } from './ui/Button';
+import { sanitizeHtml } from '../lib/utils';
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
@@ -14,7 +15,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{lesson.title}</h2>
         
-        <p className="text-gray-700 mb-4">{lesson.summary}</p>
+        <p className="text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.summary) }}></p>
         
         <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-2">
           <div className="flex items-center">
@@ -87,9 +88,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
             <h3 className="text-lg font-semibold">Topic Background</h3>
           </div>
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 text-gray-700">
-              {lesson.topic_background}
-            </div>
+            <div 
+              className="p-4 bg-blue-50 rounded-lg border border-blue-100 text-gray-700"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.topic_background) }}
+            ></div>
             {onAddToTeaching && (
               <Button
                 variant="outline"
@@ -153,7 +155,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                 </h4>
                 <span className="text-sm text-gray-500">{section.duration}</span>
               </div>
-              <p className="text-gray-600 mb-4">{section.content}</p>
+              <div 
+                className="text-gray-600 mb-4"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }}
+              ></div>
               {onAddToTeaching && (
                 <Button
                   variant="outline"
@@ -203,7 +208,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                     <CheckSquare className="h-4 w-4 mr-2" />
                     <h5 className="font-medium">Assessment</h5>
                   </div>
-                  <p className="text-gray-600">{section.assessment}</p>
+                  <div 
+                    className="text-gray-600"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.assessment) }}
+                  ></div>
                 </div>
               )}
             </div>

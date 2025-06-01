@@ -57,3 +57,18 @@ export function groupFeedbackByType(feedback: Array<{ value: string }>) {
   
   return counts;
 }
+
+/**
+ * Sanitizes HTML to prevent XSS attacks
+ * Basic implementation - for production, use a library like DOMPurify
+ */
+export function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  
+  // Remove potentially dangerous tags and attributes
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/g, '')
+    .replace(/on\w+='[^']*'/g, '')
+    .replace(/on\w+=\w+/g, '');
+}

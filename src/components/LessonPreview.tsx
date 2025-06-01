@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
 import { Clock, Target, FileText, GraduationCap, BookOpen, CheckSquare } from 'lucide-react';
+import { sanitizeHtml } from '../lib/utils';
 
 interface LessonPreviewProps {
   lesson: ProcessedLesson;
@@ -57,9 +58,10 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
             <BookOpen className="w-5 h-5 text-indigo-600 mr-2" />
             <h3 className="font-semibold text-gray-900">Topic Background</h3>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg text-gray-700 text-sm">
-            {lesson.topic_background}
-          </div>
+          <div 
+            className="p-3 bg-blue-50 rounded-lg text-gray-700 text-sm"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.topic_background) }}
+          ></div>
         </div>
       )}
 
@@ -82,7 +84,10 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
               <h4 className="font-medium text-gray-900">{section.title}</h4>
               <span className="text-sm text-gray-500">{section.duration}</span>
             </div>
-            <p className="text-gray-700 mb-3">{section.content}</p>
+            <div 
+              className="text-gray-700 mb-3"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.content) }}
+            ></div>
             {section.activities.length > 0 && (
               <div>
                 <h5 className="font-medium text-gray-900 mb-2">Activities</h5>
