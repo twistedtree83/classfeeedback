@@ -61,9 +61,9 @@ export function StudentView() {
   // Extract code from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const codeFromUrl = params.get('code');
-    if (codeFromUrl) {
-      setSessionCode(codeFromUrl.toUpperCase());
+    const codeParam = params.get('code');
+    if (codeParam) {
+      setSessionCode(codeParam.toUpperCase());
     }
   }, [location]);
 
@@ -270,17 +270,21 @@ export function StudentView() {
 
   const handleSendQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!question.trim() || !presentation?.id || !studentName || isSendingFeedback) return;
     
     setIsSendingFeedback(true);
     setError('');
     
     try {
+      console.log("Submitting question:", question);
       const success = await submitTeachingQuestion(
         presentation.id,
         studentName,
         question.trim()
       );
+
+      console.log("Question submission result:", success);
       
       if (success) {
         setQuestion('');
@@ -288,10 +292,10 @@ export function StudentView() {
         setSuccessMessage('Question sent successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        setError('Failed to send question. Please try again.');
+        setError('Failed to submit question. Please try again.');
       }
     } catch (err) {
-      console.error('Error sending question:', err);
+      console.error('Error submitting question:', err);
       setError('An error occurred. Please try again.');
     } finally {
       setIsSendingFeedback(false);
@@ -305,11 +309,14 @@ export function StudentView() {
     setError('');
     
     try {
+      console.log("Submitting teaching feedback:", feedbackType);
       const success = await submitTeachingFeedback(
         presentation.id,
         studentName,
         feedbackType
       );
+      
+      console.log("Teaching feedback result:", success);
       
       if (success) {
         setSuccessMessage('Feedback sent!');
@@ -377,26 +384,26 @@ export function StudentView() {
   // Render join form
   if (step === 'join') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <main className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="flex justify-center mb-6">
               <BookOpen className="h-12 w-12 text-indigo-600" />
             </div>
-            
-            <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
+
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Join Classroom Session
-            </h1>
-            
-            <form onSubmit={handleJoinSession} className="space-y-6">
+            </h2>
+
+            <form onSubmit={handleJoinSession} className="space-y-5">
               <Input
-                label="Class Code"
+                label="Session Code"
                 value={sessionCode}
                 onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
                 placeholder="Enter 6-character code"
                 maxLength={6}
                 disabled={isJoining}
-                className="uppercase"
+                className="uppercase text-lg tracking-wide"
                 autoFocus
               />
 
@@ -404,27 +411,28 @@ export function StudentView() {
                 label="Your Name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Enter your name or leave blank for random name"
+                placeholder="Enter your name"
                 disabled={isJoining}
               />
 
               {error && (
-                <div className="p-3 rounded-lg bg-red-100 text-red-800 text-center">
-                  {error}
+                <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
+                  <HelpCircle className="h-5 w-5 flex-shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
               <Button
                 type="submit"
-                disabled={isJoining || !sessionCode.trim()}
+                disabled={isJoining || !sessionCode.trim() || !studentName.trim()}
                 className="w-full"
                 size="lg"
               >
-                {isJoining ? 'Joining...' : 'Join Session'}
+                {isJoining ? 'Joining...' : 'Join Lesson'}
               </Button>
             </form>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
@@ -510,12 +518,12 @@ export function StudentView() {
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white shadow-sm py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-sm text-gray-500">Joined as</span>
-              <h1 className="text-lg font-medium">{studentName}</h1>
+      <header className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center gap-2">
+              <User size={18} className="text-indigo-600" />
+              <span className="font-medium">{studentName}</span>
             </div>
             <div className="flex items-center space-x-4">
               <button

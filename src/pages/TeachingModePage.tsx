@@ -72,7 +72,7 @@ export function TeachingModePage() {
         setActualCardIndex(presentationData.current_card_index);
         
         // Set current card based on the welcome card status
-        updateCurrentCardDisplay(presentationData, 0);
+        updateCurrentCardDisplay(presentationData, 0, participantsData);
       } catch (err) {
         console.error('Error loading presentation or session:', err);
         setError(err instanceof Error ? err.message : 'Failed to load presentation');
@@ -91,6 +91,7 @@ export function TeachingModePage() {
     const subscription = subscribeToSessionParticipants(
       code,
       (newParticipant) => {
+        console.log("New participant joined:", newParticipant);
         setParticipants(prev => [...prev, newParticipant]);
       }
     );
@@ -99,6 +100,13 @@ export function TeachingModePage() {
       subscription.unsubscribe();
     };
   }, [code]);
+
+  // Update welcome card when participants change
+  useEffect(() => {
+    if (displayedCardIndex === 0 && presentation) {
+      updateCurrentCardDisplay(presentation, 0, participants);
+    }
+  }, [participants, displayedCardIndex, presentation]);
 
   useEffect(() => {
     if (!presentation?.id) return;
@@ -124,20 +132,22 @@ export function TeachingModePage() {
   }, [showFeedback]);
 
   // Create a welcome card that shows the lesson title and participants
-  const createWelcomeCard = (): LessonCard => {
+  const createWelcomeCard = (participantsList: SessionParticipant[]): LessonCard => {
+    const participantsContent = participantsList.length > 0 
+      ? participantsList.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
+      : 'No students have joined yet.';
+
     return {
       id: 'welcome-card',
       type: 'custom',
       title: `Welcome to: ${lessonTitle}`,
       content: `
-## ${lessonTitle}
+## ${lessonTitle || 'Lesson Presentation'}
 
 This is the welcome screen for your lesson. Students can join using the code: **${code}**
 
 ### Students who have joined:
-${participants.length > 0 
-  ? participants.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
-  : 'No students have joined yet.'}
+${participantsContent}
 
 Click "Next" to begin your lesson presentation.
       `,
@@ -148,10 +158,10 @@ Click "Next" to begin your lesson presentation.
   };
 
   // Update the current card based on displayedCardIndex
-  const updateCurrentCardDisplay = (presentationData: LessonPresentation, index: number) => {
+  const updateCurrentCardDisplay = (presentationData: LessonPresentation, index: number, participantsList: SessionParticipant[] = participants) => {
     if (index === 0) {
       // Show welcome card
-      setCurrentCard(createWelcomeCard());
+      setCurrentCard(createWelcomeCard(participantsList));
     } else {
       // Adjust index to account for welcome card
       const adjustedIndex = index - 1;
