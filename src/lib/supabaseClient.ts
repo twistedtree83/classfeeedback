@@ -38,6 +38,7 @@ export interface LessonPlan {
   title: string;
   processed_content: ProcessedLesson | null;
   created_at: string;
+  level?: string;
 }
 
 export interface LessonPresentation {
@@ -51,6 +52,28 @@ export interface LessonPresentation {
   created_at: string;
   realtime_enabled: boolean;
 }
+
+export const getLessonPlanById = async (
+  id: string
+): Promise<LessonPlan | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('lesson_plans')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching lesson plan:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception fetching lesson plan:', err);
+    return null;
+  }
+};
 
 export const createLessonPresentation = async (
   lessonId: string,
@@ -78,11 +101,15 @@ export const createLessonPresentation = async (
       return {
         id: card.id,
         type: card.type,
-        title: card.title,
+        title: String(card.title),
         content: String(card.content),
         duration: card.duration || null,
         sectionId: typeof card.sectionId === 'string' ? card.sectionId : null,
-        activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null
+        activityIndex: typeof card.activityIndex === 'number' ? card.activityIndex : null,
+        studentFriendly: card.studentFriendly || false,
+        originalContent: card.originalContent || null,
+        differentiatedContent: card.differentiatedContent || null,
+        isDifferentiated: card.isDifferentiated || false
       };
     });
 

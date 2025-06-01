@@ -29,7 +29,8 @@ import {
   MessageSquare,
   Bell,
   X,
-  Split
+  Split,
+  Loader2
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -326,7 +327,7 @@ export function StudentTeachingView() {
   const toggleDifferentiatedView = () => {
     setViewingDifferentiated(!viewingDifferentiated);
   };
-
+  
   const handleGenerateDifferentiated = async () => {
     if (!currentCard || generatingDifferentiated) return;
     

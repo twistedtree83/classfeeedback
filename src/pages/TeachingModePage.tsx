@@ -11,9 +11,13 @@ import {
   endLessonPresentation,
   subscribeToTeachingQuestions,
   getSessionByCode,
-  sendTeacherMessage
+  sendTeacherMessage,
+  getParticipantsForSession,
+  subscribeToSessionParticipants,
+  SessionParticipant,
+  getLessonPlanById
 } from '../lib/supabaseClient';
-import type { LessonPresentation, LessonCard } from '../lib/types';
+import type { LessonPresentation, LessonCard, ProcessedLesson } from '../lib/types';
 
 export function TeachingModePage() {
   const { code } = useParams<{ code: string }>();
@@ -28,22 +32,47 @@ export function TeachingModePage() {
   const [showSendMessageModal, setShowSendMessageModal] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [teacherName, setTeacherName] = useState<string>('');
+  const [participants, setParticipants] = useState<SessionParticipant[]>([]);
+  const [lessonTitle, setLessonTitle] = useState<string>('');
+  const [displayedCardIndex, setDisplayedCardIndex] = useState<number>(0);
+  const [actualCardIndex, setActualCardIndex] = useState<number>(0);
 
   useEffect(() => {
     const loadPresentationAndSession = async () => {
       if (!code) return;
 
       try {
+        // Get presentation data
         const presentationData = await getLessonPresentationByCode(code);
         if (!presentationData) throw new Error('Presentation not found');
 
+        // Get session data
         const sessionData = await getSessionByCode(code);
         if (sessionData) {
           setTeacherName(sessionData.teacher_name);
         }
 
+        // Get lesson data to get the title
+        if (presentationData.lesson_id) {
+          const lessonData = await getLessonPlanById(presentationData.lesson_id);
+          if (lessonData && lessonData.processed_content) {
+            setLessonTitle(lessonData.processed_content.title);
+          }
+        }
+
+        // Load initial participants
+        const participantsData = await getParticipantsForSession(code);
+        setParticipants(participantsData);
+
+        // Set presentation data
         setPresentation(presentationData);
-        setCurrentCard(presentationData.cards[presentationData.current_card_index]);
+        
+        // Default to displaying the welcome card (index -1 in our UI logic)
+        setDisplayedCardIndex(0);
+        setActualCardIndex(presentationData.current_card_index);
+        
+        // Set current card based on the welcome card status
+        updateCurrentCardDisplay(presentationData, 0);
       } catch (err) {
         console.error('Error loading presentation or session:', err);
         setError(err instanceof Error ? err.message : 'Failed to load presentation');
@@ -53,6 +82,22 @@ export function TeachingModePage() {
     };
 
     loadPresentationAndSession();
+  }, [code]);
+
+  // Subscribe to session participants
+  useEffect(() => {
+    if (!code) return;
+
+    const subscription = subscribeToSessionParticipants(
+      code,
+      (newParticipant) => {
+        setParticipants(prev => [...prev, newParticipant]);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [code]);
 
   useEffect(() => {
@@ -78,6 +123,44 @@ export function TeachingModePage() {
     }
   }, [showFeedback]);
 
+  // Create a welcome card that shows the lesson title and participants
+  const createWelcomeCard = (): LessonCard => {
+    return {
+      id: 'welcome-card',
+      type: 'custom',
+      title: `Welcome to: ${lessonTitle}`,
+      content: `
+## ${lessonTitle}
+
+This is the welcome screen for your lesson. Students can join using the code: **${code}**
+
+### Students who have joined:
+${participants.length > 0 
+  ? participants.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
+  : 'No students have joined yet.'}
+
+Click "Next" to begin your lesson presentation.
+      `,
+      duration: null,
+      sectionId: null,
+      activityIndex: null
+    };
+  };
+
+  // Update the current card based on displayedCardIndex
+  const updateCurrentCardDisplay = (presentationData: LessonPresentation, index: number) => {
+    if (index === 0) {
+      // Show welcome card
+      setCurrentCard(createWelcomeCard());
+    } else {
+      // Adjust index to account for welcome card
+      const adjustedIndex = index - 1;
+      if (presentationData.cards && adjustedIndex >= 0 && adjustedIndex < presentationData.cards.length) {
+        setCurrentCard(presentationData.cards[adjustedIndex]);
+      }
+    }
+  };
+
   const handleSendMessage = async (message: string) => {
     if (!presentation?.id || !teacherName) return false;
     setIsSendingMessage(true);
@@ -97,27 +180,48 @@ export function TeachingModePage() {
   };
 
   const handlePrevious = async () => {
-    if (!presentation || presentation.current_card_index <= 0) return;
+    if (!presentation || displayedCardIndex <= 0) return;
 
-    const newIndex = presentation.current_card_index - 1;
-    const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
+    const newDisplayIndex = displayedCardIndex - 1;
+    setDisplayedCardIndex(newDisplayIndex);
 
-    if (success) {
-      setPresentation({ ...presentation, current_card_index: newIndex });
-      setCurrentCard(presentation.cards[newIndex]);
+    // Only update database card index if we're moving between actual content cards
+    if (newDisplayIndex > 0) {
+      const newActualIndex = newDisplayIndex - 1;
+      setActualCardIndex(newActualIndex);
+      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+      
+      if (!success) {
+        console.error('Failed to update card index');
+      }
     }
+
+    updateCurrentCardDisplay(presentation, newDisplayIndex);
   };
 
   const handleNext = async () => {
-    if (!presentation || presentation.current_card_index >= presentation.cards.length - 1) return;
+    if (!presentation) return;
+    
+    // Calculate max index (adding 1 for welcome card)
+    const maxIndex = presentation.cards.length + 1;
+    
+    if (displayedCardIndex >= maxIndex - 1) return;
 
-    const newIndex = presentation.current_card_index + 1;
-    const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
+    const newDisplayIndex = displayedCardIndex + 1;
+    setDisplayedCardIndex(newDisplayIndex);
 
-    if (success) {
-      setPresentation({ ...presentation, current_card_index: newIndex });
-      setCurrentCard(presentation.cards[newIndex]);
+    // Only update database card index if we're moving between actual content cards
+    if (newDisplayIndex > 0) {
+      const newActualIndex = newDisplayIndex - 1;
+      setActualCardIndex(newActualIndex);
+      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+      
+      if (!success) {
+        console.error('Failed to update card index');
+      }
     }
+
+    updateCurrentCardDisplay(presentation, newDisplayIndex);
   };
 
   const handleEndSession = async () => {
@@ -148,6 +252,10 @@ export function TeachingModePage() {
       </div>
     );
   }
+
+  // Calculate progress based on displayedCardIndex
+  const totalCards = presentation.cards.length + 1; // +1 for welcome card
+  const progressPercentage = ((displayedCardIndex + 1) / totalCards) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -208,6 +316,14 @@ export function TeachingModePage() {
         {/* Main content */}
         <main className={`flex-1 overflow-auto p-6 ${(showParticipants || showFeedback) ? 'lg:pr-0' : ''}`}>
           <div className="max-w-4xl mx-auto">
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div 
+                className="bg-indigo-600 h-2 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            
             {/* Card container */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
               {/* Card header */}
@@ -218,6 +334,9 @@ export function TeachingModePage() {
                 {currentCard.duration && (
                   <p className="text-gray-500 mt-1">{currentCard.duration}</p>
                 )}
+                <div className="text-sm text-gray-500 mt-2">
+                  Card {displayedCardIndex + 1} of {totalCards}
+                </div>
               </div>
 
               {/* Card content */}
@@ -233,18 +352,18 @@ export function TeachingModePage() {
               <div className="border-t border-gray-100 bg-gray-50 p-4 flex justify-between items-center">
                 <Button
                   onClick={handlePrevious}
-                  disabled={presentation.current_card_index === 0}
+                  disabled={displayedCardIndex === 0}
                   variant="outline"
                 >
                   <ArrowLeft className="h-5 w-5 mr-2" />
                   Previous
                 </Button>
                 <span className="text-gray-500">
-                  {presentation.current_card_index + 1} / {presentation.cards.length}
+                  {displayedCardIndex + 1} / {totalCards}
                 </span>
                 <Button
                   onClick={handleNext}
-                  disabled={presentation.current_card_index === presentation.cards.length - 1}
+                  disabled={displayedCardIndex === totalCards - 1}
                 >
                   Next
                   <ArrowRight className="h-5 w-5 ml-2" />
