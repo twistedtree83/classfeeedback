@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -17,6 +17,11 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editDuration, setEditDuration] = useState('');
+
+  // Update local cards state when selectedCards changes from parent
+  useEffect(() => {
+    setCards(selectedCards);
+  }, [selectedCards]);
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -264,7 +269,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       </div>
       
       <div className="border-t pt-4">
-        <h3 className="font-medium mb-4">Card Sequence</h3>
+        <h3 className="font-medium mb-4">Card Sequence ({cards.length} cards)</h3>
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="cards">
             {(provided) => (
