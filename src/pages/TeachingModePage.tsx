@@ -96,8 +96,9 @@ export function TeachingModePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
@@ -135,30 +136,34 @@ export function TeachingModePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main content area - adjust column span based on sidebar visibility */}
-          <div className={`lg:col-span-${showParticipants || showFeedback ? '8' : '12'}`}>
-            <div className="bg-white rounded-xl shadow-lg p-8 w-full">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+      {/* Main content area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Main content */}
+        <main className={`flex-1 overflow-auto p-6 ${(showParticipants || showFeedback) ? 'lg:pr-0' : ''}`}>
+          <div className="max-w-4xl mx-auto">
+            {/* Card container */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+              {/* Card header */}
+              <div className="border-b border-gray-100 p-6">
+                <h2 className="text-2xl font-bold text-gray-900">
                   {currentCard.title}
                 </h2>
                 {currentCard.duration && (
-                  <p className="text-gray-500">{currentCard.duration}</p>
+                  <p className="text-gray-500 mt-1">{currentCard.duration}</p>
                 )}
               </div>
-
-              {/* Content area with proper width and text formatting */}
-              <div className="mb-8 text-base text-gray-700 w-full">
+              
+              {/* Card content */}
+              <div className="p-6">
                 {typeof currentCard.content === 'string' && 
                   currentCard.content.split('\n').map((line, i) => (
-                    <p key={i} className="mb-4 leading-relaxed w-full">{line || '\u00A0'}</p>
+                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                   ))
                 }
               </div>
-
-              <div className="flex justify-between items-center">
+              
+              {/* Card navigation */}
+              <div className="border-t border-gray-100 bg-gray-50 p-4 flex justify-between items-center">
                 <Button
                   onClick={handlePrevious}
                   disabled={presentation.current_card_index === 0}
@@ -181,7 +186,7 @@ export function TeachingModePage() {
             </div>
             
             {/* Student join instructions */}
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
               <h3 className="font-bold mb-2">Student Join Instructions</h3>
               <p>
                 Students can join this session by visiting{' '}
@@ -190,10 +195,12 @@ export function TeachingModePage() {
               </p>
             </div>
           </div>
-
-          {/* Sidebar panels */}
-          {(showParticipants || showFeedback) && (
-            <div className="lg:col-span-4 space-y-6">
+        </main>
+        
+        {/* Sidebar */}
+        {(showParticipants || showFeedback) && (
+          <aside className="hidden lg:block w-96 border-l border-gray-200 bg-white overflow-y-auto">
+            <div className="p-4 space-y-6">
               {showFeedback && (
                 <TeachingFeedbackPanel presentationId={presentation.id} />
               )}
@@ -202,9 +209,9 @@ export function TeachingModePage() {
                 <ParticipantsList sessionCode={presentation.session_code} />
               )}
             </div>
-          )}
-        </div>
-      </main>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
