@@ -13,7 +13,7 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-40 overflow-hidden flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-50 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-indigo-600" />
@@ -42,7 +42,7 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
                   <span className="font-medium text-blue-800">{message.teacher_name}</span>
                   <span className="text-xs text-gray-500">{formatTime(message.created_at)}</span>
                 </div>
-                <p className="text-gray-800">{message.message_content}</p>
+                <p className="text-gray-800 break-words">{message.message_content}</p>
               </div>
             ))}
           </div>

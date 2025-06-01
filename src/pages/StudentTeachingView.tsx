@@ -49,6 +49,17 @@ export function StudentTeachingView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Create audio element for notifications
+  useEffect(() => {
+    audioRef.current = new Audio('/notification.mp3');
+    return () => {
+      if (audioRef.current) {
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -77,11 +88,15 @@ export function StudentTeachingView() {
         console.log("Loading teacher messages for presentation:", presentation.id);
         const messages = await getTeacherMessagesForPresentation(presentation.id);
         console.log("Loaded messages:", messages);
-        setAllMessages(messages || []);
-        
-        // If there are unread messages, set the count
-        if (messages && messages.length > 0) {
-          setNewMessageCount(messages.length);
+        if (messages && Array.isArray(messages)) {
+          setAllMessages(messages);
+          
+          // If there are unread messages, set the count
+          if (messages.length > 0) {
+            setNewMessageCount(messages.length);
+          }
+        } else {
+          console.error("Unexpected messages format:", messages);
         }
       } catch (err) {
         console.error('Error loading teacher messages:', err);
@@ -96,9 +111,11 @@ export function StudentTeachingView() {
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
 
+    console.log("Setting up presentation subscription for code:", presentation.session_code);
     const presentationSubscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
+        console.log("Received presentation update:", updatedPresentation);
         getLessonPresentationByCode(presentation.session_code)
           .then(fullPresentation => {
             if (fullPresentation) {
@@ -114,6 +131,7 @@ export function StudentTeachingView() {
     );
 
     return () => {
+      console.log("Cleaning up presentation subscription");
       presentationSubscription.unsubscribe();
     };
   }, [presentation?.session_code, presentation?.current_card_index, joined]);
@@ -126,20 +144,24 @@ export function StudentTeachingView() {
     const teacherMessageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
-        console.log("Received new teacher message:", newMessage);
+        console.log("Received new teacher message via subscription:", newMessage);
         
         // Add message to the messages array
-        setAllMessages(prevMessages => [...prevMessages, newMessage]);
+        setAllMessages(prevMessages => {
+          // Check if this message is already in the array to prevent duplicates
+          const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
+          if (isDuplicate) {
+            return prevMessages;
+          }
+          return [...prevMessages, newMessage];
+        });
         
         // Show toast notification
         setTeacherMessage(newMessage);
         
         // Play a notification sound
-        try {
-          const audio = new Audio('/notification.mp3');
-          audio.play().catch(e => console.log("Audio play prevented by browser policy"));
-        } catch (err) {
-          console.error("Error playing notification sound:", err);
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.log("Audio play prevented by browser policy"));
         }
         
         // Clear toast after 5 seconds
@@ -184,11 +206,13 @@ export function StudentTeachingView() {
     setError(null);
 
     try {
+      console.log("Joining session with code:", sessionCode.trim().toUpperCase());
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
       if (!session) {
         throw new Error('Session not found or has ended');
       }
 
+      console.log("Session found:", session);
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
         studentName.trim()
@@ -198,11 +222,13 @@ export function StudentTeachingView() {
         throw new Error('Failed to join session');
       }
 
+      console.log("Added as participant:", participant);
       const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
       if (!presentationData) {
         throw new Error('Presentation not found');
       }
 
+      console.log("Presentation data retrieved:", presentationData);
       setPresentation(presentationData);
       setJoined(true);
 
@@ -223,6 +249,7 @@ export function StudentTeachingView() {
     setFeedbackCooldown(true);
 
     try {
+      console.log("Submitting feedback:", type);
       await submitTeachingFeedback(
         presentation.id,
         studentName,
@@ -250,6 +277,7 @@ export function StudentTeachingView() {
     if (!presentation || !question.trim()) return;
 
     try {
+      console.log("Submitting question:", question);
       await submitTeachingQuestion(
         presentation.id,
         studentName,
@@ -269,6 +297,9 @@ export function StudentTeachingView() {
 
   const toggleMessagePanel = () => {
     setShowMessagePanel(!showMessagePanel);
+    if (!showMessagePanel) {
+      setNewMessageCount(0);
+    }
   };
 
   if (loading) {
@@ -581,13 +612,8 @@ export function StudentTeachingView() {
         </div>
       </main>
 
-      {/* Message Panel Overlay */}
-      {showMessagePanel && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-25 z-30"
-          onClick={() => setShowMessagePanel(false)}
-        ></div>
-      )}
+      {/* Hidden audio element for notifications */}
+      <audio id="notification-sound" src="/notification.mp3" preload="auto" />
 
       {/* Message Panel */}
       <MessagePanel

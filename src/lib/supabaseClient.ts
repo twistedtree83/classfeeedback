@@ -40,6 +40,18 @@ export interface LessonPlan {
   created_at: string;
 }
 
+export interface LessonPresentation {
+  id: string;
+  lesson_id: string;
+  session_code: string;
+  session_id: string;
+  current_card_index: number;
+  cards: LessonCard[];
+  active: boolean;
+  created_at: string;
+  realtime_enabled: boolean;
+}
+
 export const createLessonPresentation = async (
   lessonId: string,
   cards: LessonCard[],
