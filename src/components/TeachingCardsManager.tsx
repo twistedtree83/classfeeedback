@@ -531,27 +531,6 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         )}
                       </button>
                     )}
-                  </>
-                )}
-                {isEditing ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingCardId(null)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleSaveEdit(card.id)}
-                    >
-                      <Save className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                  </>
-                ) : (
-                  <>
                     <button
                       onClick={() => handleEditCard(card)}
                       className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
@@ -592,6 +571,23 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     placeholder="e.g., 10 minutes"
                   />
                 </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingCardId(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveEdit(card.id)}
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Save
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="p-3 text-sm text-gray-700 whitespace-pre-wrap">
@@ -608,7 +604,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap">
         <h2 className="text-lg font-semibold text-gray-900">Teaching Cards</h2>
         <div className="flex gap-2 flex-wrap">
           <Button
@@ -663,7 +659,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       </div>
       
       <div className="border-t pt-4">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 flex-wrap">
           <h3 className="font-medium">Card Sequence ({cards.length} cards)</h3>
           <div className="flex gap-2">
             <Button

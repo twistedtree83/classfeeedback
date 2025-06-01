@@ -29,9 +29,11 @@ import {
   MessageSquareText, 
   CheckCircle2,
   User,
-  Split
+  Split,
+  Loader2
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
+import { generateDifferentiatedContent } from '../lib/aiService';
 
 export function StudentView() {
   const navigate = useNavigate();
@@ -53,6 +55,7 @@ export function StudentView() {
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
+  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
@@ -325,6 +328,51 @@ export function StudentView() {
   const toggleDifferentiatedView = () => {
     setViewingDifferentiated(!viewingDifferentiated);
   };
+  
+  const handleGenerateDifferentiated = async () => {
+    if (!presentation || generatingDifferentiated) return;
+    
+    const currentCard = presentation?.cards?.[presentation.current_card_index];
+    if (!currentCard) return;
+    
+    setGeneratingDifferentiated(true);
+    setError('');
+    
+    try {
+      // Generate differentiated content for the current card
+      const differentiatedContent = await generateDifferentiatedContent(
+        currentCard.content,
+        currentCard.type,
+        "student-friendly" // Use a default level
+      );
+      
+      // Update the card with the new content
+      const updatedCards = [...presentation.cards];
+      updatedCards[presentation.current_card_index] = {
+        ...updatedCards[presentation.current_card_index],
+        differentiatedContent
+      };
+      
+      // Update the presentation in state
+      setPresentation({
+        ...presentation,
+        cards: updatedCards
+      });
+      
+      // Switch to differentiated view
+      setViewingDifferentiated(true);
+      
+      // Show success message
+      setSuccessMessage('Simplified content created!');
+      setTimeout(() => setSuccessMessage(''), 2000);
+      
+    } catch (err) {
+      console.error('Error generating differentiated content:', err);
+      setError('Failed to create simplified content. Please try again.');
+    } finally {
+      setGeneratingDifferentiated(false);
+    }
+  };
 
   // Render join form
   if (step === 'join') {
@@ -520,6 +568,14 @@ export function StudentView() {
       
       <main className="flex-1 flex flex-col p-6">
         <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
+          {/* Success message toast */}
+          {successMessage && (
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+          
           {/* Card content */}
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6 flex-1">
             {currentCard ? (
@@ -559,9 +615,20 @@ export function StudentView() {
                     <Button
                       variant="outline"
                       className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
+                      onClick={handleGenerateDifferentiated}
+                      disabled={generatingDifferentiated}
                     >
-                      <Split className="h-4 w-4 mr-2" />
-                      Differentiate Content
+                      {generatingDifferentiated ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Simplifying...
+                        </>
+                      ) : (
+                        <>
+                          <Split className="h-4 w-4 mr-2" />
+                          Simplify Content
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -575,12 +642,6 @@ export function StudentView() {
           
           {/* Feedback controls */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            {successMessage && (
-              <div className="p-3 mb-4 rounded-lg bg-green-100 text-green-800 text-center">
-                {successMessage}
-              </div>
-            )}
-            
             {error && (
               <div className="p-3 mb-4 rounded-lg bg-red-100 text-red-800 text-center">
                 {error}

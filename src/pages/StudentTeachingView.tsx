@@ -32,6 +32,7 @@ import {
   Split
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
+import { generateDifferentiatedContent } from '../lib/aiService';
 
 export function StudentTeachingView() {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ export function StudentTeachingView() {
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
+  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
   
@@ -325,6 +327,53 @@ export function StudentTeachingView() {
     setViewingDifferentiated(!viewingDifferentiated);
   };
 
+  const handleGenerateDifferentiated = async () => {
+    if (!currentCard || generatingDifferentiated) return;
+    
+    setGeneratingDifferentiated(true);
+    setError(null);
+    
+    try {
+      // Create a differentiated version of the current card
+      const differentiatedContent = await generateDifferentiatedContent(
+        currentCard.content,
+        currentCard.type,
+        "student-friendly" // Level can be determined from the lesson level if available
+      );
+      
+      // Update the card with differentiated content
+      if (presentation && currentCard) {
+        const updatedCards = [...presentation.cards];
+        const cardIndex = presentation.current_card_index;
+        
+        updatedCards[cardIndex] = {
+          ...updatedCards[cardIndex],
+          differentiatedContent
+        };
+        
+        // Update the presentation in state
+        setPresentation({
+          ...presentation,
+          cards: updatedCards
+        });
+        
+        // Switch to differentiated view
+        setViewingDifferentiated(true);
+        
+        // Show success message
+        setShowSuccessMessage(true);
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error generating differentiated content:', error);
+      setError('Failed to create simpler explanation. Please try again.');
+    } finally {
+      setGeneratingDifferentiated(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -539,7 +588,7 @@ export function StudentTeachingView() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {hasDifferentiated && (
+                  {hasDifferentiatedContent && (
                     <Button
                       onClick={toggleDifferentiatedView}
                       variant={viewingDifferentiated ? "primary" : "outline"}
@@ -569,16 +618,27 @@ export function StudentTeachingView() {
                 ))}
               </div>
               
-              {/* Differentiate button for when there's no differentiated content yet */}
-              {!hasDifferentiated && (
+              {/* Differentiate button when there's no differentiated content yet */}
+              {!hasDifferentiatedContent && (
                 <div className="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg">
                   <p className="text-purple-800 mb-2">Need a simpler explanation?</p>
                   <Button
                     variant="outline"
                     className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
+                    onClick={handleGenerateDifferentiated}
+                    disabled={generatingDifferentiated}
                   >
-                    <Split className="h-4 w-4 mr-2" />
-                    Differentiate Content
+                    {generatingDifferentiated ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Simplifying...
+                      </>
+                    ) : (
+                      <>
+                        <Split className="h-4 w-4 mr-2" />
+                        Simplify Content
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
