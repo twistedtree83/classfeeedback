@@ -13,7 +13,8 @@ export function MessagePanel({ messages, isOpen, onClose }: MessagePanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-50 overflow-hidden flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-80 bg-white shadow-lg z-50 overflow-hidden flex flex-col transition-transform duration-300 ease-in-out transform" 
+         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}>
       <div className="p-4 border-b border-gray-200 flex justify-between items-center">
         <h2 className="text-lg font-semibold flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-indigo-600" />

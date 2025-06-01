@@ -686,8 +686,11 @@ export const subscribeToTeacherMessages = (
   console.log('Setting up subscription for teacher messages on presentation:', presentationId);
   
   try {
+    // Create a unique channel ID to prevent conflicts
+    const channelId = `teacher_messages_${presentationId}_${Math.random().toString(36).substring(2, 9)}`;
+    
     const channel = supabase
-      .channel(`teacher_messages_${presentationId}`)
+      .channel(channelId)
       .on(
         'postgres_changes',
         {
@@ -702,10 +705,15 @@ export const subscribeToTeacherMessages = (
         }
       )
       .subscribe((status) => {
-        console.log('Teacher messages subscription status:', status);
+        console.log(`Teacher messages subscription status (${channelId}):`, status);
       });
     
-    return channel;
+    return {
+      unsubscribe: () => {
+        console.log(`Unsubscribing from teacher messages channel ${channelId}`);
+        channel.unsubscribe();
+      }
+    };
   } catch (error) {
     console.error('Error setting up teacher messages subscription:', error);
     // Return a dummy subscription with unsubscribe method to prevent crashes

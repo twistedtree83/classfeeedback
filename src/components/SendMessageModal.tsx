@@ -42,14 +42,21 @@ export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: 
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Your Message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message here..."
-            disabled={isSending}
-            error={error || undefined}
-          />
+          <div>
+            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+              Your Message
+            </label>
+            <textarea
+              id="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message here..."
+              disabled={isSending}
+              className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              rows={4}
+            />
+            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+          </div>
           <div className="flex justify-end">
             <Button type="submit" disabled={isSending || !message.trim()}>
               {isSending ? 'Sending...' : 'Send Message'}

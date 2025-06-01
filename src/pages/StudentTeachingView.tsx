@@ -50,17 +50,36 @@ export function StudentTeachingView() {
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioLoaded, setAudioLoaded] = useState(false);
 
   // Create audio element for notifications
   useEffect(() => {
-    audioRef.current = new Audio('/notification.mp3');
+    const audio = new Audio('/notification.mp3');
+    
+    // Set up event listeners
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Audio loaded and ready to play');
+      setAudioLoaded(true);
+    });
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio loading error:', e);
+    });
+    
+    // Preload the audio
+    audio.load();
+    
+    audioRef.current = audio;
+    
     return () => {
       if (audioRef.current) {
+        audioRef.current.pause();
         audioRef.current = null;
       }
     };
   }, []);
 
+  // Extract code from URL query params if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const codeParam = params.get('code');
@@ -73,6 +92,7 @@ export function StudentTeachingView() {
   const isFirstCard = presentation?.current_card_index === 0;
   const isLastCard = presentation?.current_card_index === presentation?.cards.length - 1;
 
+  // Scroll to top when card changes
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
@@ -87,7 +107,8 @@ export function StudentTeachingView() {
       try {
         console.log("Loading teacher messages for presentation:", presentation.id);
         const messages = await getTeacherMessagesForPresentation(presentation.id);
-        console.log("Loaded messages:", messages);
+        console.log("Loaded messages:", messages.length);
+        
         if (messages && Array.isArray(messages)) {
           setAllMessages(messages);
           
@@ -106,6 +127,7 @@ export function StudentTeachingView() {
     }
   }, [presentation?.id]);
 
+  // Subscribe to presentation updates
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
 
@@ -113,12 +135,15 @@ export function StudentTeachingView() {
     const presentationSubscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
-        console.log("Received presentation update:", updatedPresentation);
+        console.log("Received presentation update");
+        
+        // Get the full presentation data to ensure we have parsed cards
         getLessonPresentationByCode(presentation.session_code)
           .then(fullPresentation => {
             if (fullPresentation) {
               setPresentation(fullPresentation);
 
+              // Reset feedback when card changes
               if (fullPresentation.current_card_index !== presentation.current_card_index) {
                 setFeedbackSubmitted(null);
               }
@@ -158,13 +183,21 @@ export function StudentTeachingView() {
         setTeacherMessage(newMessage);
         
         // Play notification sound
-        if (audioRef.current) {
+        if (audioRef.current && audioLoaded) {
+          console.log("Attempting to play notification sound");
           const playPromise = audioRef.current.play();
+          
           if (playPromise !== undefined) {
-            playPromise.catch(e => {
-              console.log("Audio play prevented:", e);
-            });
+            playPromise
+              .then(() => console.log("Audio played successfully"))
+              .catch(error => {
+                console.warn("Audio play was prevented:", error);
+                // If autoplay is prevented, we can inform the user
+                // or try again when they interact with the page
+              });
           }
+        } else {
+          console.warn("Audio element not ready yet");
         }
         
         // Clear toast after 5 seconds
@@ -183,7 +216,7 @@ export function StudentTeachingView() {
       console.log("Unsubscribing from teacher messages");
       messageSubscription.unsubscribe();
     };
-  }, [presentation?.id, joined, showMessagePanel]);
+  }, [presentation?.id, joined, showMessagePanel, audioLoaded]);
 
   // Reset new message count when opening the message panel
   useEffect(() => {
@@ -235,6 +268,7 @@ export function StudentTeachingView() {
       setPresentation(presentationData);
       setJoined(true);
 
+      // Update URL with session code for easy rejoining
       const url = new URL(window.location.href);
       url.searchParams.set('code', sessionCode.trim().toUpperCase());
       window.history.pushState({}, '', url);
@@ -451,6 +485,12 @@ export function StudentTeachingView() {
               <div>
                 <p className="font-semibold">Message from {teacherMessage.teacher_name}:</p>
                 <p className="text-sm">{teacherMessage.message_content}</p>
+                <button 
+                  onClick={toggleMessagePanel}
+                  className="text-xs text-blue-600 hover:underline mt-1"
+                >
+                  View all messages
+                </button>
               </div>
             </div>
           )}
@@ -616,7 +656,11 @@ export function StudentTeachingView() {
       </main>
 
       {/* Hidden audio element for notifications */}
-      <audio id="notification-sound" src="/notification.mp3" preload="auto" />
+      <audio 
+        id="notification-sound" 
+        src="/notification.mp3" 
+        preload="auto" 
+      />
 
       {/* Message Panel */}
       <MessagePanel
