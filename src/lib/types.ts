@@ -29,7 +29,7 @@ export interface ProcessedLesson {
 
 export interface LessonCard {
   id: string;
-  type: 'objective' | 'material' | 'section' | 'activity';
+  type: 'objective' | 'material' | 'section' | 'activity' | 'custom';
   title: string;
   content: string;
   duration: string | null;

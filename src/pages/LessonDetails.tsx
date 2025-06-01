@@ -3,9 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
+import { TeachingCardsManager } from '../components/TeachingCardsManager';
 import { Button } from '../components/ui/Button';
 import type { LessonCard } from '../lib/types';
-import { createLessonPresentation, getLessonPresentationByCode } from '../lib/supabaseClient';
+import { createLessonPresentation } from '../lib/supabaseClient';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +25,7 @@ export function LessonDetails() {
       if (!id) return;
 
       try {
-        const { data, fetchError } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('lesson_plans')
           .select('*')
           .eq('id', id)
@@ -70,18 +71,6 @@ export function LessonDetails() {
     setShowTeacherPrompt(true);
   };
 
-  const createCard = (type: string, title: string, content: string, duration?: string | null, sectionId?: string | null, activityIndex?: number | null): LessonCard => {
-    return {
-      id: crypto.randomUUID(),
-      type: type as 'objective' | 'material' | 'section' | 'activity',
-      title,
-      content,
-      duration: duration || null,
-      sectionId: sectionId || null,
-      activityIndex: typeof activityIndex === 'number' ? activityIndex : null
-    };
-  };
-
   const startTeaching = async () => {
     if (!lesson?.processed_content) return;
     if (!teacherName.trim()) {
@@ -93,51 +82,14 @@ export function LessonDetails() {
     setError(null);
 
     try {
-      const teachingCards = selectedCards.length > 0 ? selectedCards : [
-        // Title card
-        createCard(
-          'objective',
-          lesson.processed_content.title,
-          lesson.processed_content.summary || '',
-          lesson.processed_content.duration
-        ),
-        // Objectives card
-        createCard(
-          'objective',
-          'Learning Objectives',
-          lesson.processed_content.objectives.map(obj => `• ${obj}`).join('\n')
-        ),
-        // Materials card
-        createCard(
-          'material',
-          'Required Materials',
-          lesson.processed_content.materials.map(mat => `• ${mat}`).join('\n')
-        ),
-        // Section cards
-        ...lesson.processed_content.sections.flatMap(section => [
-          // Section content card
-          createCard(
-            'section',
-            section.title,
-            section.content || '',
-            section.duration,
-            section.id
-          ),
-          // Activity cards
-          ...section.activities.map((activity, index) => createCard(
-            'activity',
-            `Activity: ${section.title || 'Untitled Section'}`,
-            activity || '',
-            null,
-            section.id,
-            index
-          ))
-        ])
-      ];
-
+      // Use the selected cards from the teaching cards manager
+      if (selectedCards.length === 0) {
+        throw new Error('Please add at least one card to the teaching sequence');
+      }
+      
       const presentation = await createLessonPresentation(
         lesson.id,
-        teachingCards, // Send the full card objects
+        selectedCards,
         teacherName.trim()
       );
 
@@ -154,14 +106,16 @@ export function LessonDetails() {
   };
 
   const handleAddToTeaching = (type: 'objective' | 'material' | 'section' | 'activity', data: any) => {
-    const newCard = createCard(
+    const newCard: LessonCard = {
+      id: crypto.randomUUID(),
       type,
-      data.title,
-      data.content,
-      data.duration || null,
-      data.sectionId || null,
-      typeof data.activityIndex === 'number' ? data.activityIndex : null
-    );
+      title: data.title,
+      content: data.content,
+      duration: data.duration || null,
+      sectionId: data.sectionId || null,
+      activityIndex: typeof data.activityIndex === 'number' ? data.activityIndex : null
+    };
+    
     setSelectedCards(prev => [...prev, newCard]);
   };
 
@@ -182,15 +136,10 @@ export function LessonDetails() {
                 onClick={handleBeginTeaching}
                 variant="outline"
                 className="flex items-center gap-2 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50"
-                disabled={isStartingTeaching}
+                disabled={isStartingTeaching || selectedCards.length === 0}
               >
                 {isStartingTeaching ? 'Starting...' : 'Begin Teaching'}
               </Button>
-              {selectedCards.length > 0 && (
-                <div className="text-sm text-gray-500 flex items-center">
-                  {selectedCards.length} cards selected
-                </div>
-              )}
               <Button
                 onClick={() => navigate(`/planner/${id}/edit`)}
                 variant="outline"
@@ -220,11 +169,22 @@ export function LessonDetails() {
           <div className="bg-red-50 text-red-700 p-4 rounded-lg">
             {error}
           </div>
-        ) : lesson?.processed_content ? ( 
-          <LessonPlanDisplay 
-            lesson={lesson.processed_content}
-            onAddToTeaching={handleAddToTeaching}
-          />
+        ) : lesson?.processed_content ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
+              <LessonPlanDisplay 
+                lesson={lesson.processed_content}
+                onAddToTeaching={handleAddToTeaching}
+              />
+            </div>
+            <div>
+              <TeachingCardsManager
+                lesson={lesson.processed_content}
+                selectedCards={selectedCards}
+                onSave={setSelectedCards}
+              />
+            </div>
+          </div>
         ) : (
           <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
             This lesson plan has no content.
@@ -232,7 +192,7 @@ export function LessonDetails() {
         )}
         
         {showTeacherPrompt && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <h3 className="text-lg font-semibold mb-4">Enter Teacher Name</h3>
               <input
