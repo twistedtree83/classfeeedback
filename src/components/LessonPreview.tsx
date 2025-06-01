@@ -72,7 +72,7 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
         </div>
         <ul className="list-disc list-inside space-y-1 text-gray-700">
           {lesson.materials.map((material, index) => (
-            <li key={index}>{material}</li>
+            <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }}></li>
           ))}
         </ul>
       </div>
@@ -93,9 +93,18 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
                 <h5 className="font-medium text-gray-900 mb-2">Activities</h5>
                 <ul className="list-disc list-inside text-gray-700">
                   {section.activities.map((activity, index) => (
-                    <li key={index}>{activity}</li>
+                    <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></li>
                   ))}
                 </ul>
+              </div>
+            )}
+            {section.assessment && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <h5 className="font-medium text-gray-900 mb-1">Assessment</h5>
+                <div 
+                  className="text-gray-700 text-sm"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.assessment) }}
+                ></div>
               </div>
             )}
           </div>

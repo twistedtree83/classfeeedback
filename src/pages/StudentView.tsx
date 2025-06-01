@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
+import { sanitizeHtml } from '../lib/utils';
 
 export function StudentView() {
   const navigate = useNavigate();
@@ -605,15 +606,14 @@ export function StudentView() {
                   )}
                 </div>
 
-                <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-                  {typeof cardContent === 'string' ? 
-                    cardContent.split('\n').map((line, i) => (
-                      <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                    )) : 
+                <div className="prose max-w-none">
+                  {typeof cardContent === 'string' ? (
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
+                  ) : (
                     (cardContent as string[]).map((line, i) => (
-                      <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                      <p key={i} className="mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
                     ))
-                  }
+                  )}
                 </div>
                 
                 {/* Differentiate button when there's no differentiated content yet */}

@@ -21,6 +21,7 @@ import {
   generateSuccessCriteria,
   generateDifferentiatedContent
 } from '../lib/aiService';
+import { sanitizeHtml } from '../lib/utils';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -590,10 +591,16 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </div>
               </div>
             ) : (
-              <div className="p-3 text-sm text-gray-700 whitespace-pre-wrap">
-                {card.content.length > 150
-                  ? `${card.content.substring(0, 150)}...`
-                  : card.content}
+              <div className="p-3 text-sm text-gray-700">
+                {card.content.length > 150 ? (
+                  <div>
+                    <div dangerouslySetInnerHTML={{ 
+                      __html: sanitizeHtml(card.content.substring(0, 150) + '...') 
+                    }}></div>
+                  </div>
+                ) : (
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.content) }}></div>
+                )}
               </div>
             )}
           </div>

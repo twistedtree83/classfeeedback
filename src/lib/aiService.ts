@@ -121,7 +121,9 @@ function validateAndCleanResponse(response: any, level: string = ''): AIResponse
       title: section.title || `Section ${index + 1}`,
       duration: section.duration || '15 minutes',
       content: convertUrlsToHyperlinks(section.content || 'No content provided'),
-      activities: Array.isArray(section.activities) ? section.activities : [],
+      activities: Array.isArray(section.activities) ? 
+        section.activities.map((activity: string) => convertUrlsToHyperlinks(activity)) : 
+        [],
       assessment: convertUrlsToHyperlinks(section.assessment || 'Monitor student progress and understanding')
     })) : []
   };
@@ -208,7 +210,8 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
     For Learning Intentions, transform the objectives into "I can" statements.
     If the content includes Success Criteria, make these clear, specific, and achievable.
     Maintain all important educational content but make it directly address the student.
-    For Topic Background, include only the most interesting and relevant facts that will engage students.`;
+    For Topic Background, include only the most interesting and relevant facts that will engage students.
+    Preserve any URLs and website links in the content.`;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -353,6 +356,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
     Use simpler vocabulary while maintaining academic integrity.
     Include visual cues through text (like "Picture this:" or "Imagine that:").
     For learning objectives, make them more specific and achievable.
+    Preserve all URLs and links in their original form.
     Your goal is to make the content accessible to students who find the original difficult to understand.`;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

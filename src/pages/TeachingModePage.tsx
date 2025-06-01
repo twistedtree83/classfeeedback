@@ -18,6 +18,7 @@ import {
   getLessonPlanById
 } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard, ProcessedLesson } from '../lib/types';
+import { sanitizeHtml } from '../lib/utils';
 
 export function TeachingModePage() {
   const { code } = useParams<{ code: string }>();
@@ -351,11 +352,18 @@ Click "Next" to begin your lesson presentation.
 
               {/* Card content */}
               <div className="p-6">
-                {typeof currentCard.content === 'string' &&
-                  currentCard.content.split('\n').map((line, i) => (
-                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                  ))
-                }
+                {typeof currentCard.content === 'string' ? (
+                  <div 
+                    className="prose max-w-none" 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentCard.content) }}
+                  ></div>
+                ) : (
+                  <div className="prose max-w-none">
+                    {(currentCard.content as string[]).map((line, i) => (
+                      <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Card navigation */}

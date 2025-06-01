@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
+import { sanitizeHtml } from '../lib/utils';
 
 export function StudentTeachingView() {
   const navigate = useNavigate();
@@ -321,6 +322,8 @@ export function StudentTeachingView() {
     setShowMessagePanel(prev => !prev);
     if (!showMessagePanel) {
       setNewMessageCount(0);
+      // Dismiss the toast notification when opening the panel
+      setTeacherMessage(null);
     }
   };
 
@@ -613,10 +616,10 @@ export function StudentTeachingView() {
               ref={contentRef}
               className="p-6 overflow-auto max-h-[calc(100vh-22rem)]"
             >
-              <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-                {typeof cardContent === 'string' && cardContent.split('\n').map((line, i) => (
-                  <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                ))}
+              <div className="prose max-w-none">
+                {typeof cardContent === 'string' && (
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
+                )}
               </div>
               
               {/* Differentiate button when there's no differentiated content yet */}

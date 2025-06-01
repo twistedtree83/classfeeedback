@@ -15,7 +15,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{lesson.title}</h2>
         
-        <p className="text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.summary) }}></p>
+        <div 
+          className="text-gray-700 mb-4"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.summary) }}
+        ></div>
         
         <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-2">
           <div className="flex items-center">
@@ -118,7 +121,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             {lesson.materials.map((material, index) => (
-              <li key={index}>{material}</li>
+              <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }}></li>
             ))}
           </ul>
           {onAddToTeaching && (
@@ -181,7 +184,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {section.activities.map((activity, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <span>{activity}</span>
+                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></div>
                         {onAddToTeaching && (
                           <Button
                             variant="ghost"
