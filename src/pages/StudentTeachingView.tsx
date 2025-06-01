@@ -384,7 +384,7 @@ export function StudentTeachingView() {
               className="p-6 overflow-auto max-h-[calc(100vh-22rem)]"
             >
               <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-                {currentCard.content.split('\n').map((line, i) => (
+                {typeof currentCard.content === 'string' && currentCard.content.split('\n').map((line, i) => (
                   <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                 ))}
               </div>

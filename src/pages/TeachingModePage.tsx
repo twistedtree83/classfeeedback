@@ -150,14 +150,10 @@ export function TeachingModePage() {
               </div>
 
               <div className="prose max-w-none mb-8 whitespace-pre-wrap">
-                {typeof currentCard.content === 'string' ? 
+                {typeof currentCard.content === 'string' && 
                   currentCard.content.split('\n').map((line, i) => (
                     <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                  )) : 
-                  (currentCard.content as string[]).map((line, i) => (
-                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                  ))
-                }
+                  ))}
               </div>
 
               <div className="flex justify-between items-center">
