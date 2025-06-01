@@ -7,7 +7,8 @@ import { TeachingFeedbackPanel } from '../components/TeachingFeedbackPanel';
 import { 
   getLessonPresentationByCode,
   updateLessonPresentationCardIndex,
-  endLessonPresentation
+  endLessonPresentation,
+  subscribeToTeachingQuestions
 } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard } from '../lib/types';
 
@@ -19,7 +20,8 @@ export function TeachingModePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showParticipants, setShowParticipants] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(true); // Changed to true by default
+  const [hasNewQuestions, setHasNewQuestions] = useState(false);
 
   useEffect(() => {
     const loadPresentation = async () => {
@@ -41,6 +43,31 @@ export function TeachingModePage() {
 
     loadPresentation();
   }, [code]);
+
+  // Subscribe to new questions to show notification
+  useEffect(() => {
+    if (!presentation?.id) return;
+    
+    const subscription = subscribeToTeachingQuestions(
+      presentation.id,
+      (newQuestion) => {
+        if (!showFeedback) {
+          setHasNewQuestions(true);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [presentation?.id, showFeedback]);
+
+  // Reset new questions flag when feedback panel is shown
+  useEffect(() => {
+    if (showFeedback) {
+      setHasNewQuestions(false);
+    }
+  }, [showFeedback]);
 
   const handlePrevious = async () => {
     if (!presentation || presentation.current_card_index <= 0) return;
@@ -101,11 +128,11 @@ export function TeachingModePage() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center">
               <h1 className="text-xl font-semibold text-gray-900">
                 Teaching Mode
               </h1>
-              <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md font-mono">
+              <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md font-mono ml-4">
                 {presentation.session_code}
               </div>
             </div>
@@ -114,8 +141,14 @@ export function TeachingModePage() {
                 variant={showFeedback ? "primary" : "outline"}
                 onClick={() => setShowFeedback(!showFeedback)}
                 size="sm"
+                className="relative"
               >
                 <BarChart3 className="h-5 w-5" />
+                {hasNewQuestions && !showFeedback && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    !
+                  </span>
+                )}
               </Button>
               <Button
                 variant={showParticipants ? "primary" : "outline"}

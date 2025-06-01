@@ -483,6 +483,12 @@ export const submitTeachingQuestion = async (
   question: string
 ): Promise<boolean> => {
   try {
+    console.log('Submitting question:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      question: question
+    });
+    
     const { error } = await supabase
       .from('teaching_questions')
       .insert([{
@@ -491,7 +497,12 @@ export const submitTeachingQuestion = async (
         question
       }]);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Database error submitting question:', error);
+      throw error;
+    }
+    
+    console.log('Question submitted successfully');
     return true;
   } catch (err) {
     console.error('Error submitting question:', err);

@@ -7,7 +7,7 @@ import {
   markQuestionAsAnswered
 } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock } from 'lucide-react';
+import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock, Check, Bell } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface TeachingFeedbackPanelProps {
@@ -35,6 +35,7 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
   const [questions, setQuestions] = useState<Question[]>([]);
   const [view, setView] = useState<'chart' | 'list' | 'questions'>('chart');
   const [loading, setLoading] = useState(true);
+  const [newQuestionAlert, setNewQuestionAlert] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -71,6 +72,14 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       presentationId,
       (newQuestion) => {
         setQuestions(prev => [newQuestion, ...prev]);
+        
+        // Show notification for new questions
+        if (view !== 'questions') {
+          setNewQuestionAlert(true);
+          // Play a subtle notification sound
+          const audio = new Audio('data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTguNDUuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
+          audio.play().catch(e => console.log("Audio play prevented by browser policy"));
+        }
       }
     );
     
@@ -78,7 +87,14 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       feedbackSubscription.unsubscribe();
       questionSubscription.unsubscribe();
     };
-  }, [presentationId]);
+  }, [presentationId, view]);
+
+  // Reset alert when switching to questions view
+  useEffect(() => {
+    if (view === 'questions') {
+      setNewQuestionAlert(false);
+    }
+  }, [view]);
 
   // Count feedback by type
   const feedbackCounts = {
@@ -106,18 +122,26 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
 
   if (loading) {
     return (
-      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full p-4 bg-white rounded-xl">
         <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full p-6 bg-white rounded-xl shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Live Feedback</h2>
+    <div className="w-full bg-white rounded-xl">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-gray-800">
+          Live Feedback
+          {newQuestionAlert && (
+            <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+              <Bell className="h-3 w-3 mr-1" />
+              New Question
+            </span>
+          )}
+        </h2>
         
         <div className="flex space-x-2">
           <Button
@@ -151,58 +175,88 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       </div>
       
       {view === 'chart' && (
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-2">
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
                 <ThumbsUp className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-lg">Understanding</span>
+                <span>Understanding</span>
               </div>
               <span className="font-medium">{feedbackCounts.understand}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-out"
+                className="bg-green-500 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.understand / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-2">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
                 <ThumbsDown className="h-5 w-5 text-yellow-600 mr-2" />
-                <span className="text-lg">Confusion</span>
+                <span>Confusion</span>
               </div>
               <span className="font-medium">{feedbackCounts.confused}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-yellow-500 h-4 rounded-full transition-all duration-500 ease-out"
+                className="bg-yellow-500 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.confused / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-2">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
                 <Clock className="h-5 w-5 text-blue-600 mr-2" />
-                <span className="text-lg">Slow Down</span>
+                <span>Slow Down</span>
               </div>
               <span className="font-medium">{feedbackCounts.slower}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
+            <div className="w-full bg-gray-200 rounded-full h-3">
               <div 
-                className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
+                className="bg-blue-500 h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.slower / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
           </div>
           
-          <div className="mt-6 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center text-sm text-gray-500">
             Total feedback: {feedbackCounts.total}
           </div>
+
+          {/* Quick access to questions if there are any */}
+          {questions.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium flex items-center">
+                  <MessageSquare className="h-4 w-4 mr-2 text-indigo-600" />
+                  Questions ({questions.length})
+                </h3>
+                <Button 
+                  variant="link" 
+                  size="sm"
+                  onClick={() => setView('questions')}
+                >
+                  View All
+                </Button>
+              </div>
+              {questions.slice(0, 2).map(item => (
+                <div key={item.id} className="text-sm mb-2 p-2 bg-gray-50 rounded">
+                  <p className="font-medium">{item.student_name}:</p>
+                  <p className="text-gray-700 truncate">{item.question}</p>
+                </div>
+              ))}
+              {questions.length > 2 && (
+                <div className="text-sm text-center text-indigo-600">
+                  +{questions.length - 2} more questions
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       
@@ -275,16 +329,22 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                     <div className="text-xs text-gray-500">{formatTime(item.created_at)}</div>
                   </div>
                   <p className="text-gray-800">{item.question}</p>
-                  {!item.answered && (
+                  {!item.answered ? (
                     <div className="mt-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-sm"
+                        className="text-sm flex items-center"
                         onClick={() => handleMarkAsAnswered(item.id)}
                       >
+                        <Check className="h-3 w-3 mr-1" />
                         Mark as Answered
                       </Button>
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-xs text-gray-500 flex items-center">
+                      <Check className="h-3 w-3 mr-1 text-green-500" />
+                      Answered
                     </div>
                   )}
                 </div>
