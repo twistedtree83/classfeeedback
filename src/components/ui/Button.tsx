@@ -44,7 +44,7 @@ export function Button({
     >
       {isLoading ? (
         <>
-          <LoadingSpinner size="sm" color={variant === 'primary' ? 'white' : 'primary'} />
+          <LoadingSpinner size="sm\" color={variant === 'primary' ? 'white' : 'primary'} />
           <span className="ml-2">Loading...</span>
         </>
       ) : (
