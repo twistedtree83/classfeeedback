@@ -139,7 +139,7 @@ export function TeachingModePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main content area - adjust column span based on sidebar visibility */}
           <div className={`lg:col-span-${showParticipants || showFeedback ? '8' : '12'}`}>
-            <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="bg-white rounded-xl shadow-lg p-8 w-full">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   {currentCard.title}
