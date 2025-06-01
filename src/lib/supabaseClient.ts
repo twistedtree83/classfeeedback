@@ -59,7 +59,7 @@ export const createLessonPresentation = async (
         throw new Error('Each card must have id, type, title, and content');
       }
       
-      if (!['objective', 'material', 'section', 'activity'].includes(card.type)) {
+      if (!['objective', 'material', 'section', 'activity', 'custom'].includes(card.type)) {
         throw new Error(`Invalid card type: ${card.type}`);
       }
       
@@ -496,6 +496,67 @@ export const submitTeachingQuestion = async (
   } catch (err) {
     console.error('Error submitting question:', err);
     return false;
+  }
+};
+
+export const markQuestionAsAnswered = async (
+  questionId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('teaching_questions')
+      .update({ answered: true })
+      .eq('id', questionId);
+    
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error marking question as answered:', err);
+    return false;
+  }
+};
+
+export const getTeachingQuestionsForPresentation = async (
+  presentationId: string
+): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_questions')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching teaching questions:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching teaching questions:', err);
+    return [];
+  }
+};
+
+export const getTeachingFeedbackForPresentation = async (
+  presentationId: string
+): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_feedback')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching teaching feedback:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching teaching feedback:', err);
+    return [];
   }
 };
 

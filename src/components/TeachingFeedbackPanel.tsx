@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { subscribeToTeachingFeedback, subscribeToTeachingQuestions } from '../lib/supabaseClient';
+import { 
+  subscribeToTeachingFeedback, 
+  subscribeToTeachingQuestions, 
+  getTeachingFeedbackForPresentation,
+  getTeachingQuestionsForPresentation,
+  markQuestionAsAnswered
+} from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List } from 'lucide-react';
+import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface TeachingFeedbackPanelProps {
@@ -28,6 +34,29 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [view, setView] = useState<'chart' | 'list' | 'questions'>('chart');
+  const [loading, setLoading] = useState(true);
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [feedbackData, questionsData] = await Promise.all([
+          getTeachingFeedbackForPresentation(presentationId),
+          getTeachingQuestionsForPresentation(presentationId)
+        ]);
+        
+        setFeedback(feedbackData);
+        setQuestions(questionsData);
+      } catch (err) {
+        console.error('Error loading feedback and questions:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [presentationId]);
 
   // Subscribe to real-time feedback
   useEffect(() => {
@@ -55,11 +84,35 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
   const feedbackCounts = {
     understand: feedback.filter(f => f.feedback_type === 'understand').length,
     confused: feedback.filter(f => f.feedback_type === 'confused').length,
+    slower: feedback.filter(f => f.feedback_type === 'slower').length,
     total: feedback.length
   };
 
   // New questions count
   const newQuestionsCount = questions.filter(q => !q.answered).length;
+  
+  // Handle marking a question as answered
+  const handleMarkAsAnswered = async (questionId: string) => {
+    const success = await markQuestionAsAnswered(questionId);
+    if (success) {
+      // Update local state to reflect the change
+      setQuestions(prevQuestions => 
+        prevQuestions.map(q => 
+          q.id === questionId ? { ...q, answered: true } : q
+        )
+      );
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full p-6 bg-white rounded-xl shadow-lg">
@@ -131,6 +184,22 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
             </div>
           </div>
           
+          <div className="space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 text-blue-600 mr-2" />
+                <span className="text-lg">Slow Down</span>
+              </div>
+              <span className="font-medium">{feedbackCounts.slower}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div 
+                className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${feedbackCounts.total ? (feedbackCounts.slower / feedbackCounts.total) * 100 : 0}%` }}
+              ></div>
+            </div>
+          </div>
+          
           <div className="mt-6 text-center text-sm text-gray-500">
             Total feedback: {feedbackCounts.total}
           </div>
@@ -166,9 +235,17 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <ThumbsUp className="h-3 w-3 mr-1" /> Understands
                         </span>
-                      ) : (
+                      ) : item.feedback_type === 'confused' ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                           <ThumbsDown className="h-3 w-3 mr-1" /> Confused
+                        </span>
+                      ) : item.feedback_type === 'slower' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <Clock className="h-3 w-3 mr-1" /> Slow Down
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Other
                         </span>
                       )}
                     </td>
@@ -204,12 +281,7 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                         size="sm"
                         variant="outline"
                         className="text-sm"
-                        onClick={() => {
-                          // Mark as answered logic would go here
-                          setQuestions(questions.map(q => 
-                            q.id === item.id ? {...q, answered: true} : q
-                          ));
-                        }}
+                        onClick={() => handleMarkAsAnswered(item.id)}
                       >
                         Mark as Answered
                       </Button>
