@@ -8,14 +8,15 @@ const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuri
 4. Level: The appropriate level for this lesson (e.g. "Beginner", "Grade 3-5", "High School")
 5. Learning Objectives: 3-5 specific, measurable objectives starting with action verbs
 6. Required Materials: All physical and digital resources needed
-7. Lesson Sections: Organized teaching segments, each with:
+7. Topic Background: Provide factual, contextual information about the main subject of the lesson, tailored to the specified grade level. Include key facts, historical context, or relevant information that would help a teacher present the material confidently. Make this age-appropriate based on the level field.
+8. Lesson Sections: Organized teaching segments, each with:
    - Title: Clear section heading
    - Duration: Time allocation
    - Content: Main teaching points and explanations
    - Activities: Specific exercises or tasks
    - Assessment: How to check understanding
 
-Format your response as a JSON object with these exact fields: title, summary, duration, level, objectives (array), materials (array), and sections (array of objects with id, title, duration, content, activities array, and assessment).`;
+Format your response as a JSON object with these exact fields: title, summary, duration, level, objectives (array), materials (array), topic_background, and sections (array of objects with id, title, duration, content, activities array, and assessment).`;
 
 interface AIResponse {
   title: string;
@@ -24,6 +25,7 @@ interface AIResponse {
   level: string;
   objectives: string[];
   materials: string[];
+  topic_background: string;
   sections: {
     id: string;
     title: string;
@@ -34,14 +36,14 @@ interface AIResponse {
   }[];
 }
 
-export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
+export async function aiAnalyzeLesson(content: string, level: string = ''): Promise<AIResponse> {
   try {
     // Get the API key from environment variables
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
 
     if (!apiKey) {
       console.error('OpenAI API key is missing');
-      return fallbackAnalysis(content);
+      return fallbackAnalysis(content, level);
     }
   
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -54,7 +56,7 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Analyze this lesson plan content: ${content}` }
+          { role: 'user', content: `Analyze this lesson plan content for ${level || 'any grade level'}: ${content}` }
         ],
         temperature: 0.7,
         response_format: { type: 'json_object' }
@@ -64,38 +66,39 @@ export async function aiAnalyzeLesson(content: string): Promise<AIResponse> {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('OpenAI API error:', errorData);
-      return fallbackAnalysis(content);
+      return fallbackAnalysis(content, level);
     }
 
     const data = await response.json();
     
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid AI response format:', data);
-      return fallbackAnalysis(content);
+      return fallbackAnalysis(content, level);
     }
 
     try {
       const result = JSON.parse(data.choices[0].message.content);
-      return validateAndCleanResponse(result);
+      return validateAndCleanResponse(result, level);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      return fallbackAnalysis(content);
+      return fallbackAnalysis(content, level);
     }
   } catch (error) {
     console.error('Error analyzing lesson:', error);
-    return fallbackAnalysis(content);
+    return fallbackAnalysis(content, level);
   }
 }
 
-function validateAndCleanResponse(response: any): AIResponse {
+function validateAndCleanResponse(response: any, level: string = ''): AIResponse {
   // Ensure all required fields exist
   const cleaned: AIResponse = {
     title: response.title || 'Untitled Lesson',
     summary: response.summary || 'No summary provided',
     duration: response.duration || '60 minutes',
-    level: response.level || 'All Levels',
+    level: response.level || level || 'All Levels',
     objectives: Array.isArray(response.objectives) ? response.objectives : [],
     materials: Array.isArray(response.materials) ? response.materials : [],
+    topic_background: response.topic_background || generateDefaultTopicBackground(response.title, level),
     sections: Array.isArray(response.sections) ? response.sections.map((section: any, index: number) => ({
       id: section.id || String(index + 1),
       title: section.title || `Section ${index + 1}`,
@@ -123,20 +126,27 @@ function validateAndCleanResponse(response: any): AIResponse {
   return cleaned;
 }
 
-function fallbackAnalysis(content: string): AIResponse {
+function generateDefaultTopicBackground(title: string, level: string = ''): string {
+  const gradeLevel = level || 'general education';
+  return `This lesson covers fundamental concepts related to ${title}. Teachers may want to review basic principles before presenting this material to students. The content is designed to be accessible to students at the ${gradeLevel} level, focusing on core concepts while building a foundation for future learning.`;
+}
+
+function fallbackAnalysis(content: string, level: string = ''): AIResponse {
   const paragraphs = content.split('\n\n').filter(p => p.trim());
+  const title = 'Untitled Lesson';
   
   return {
-    title: 'Untitled Lesson',
+    title: title,
     summary: `This lesson covers ${content.slice(0, 100)}...`,
     duration: '60 minutes',
-    level: 'All Levels',
+    level: level || 'All Levels',
     objectives: [
       'Understand key concepts from the material',
       'Apply learning to practical examples',
       'Demonstrate comprehension through exercises'
     ],
     materials: ['Lesson handouts', 'Writing materials'],
+    topic_background: generateDefaultTopicBackground(title, level),
     sections: [
       {
         id: '1',

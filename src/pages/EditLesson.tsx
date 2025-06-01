@@ -16,6 +16,7 @@ export function EditLesson() {
   const [objectives, setObjectives] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [sections, setSections] = useState<LessonSection[]>([]);
+  const [topicBackground, setTopicBackground] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export function EditLesson() {
         setObjectives(lessonContent.objectives);
         setMaterials(lessonContent.materials);
         setSections(lessonContent.sections);
+        setTopicBackground(lessonContent.topic_background || '');
       } catch (err) {
         console.error('Error fetching lesson:', err);
         setError(err instanceof Error ? err.message : 'Failed to load lesson');
@@ -67,7 +69,8 @@ export function EditLesson() {
         level,
         objectives,
         materials,
-        sections
+        sections,
+        topic_background: topicBackground
       };
 
       const { error: updateError } = await supabase
@@ -234,6 +237,20 @@ export function EditLesson() {
               </Button>
             </div>
           ))}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Topic Background</h2>
+          </div>
+          <textarea
+            value={topicBackground}
+            onChange={(e) => setTopicBackground(e.target.value)}
+            placeholder="Enter background information about the topic, tailored to the student level"
+            rows={6}
+            disabled={saving}
+            className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
         </div>
 
         <div className="space-y-4">

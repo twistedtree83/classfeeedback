@@ -71,7 +71,7 @@ export const createLessonPresentation = async (
         throw new Error('Each card must have id, type, title, and content');
       }
       
-      if (!['objective', 'material', 'section', 'activity', 'custom'].includes(card.type)) {
+      if (!['objective', 'material', 'section', 'activity', 'custom', 'topic_background'].includes(card.type)) {
         throw new Error(`Invalid card type: ${card.type}`);
       }
       

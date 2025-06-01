@@ -27,11 +27,12 @@ export interface ProcessedLesson {
   duration: string;
   materials: string[];
   level: string;
+  topic_background?: string;
 }
 
 export interface LessonCard {
   id: string;
-  type: 'objective' | 'material' | 'section' | 'activity' | 'custom';
+  type: 'objective' | 'material' | 'section' | 'activity' | 'custom' | 'topic_background';
   title: string;
   content: string;
   duration: string | null;

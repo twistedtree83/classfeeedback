@@ -43,7 +43,7 @@ export function CreateLesson() {
       const text = await extractTextFromFile(selectedFile);
       console.log('Extracted text:', text.slice(0, 500)); // Log first 500 chars
       
-      const analyzed = await aiAnalyzeLesson(text);      
+      const analyzed = await aiAnalyzeLesson(text, level);      
       if (!analyzed) {
         throw new Error('Failed to analyze lesson plan');
       }

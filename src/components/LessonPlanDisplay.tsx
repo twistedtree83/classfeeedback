@@ -1,11 +1,11 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
-import { Clock, FileText, List, Target, CheckSquare, Plus, GraduationCap } from 'lucide-react';
+import { Clock, FileText, List, Target, CheckSquare, Plus, GraduationCap, BookOpen } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
-  onAddToTeaching?: (cardType: 'objective' | 'material' | 'section' | 'activity', data: any) => void;
+  onAddToTeaching?: (cardType: 'objective' | 'material' | 'section' | 'activity' | 'topic_background', data: any) => void;
 }
 
 export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplayProps) {
@@ -58,6 +58,34 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
           )}
         </div>
       </div>
+
+      {lesson.topic_background && (
+        <div>
+          <div className="flex items-center mb-3">
+            <BookOpen className="h-5 w-5 text-indigo-600 mr-2" />
+            <h3 className="text-lg font-semibold">Topic Background</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 text-gray-700">
+              {lesson.topic_background}
+            </div>
+            {onAddToTeaching && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAddToTeaching('topic_background', {
+                  title: 'Topic Background',
+                  content: lesson.topic_background
+                })}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add to Teaching
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="flex items-center mb-3">

@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import type { LessonCard, ProcessedLesson } from '../lib/types';
-import { Plus, X, GripVertical, Edit, Save } from 'lucide-react';
+import { Plus, X, GripVertical, Edit, Save, BookOpen } from 'lucide-react';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -134,6 +134,25 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     onSave(updatedCards);
   };
 
+  // Create a topic background card from lesson
+  const createTopicBackgroundCard = () => {
+    if (!lesson.topic_background) return;
+    
+    const newCard: LessonCard = {
+      id: crypto.randomUUID(),
+      type: 'topic_background',
+      title: 'Topic Background',
+      content: lesson.topic_background,
+      duration: null,
+      sectionId: null,
+      activityIndex: null
+    };
+    
+    const updatedCards = [...cards, newCard];
+    setCards(updatedCards);
+    onSave(updatedCards);
+  };
+
   // Render a card based on its state (normal or editing)
   const renderCard = (card: LessonCard, index: number) => {
     const isEditing = editingCardId === card.id;
@@ -240,7 +259,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-900">Teaching Cards</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -257,6 +276,16 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             <Plus className="h-4 w-4 mr-1" />
             Add Materials
           </Button>
+          {lesson.topic_background && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={createTopicBackgroundCard}
+            >
+              <BookOpen className="h-4 w-4 mr-1" />
+              Add Background
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
