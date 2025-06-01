@@ -5,6 +5,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { SectionEditor } from '../components/SectionEditor';
 import type { ProcessedLesson, LessonSection } from '../lib/types';
+import { aiAnalyzeLesson } from '../lib/aiService';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 export function EditLesson() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +22,8 @@ export function EditLesson() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatingBackground, setGeneratingBackground] = useState(false);
+  const [backgroundMessage, setBackgroundMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -88,6 +92,58 @@ export function EditLesson() {
       console.error('Error updating lesson:', err);
       setError(err instanceof Error ? err.message : 'Failed to update lesson');
       setSaving(false);
+    }
+  };
+
+  const handleGenerateBackground = async () => {
+    if (!lesson || !level) {
+      setBackgroundMessage({
+        text: 'Please select a grade level before generating background information',
+        type: 'error'
+      });
+      return;
+    }
+
+    setGeneratingBackground(true);
+    setBackgroundMessage(null);
+
+    try {
+      // Construct a simple text representation of the lesson content
+      const lessonContent = `
+        Title: ${title}
+        Duration: ${duration}
+        Level: ${level}
+        Objectives: ${objectives.join('; ')}
+        Materials: ${materials.join('; ')}
+        Sections: ${sections.map(s => `${s.title}: ${s.content}`).join('\n')}
+      `;
+
+      // Use the AI service to generate background information
+      const result = await aiAnalyzeLesson(lessonContent, level);
+      
+      if (result && result.topic_background) {
+        setTopicBackground(result.topic_background);
+        setBackgroundMessage({
+          text: 'Background information generated successfully',
+          type: 'success'
+        });
+      } else {
+        throw new Error('Failed to generate background information');
+      }
+    } catch (err) {
+      console.error('Error generating background:', err);
+      setBackgroundMessage({
+        text: err instanceof Error ? err.message : 'Failed to generate background information',
+        type: 'error'
+      });
+    } finally {
+      setGeneratingBackground(false);
+      // Clear success message after 5 seconds
+      if (backgroundMessage?.type === 'success') {
+        setTimeout(() => {
+          setBackgroundMessage(null);
+        }, 5000);
+      }
     }
   };
 
@@ -171,6 +227,13 @@ export function EditLesson() {
           disabled={saving}
         />
 
+        <Input
+          label="Duration"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+          disabled={saving}
+        />
+
         <div className="space-y-2">
           <label htmlFor="level" className="block text-sm font-medium text-gray-700">
             Lesson Level
@@ -198,13 +261,6 @@ export function EditLesson() {
             <option value="Grade 12">Grade 12</option>
           </select>
         </div>
-
-        <Input
-          label="Duration"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          disabled={saving}
-        />
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -242,13 +298,41 @@ export function EditLesson() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-900">Topic Background</h2>
+            <Button
+              onClick={handleGenerateBackground}
+              variant="outline"
+              size="sm"
+              disabled={saving || generatingBackground}
+              className="flex items-center gap-2"
+            >
+              {generatingBackground ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate Background
+                </>
+              )}
+            </Button>
           </div>
+          {backgroundMessage && (
+            <div className={`p-3 rounded-lg ${
+              backgroundMessage.type === 'success' 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-red-50 text-red-700'
+            }`}>
+              {backgroundMessage.text}
+            </div>
+          )}
           <textarea
             value={topicBackground}
             onChange={(e) => setTopicBackground(e.target.value)}
             placeholder="Enter background information about the topic, tailored to the student level"
             rows={6}
-            disabled={saving}
+            disabled={saving || generatingBackground}
             className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
