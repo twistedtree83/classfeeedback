@@ -453,7 +453,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
               <div {...provided.dragHandleProps} className="mr-2 cursor-move">
                 <GripVertical className="h-5 w-5 text-gray-400" />
               </div>
-              <div className="flex-1">
+              <div className="flex-grow">
                 {isEditing ? (
                   <Input
                     label="Title"

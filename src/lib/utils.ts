@@ -65,10 +65,43 @@ export function groupFeedbackByType(feedback: Array<{ value: string }>) {
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
   
-  // Remove potentially dangerous tags and attributes
+  // Remove potentially dangerous tags and attributes while preserving links
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+="[^"]*"/g, '')
     .replace(/on\w+='[^']*'/g, '')
     .replace(/on\w+=\w+/g, '');
+}
+
+/**
+ * Converts URLs in text content to clickable hyperlinks
+ */
+export function convertUrlsToHyperlinks(text: string): string {
+  if (!text) return '';
+  
+  // Enhanced regex for URL detection that handles a wider variety of URL formats
+  // This regex captures URLs starting with http://, https://, ftp://, or www.
+  // It also handles URLs with query parameters, fragments, and various TLDs
+  const urlRegex = /(\b(?:https?|ftp):\/\/|www\.)[a-z0-9-]+(\.[a-z0-9-]+)+([/?#]\S*)?/gi;
+  
+  return text.replace(urlRegex, (url) => {
+    // Add protocol if missing
+    const href = url.startsWith('www.') ? `https://${url}` : url;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline">${url}</a>`;
+  });
+}
+
+/**
+ * Processes text content to convert URLs to hyperlinks and ensures proper HTML
+ */
+export function processContentWithUrls(content: string): string {
+  if (!content) return '';
+  
+  // First convert URLs to hyperlinks
+  let processedContent = convertUrlsToHyperlinks(content);
+  
+  // Convert newlines to <br> tags for proper HTML rendering
+  processedContent = processedContent.replace(/\n/g, '<br>');
+  
+  return processedContent;
 }

@@ -184,7 +184,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {section.activities.map((activity, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></div>
+                        <span>{activity}</span>
                         {onAddToTeaching && (
                           <Button
                             variant="ghost"

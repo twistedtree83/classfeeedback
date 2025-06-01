@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { convertUrlsToHyperlinks, processContentWithUrls } from './utils';
 
 const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuring them into clear, organized formats. When given lesson content, break it down into:
 
@@ -7,14 +8,16 @@ const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuri
 3. Duration: Total lesson time (e.g. "45 minutes", "1 hour")
 4. Level: The appropriate level for this lesson (e.g. "Beginner", "Grade 3-5", "High School")
 5. Learning Objectives: 3-5 specific, measurable objectives starting with action verbs
-6. Required Materials: All physical and digital resources needed
+6. Required Materials: All physical and digital resources needed. If URLs or links are present, preserve them exactly as they appear.
 7. Topic Background: Provide factual, contextual information about the main subject of the lesson, tailored to the specified grade level. Include key facts, historical context, or relevant information that would help a teacher present the material confidently. Make this age-appropriate based on the level field.
 8. Lesson Sections: Organized teaching segments, each with:
    - Title: Clear section heading
    - Duration: Time allocation
-   - Content: Main teaching points and explanations
-   - Activities: Specific exercises or tasks
+   - Content: Main teaching points and explanations. Preserve all URLs and links exactly as they appear.
+   - Activities: Specific exercises or tasks with detailed instructions
    - Assessment: How to check understanding
+
+IMPORTANT: Preserve all URLs, web addresses, and links exactly as they appear in the original text.
 
 Format your response as a JSON object with these exact fields: title, summary, duration, level, objectives (array), materials (array), topic_background, and sections (array of objects with id, title, duration, content, activities array, and assessment).`;
 
@@ -34,23 +37,6 @@ interface AIResponse {
     activities: string[];
     assessment: string;
   }[];
-}
-
-/**
- * Converts plaintext URLs in a string to HTML hyperlinks
- */
-function convertUrlsToHyperlinks(text: string): string {
-  if (!text) return text;
-  
-  // Regex to match URLs (handles http, https, ftp, www)
-  const urlRegex = /(https?:\/\/|www\.)[^\s<>]+\.[^\s<>]+/g;
-  
-  // Replace URLs with hyperlinks
-  return text.replace(urlRegex, (url) => {
-    // Add protocol if missing
-    const href = url.startsWith('www.') ? `https://${url}` : url;
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline">${url}</a>`;
-  });
 }
 
 export async function aiAnalyzeLesson(content: string, level: string = ''): Promise<AIResponse> {
@@ -73,7 +59,7 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: `Analyze this lesson plan content for ${level || 'any grade level'}: ${content}` }
+          { role: 'user', content: `Analyze this lesson plan content for ${level || 'any grade level'}, making sure to extract all important details and preserve any URLs or links: ${content}` }
         ],
         temperature: 0.7,
         response_format: { type: 'json_object' }
@@ -110,21 +96,23 @@ function validateAndCleanResponse(response: any, level: string = ''): AIResponse
   // Ensure all required fields exist
   const cleaned: AIResponse = {
     title: response.title || 'Untitled Lesson',
-    summary: convertUrlsToHyperlinks(response.summary || 'No summary provided'),
+    summary: processContentWithUrls(response.summary || 'No summary provided'),
     duration: response.duration || '60 minutes',
     level: response.level || level || 'All Levels',
     objectives: Array.isArray(response.objectives) ? response.objectives : [],
-    materials: Array.isArray(response.materials) ? response.materials : [],
-    topic_background: convertUrlsToHyperlinks(response.topic_background || generateDefaultTopicBackground(response.title, level)),
+    materials: Array.isArray(response.materials) ? 
+      response.materials.map((material: string) => processContentWithUrls(material)) : 
+      [],
+    topic_background: processContentWithUrls(response.topic_background || generateDefaultTopicBackground(response.title, level)),
     sections: Array.isArray(response.sections) ? response.sections.map((section: any, index: number) => ({
       id: section.id || String(index + 1),
       title: section.title || `Section ${index + 1}`,
       duration: section.duration || '15 minutes',
-      content: convertUrlsToHyperlinks(section.content || 'No content provided'),
+      content: processContentWithUrls(section.content || 'No content provided'),
       activities: Array.isArray(section.activities) ? 
-        section.activities.map((activity: string) => convertUrlsToHyperlinks(activity)) : 
+        section.activities.map((activity: string) => activity) : 
         [],
-      assessment: convertUrlsToHyperlinks(section.assessment || 'Monitor student progress and understanding')
+      assessment: processContentWithUrls(section.assessment || 'Monitor student progress and understanding')
     })) : []
   };
 
@@ -156,7 +144,7 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
   
   return {
     title: title,
-    summary: `This lesson covers ${content.slice(0, 100)}...`,
+    summary: processContentWithUrls(`This lesson covers ${content.slice(0, 100)}...`),
     duration: '60 minutes',
     level: level || 'All Levels',
     objectives: [
@@ -165,13 +153,13 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
       'Demonstrate comprehension through exercises'
     ],
     materials: ['Lesson handouts', 'Writing materials'],
-    topic_background: generateDefaultTopicBackground(title, level),
+    topic_background: processContentWithUrls(generateDefaultTopicBackground(title, level)),
     sections: [
       {
         id: '1',
         title: 'Introduction',
         duration: '10 minutes',
-        content: paragraphs.slice(0, Math.max(1, Math.floor(paragraphs.length * 0.2))).join('\n\n'),
+        content: processContentWithUrls(paragraphs.slice(0, Math.max(1, Math.floor(paragraphs.length * 0.2))).join('\n\n')),
         activities: ['Class discussion'],
         assessment: 'Monitor student participation and initial understanding'
       },
@@ -179,7 +167,7 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
         id: '2',
         title: 'Main Content',
         duration: '40 minutes',
-        content: paragraphs.slice(Math.floor(paragraphs.length * 0.2), Math.floor(paragraphs.length * 0.8)).join('\n\n'),
+        content: processContentWithUrls(paragraphs.slice(Math.floor(paragraphs.length * 0.2), Math.floor(paragraphs.length * 0.8)).join('\n\n')),
         activities: ['Group work', 'Individual practice'],
         assessment: 'Check work completion and accuracy'
       },
@@ -187,7 +175,7 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
         id: '3',
         title: 'Conclusion',
         duration: '10 minutes',
-        content: paragraphs.slice(Math.floor(paragraphs.length * 0.8)).join('\n\n'),
+        content: processContentWithUrls(paragraphs.slice(Math.floor(paragraphs.length * 0.8)).join('\n\n')),
         activities: ['Review', 'Exit ticket'],
         assessment: 'Collect and review exit tickets'
       }
@@ -211,7 +199,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
     If the content includes Success Criteria, make these clear, specific, and achievable.
     Maintain all important educational content but make it directly address the student.
     For Topic Background, include only the most interesting and relevant facts that will engage students.
-    Preserve any URLs and website links in the content.`;
+    IMPORTANT: Preserve all URLs, web addresses, and links exactly as they appear in the original text.`;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -223,7 +211,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `This is ${cardType} content intended for ${level || 'students'}. Please adapt it to be student-friendly: ${content}` }
+          { role: 'user', content: `This is ${cardType} content intended for ${level || 'students'}. Please adapt it to be student-friendly, preserving all URLs exactly as they appear: ${content}` }
         ],
         temperature: 0.7
       })
@@ -242,7 +230,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
       return defaultStudentFriendlyContent(content, cardType);
     }
 
-    return convertUrlsToHyperlinks(data.choices[0].message.content.trim());
+    return processContentWithUrls(data.choices[0].message.content.trim());
   } catch (error) {
     console.error('Error making content student-friendly:', error);
     return defaultStudentFriendlyContent(content, cardType);
@@ -263,14 +251,14 @@ function defaultStudentFriendlyContent(content: string, cardType: string): strin
   }
   
   if (cardType === 'topic_background') {
-    return `Did you know? ${content}`;
+    return processContentWithUrls(`Did you know? ${content}`);
   }
   
   // For other types, just make a simple adjustment
-  return content.replace(/students will/gi, 'you will')
+  return processContentWithUrls(content.replace(/students will/gi, 'you will')
     .replace(/students should/gi, 'you should')
     .replace(/the students/gi, 'you')
-    .replace(/teachers/gi, 'we');
+    .replace(/teachers/gi, 'we'));
 }
 
 export async function generateSuccessCriteria(objectives: string[], level: string = ''): Promise<string[]> {
@@ -369,7 +357,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `This is ${cardType} content that students are finding difficult to understand. It's intended for ${level || 'students'}. Please create a differentiated, simpler version: ${content}` }
+          { role: 'user', content: `This is ${cardType} content that students are finding difficult to understand. It's intended for ${level || 'students'}. Please create a differentiated, simpler version while preserving all URLs exactly as they appear: ${content}` }
         ],
         temperature: 0.7
       })
@@ -388,7 +376,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
       return defaultDifferentiatedContent(content, cardType);
     }
 
-    return convertUrlsToHyperlinks(data.choices[0].message.content.trim());
+    return processContentWithUrls(data.choices[0].message.content.trim());
   } catch (error) {
     console.error('Error generating differentiated content:', error);
     return defaultDifferentiatedContent(content, cardType);
@@ -416,5 +404,5 @@ function defaultDifferentiatedContent(content: string, cardType: string): string
   });
   
   // Add helper text at the beginning
-  return `Let's break this down simply:\n\n${simplifiedSentences.join('. ')}\n\nStill confused? Just remember the main idea: ${sentences[0]}`;
+  return processContentWithUrls(`Let's break this down simply:\n\n${simplifiedSentences.join('. ')}\n\nStill confused? Just remember the main idea: ${sentences[0]}`);
 }

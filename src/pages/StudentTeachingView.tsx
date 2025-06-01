@@ -200,6 +200,8 @@ export function StudentTeachingView() {
     console.log("Message panel visibility changed:", showMessagePanel);
     if (showMessagePanel) {
       setNewMessageCount(0);
+      // Dismiss the toast notification when opening the panel
+      setTeacherMessage(null);
     }
   }, [showMessagePanel]);
 
@@ -309,7 +311,7 @@ export function StudentTeachingView() {
           setShowSuccessMessage(false);
         }, 2000);
       } else {
-        setError('Failed to submit question. Please try again.');
+        setMessage({ text: 'Failed to submit question. Please try again.', type: 'error' });
       }
     } catch (err) {
       console.error('Error submitting question:', err);

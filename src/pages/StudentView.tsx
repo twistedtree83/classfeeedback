@@ -150,6 +150,8 @@ export function StudentView() {
   useEffect(() => {
     if (showMessagePanel) {
       setNewMessageCount(0);
+      // Dismiss the toast notification when opening the panel
+      setTeacherMessage(null);
     }
   }, [showMessagePanel]);
 
@@ -610,9 +612,12 @@ export function StudentView() {
                   {typeof cardContent === 'string' ? (
                     <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
                   ) : (
-                    (cardContent as string[]).map((line, i) => (
-                      <p key={i} className="mb-4 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
-                    ))
+                    <div>
+                      {(cardContent as string[]).map((line, i) => (
+                        <p key={i} className="mb-4 leading-relaxed" 
+                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
+                      ))}
+                    </div>
                   )}
                 </div>
                 
