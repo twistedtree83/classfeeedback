@@ -9,23 +9,65 @@ import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
 import { TeachingModePage } from './pages/TeachingModePage';
 import { Header } from './components/Header';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { ResetPassword } from './pages/ResetPassword';
+import { UpdatePassword } from './pages/UpdatePassword';
+import { Profile } from './pages/Profile';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Header />
-      <Routes>
-        <Route path="/" element={<TeacherDashboard />} />
-        <Route path="/join" element={<JoinPage />} />
-        <Route path="/student" element={<StudentView />} />
-        <Route path="/planner" element={<LessonPlannerPage />} />
-        <Route path="/planner/create" element={<CreateLesson />} />
-        <Route path="/planner/:id/edit" element={<EditLesson />} />
-        <Route path="/planner/:id" element={<LessonDetails />} />
-        <Route path="/teach/:code" element={<TeachingModePage />} />
-        <Route path="*" element={<Navigate to="/\" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Header />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/join" element={<JoinPage />} />
+          <Route path="/student" element={<StudentView />} />
+          
+          {/* Protected routes */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <TeacherDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/planner" element={
+            <ProtectedRoute>
+              <LessonPlannerPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/planner/create" element={
+            <ProtectedRoute>
+              <CreateLesson />
+            </ProtectedRoute>
+          } />
+          <Route path="/planner/:id/edit" element={
+            <ProtectedRoute>
+              <EditLesson />
+            </ProtectedRoute>
+          } />
+          <Route path="/planner/:id" element={
+            <ProtectedRoute>
+              <LessonDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/teach/:code" element={
+            <ProtectedRoute>
+              <TeachingModePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/update-password" element={<UpdatePassword />} />
+          
+          <Route path="*" element={<Navigate to="/\" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

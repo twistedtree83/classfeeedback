@@ -1,11 +1,13 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'link';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
   className?: string;
+  isLoading?: boolean;
 }
 
 export function Button({
@@ -13,6 +15,8 @@ export function Button({
   size = 'md',
   className,
   children,
+  isLoading = false,
+  disabled,
   ...props
 }: ButtonProps) {
   return (
@@ -35,9 +39,17 @@ export function Button({
         },
         className
       )}
+      disabled={disabled || isLoading}
       {...props}
     >
-      {children}
+      {isLoading ? (
+        <>
+          <LoadingSpinner size="sm" color={variant === 'primary' ? 'white' : 'primary'} />
+          <span className="ml-2">Loading...</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }
