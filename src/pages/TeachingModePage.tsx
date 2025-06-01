@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Users, BarChart3, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, BarChart3 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ParticipantsList } from '../components/ParticipantsList';
 import { TeachingFeedbackPanel } from '../components/TeachingFeedbackPanel';
