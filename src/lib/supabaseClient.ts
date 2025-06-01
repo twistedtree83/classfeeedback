@@ -632,6 +632,28 @@ export const sendTeacherMessage = async (
   }
 };
 
+export const getTeacherMessagesForPresentation = async (
+  presentationId: string
+): Promise<TeacherMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teacher_messages')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .order('created_at', { ascending: true });  // Ascending for conversation flow
+    
+    if (error) {
+      console.error('Error fetching teacher messages:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching teacher messages:', err);
+    return [];
+  }
+};
+
 export const subscribeToTeacherMessages = (
   presentationId: string,
   callback: (message: TeacherMessage) => void

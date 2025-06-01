@@ -8,10 +8,12 @@ import {
   submitTeachingFeedback,
   submitTeachingQuestion,
   subscribeToTeacherMessages,
+  getTeacherMessagesForPresentation,
   TeacherMessage
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { MessagePanel } from '../components/MessagePanel';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -23,7 +25,8 @@ import {
   ArrowLeftCircle,
   ArrowRightCircle,
   BookOpen,
-  MessageSquareText
+  MessageSquareText,
+  MessageSquare
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
@@ -41,6 +44,9 @@ export function StudentTeachingView() {
   const [feedbackCooldown, setFeedbackCooldown] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
+  const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
+  const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,6 +66,24 @@ export function StudentTeachingView() {
       contentRef.current.scrollTop = 0;
     }
   }, [presentation?.current_card_index]);
+
+  // Load past teacher messages when joining a session
+  useEffect(() => {
+    const loadTeacherMessages = async () => {
+      if (!presentation?.id) return;
+
+      try {
+        const messages = await getTeacherMessagesForPresentation(presentation.id);
+        setAllMessages(messages);
+      } catch (err) {
+        console.error('Error loading teacher messages:', err);
+      }
+    };
+
+    if (presentation?.id) {
+      loadTeacherMessages();
+    }
+  }, [presentation?.id]);
 
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
@@ -84,10 +108,19 @@ export function StudentTeachingView() {
     const teacherMessageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
+        // Add message to the messages array
+        setAllMessages(prevMessages => [...prevMessages, newMessage]);
+        
+        // Show toast notification
         setTeacherMessage(newMessage);
         setTimeout(() => {
           setTeacherMessage(null);
         }, 5000);
+        
+        // Increment new message counter if panel is not open
+        if (!showMessagePanel) {
+          setNewMessageCount(count => count + 1);
+        }
       }
     );
 
@@ -95,7 +128,14 @@ export function StudentTeachingView() {
       presentationSubscription.unsubscribe();
       teacherMessageSubscription.unsubscribe();
     };
-  }, [presentation?.session_code, presentation?.id, presentation?.current_card_index, joined]);
+  }, [presentation?.session_code, presentation?.id, presentation?.current_card_index, joined, showMessagePanel]);
+
+  // Reset new message count when opening the message panel
+  useEffect(() => {
+    if (showMessagePanel) {
+      setNewMessageCount(0);
+    }
+  }, [showMessagePanel]);
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,6 +237,10 @@ export function StudentTeachingView() {
     }
   };
 
+  const toggleMessagePanel = () => {
+    setShowMessagePanel(!showMessagePanel);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -293,6 +337,18 @@ export function StudentTeachingView() {
               <span className="font-medium">{studentName}</span>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMessagePanel}
+                className="relative p-1 rounded-full hover:bg-gray-100"
+                title="View messages"
+              >
+                <MessageSquare className="h-5 w-5 text-indigo-600" />
+                {newMessageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {newMessageCount}
+                  </span>
+                )}
+              </button>
               <span className="text-sm text-gray-600">
                 Card {presentation.current_card_index + 1} of {presentation.cards.length}
               </span>
@@ -489,6 +545,21 @@ export function StudentTeachingView() {
           </div>
         </div>
       </main>
+
+      {/* Message Panel Overlay */}
+      {showMessagePanel && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-25 z-30"
+          onClick={() => setShowMessagePanel(false)}
+        ></div>
+      )}
+
+      {/* Message Panel */}
+      <MessagePanel
+        messages={allMessages}
+        isOpen={showMessagePanel}
+        onClose={() => setShowMessagePanel(false)}
+      />
     </div>
   );
 }
