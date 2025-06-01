@@ -328,74 +328,35 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             {...provided.draggableProps}
             className="mb-4 border rounded-lg bg-white shadow-sm"
           >
-            {isEditing ? (
-              // Editing view
-              <div className="p-4">
-                <div className="mb-4">
+            {/* Always render the header with drag handle */}
+            <div className="flex items-center p-3 border-b">
+              <div {...provided.dragHandleProps} className="mr-2 cursor-move">
+                <GripVertical className="h-5 w-5 text-gray-400" />
+              </div>
+              <div className="flex-1">
+                {isEditing ? (
                   <Input
                     label="Title"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                   />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Content
-                  </label>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    rows={4}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <Input
-                    label="Duration (optional)"
-                    value={editDuration}
-                    onChange={(e) => setEditDuration(e.target.value)}
-                    placeholder="e.g., 10 minutes"
-                  />
-                </div>
-                
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingCardId(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveEdit(card.id)}
-                  >
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              // Normal view
-              <div>
-                <div className="flex items-center p-3 border-b">
-                  <div {...provided.dragHandleProps} className="mr-2 cursor-move">
-                    <GripVertical className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
+                ) : (
+                  <>
                     <h3 className="font-medium text-gray-900">{card.title}</h3>
                     {card.duration && (
                       <div className="text-sm text-gray-500">{card.duration}</div>
                     )}
-                  </div>
-                  <div className="flex gap-1">
-                    {card.studentFriendly && (
-                      <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md mr-2">
-                        Student-Friendly
-                      </span>
-                    )}
+                  </>
+                )}
+              </div>
+              <div className="flex gap-1">
+                {!isEditing && card.studentFriendly && (
+                  <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md mr-2">
+                    Student-Friendly
+                  </span>
+                )}
+                {!isEditing && (
+                  <>
                     <button
                       onClick={() => isProcessing ? null : makeCardStudentFriendly(card.id)}
                       className={`p-1 text-gray-500 hover:text-indigo-600 rounded-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -421,6 +382,27 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         )}
                       </button>
                     )}
+                  </>
+                )}
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingCardId(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleSaveEdit(card.id)}
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <>
                     <button
                       onClick={() => handleEditCard(card)}
                       className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
@@ -433,13 +415,40 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     >
                       <X className="h-4 w-4" />
                     </button>
-                  </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Card content */}
+            {isEditing ? (
+              <div className="p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Content
+                  </label>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    rows={4}
+                  />
                 </div>
-                <div className="p-3 text-sm text-gray-700 whitespace-pre-wrap">
-                  {card.content.length > 150
-                    ? `${card.content.substring(0, 150)}...`
-                    : card.content}
+                
+                <div className="mb-4">
+                  <Input
+                    label="Duration (optional)"
+                    value={editDuration}
+                    onChange={(e) => setEditDuration(e.target.value)}
+                    placeholder="e.g., 10 minutes"
+                  />
                 </div>
+              </div>
+            ) : (
+              <div className="p-3 text-sm text-gray-700 whitespace-pre-wrap">
+                {card.content.length > 150
+                  ? `${card.content.substring(0, 150)}...`
+                  : card.content}
               </div>
             )}
           </div>
