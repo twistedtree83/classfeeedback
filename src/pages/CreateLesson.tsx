@@ -104,13 +104,33 @@ export function CreateLesson() {
             disabled={isProcessing}
           />
 
-          <Input
-            label="Lesson Level"
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-            placeholder="e.g., Beginner, Intermediate, Advanced, Grade 3-5, etc."
-            disabled={isProcessing}
-          />
+          <div className="space-y-2">
+            <label htmlFor="level" className="block text-sm font-medium text-gray-700">
+              Lesson Level
+            </label>
+            <select
+              id="level"
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              disabled={isProcessing}
+              className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Select grade level</option>
+              <option value="Kindergarten">Kindergarten</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10">Grade 10</option>
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12">Grade 12</option>
+            </select>
+          </div>
 
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700">
