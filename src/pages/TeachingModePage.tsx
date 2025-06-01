@@ -149,10 +149,11 @@ export function TeachingModePage() {
                 )}
               </div>
 
-              <div className="prose max-w-none mb-8 whitespace-pre-wrap">
+              {/* Content area with full width and proper text formatting */}
+              <div className="w-full mb-8">
                 {typeof currentCard.content === 'string' && 
                   currentCard.content.split('\n').map((line, i) => (
-                    <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                    <p key={i} className="mb-4 leading-relaxed text-base text-gray-700 w-full">{line || '\u00A0'}</p>
                   ))}
               </div>
 
