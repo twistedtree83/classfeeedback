@@ -21,11 +21,16 @@ export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: 
       return;
     }
     setError(null);
+    
+    console.log("Sending message:", message);
     const success = await onSendMessage(message.trim());
+    
     if (success) {
+      console.log("Message sent successfully");
       setMessage('');
       onClose(); // Close modal on success
     } else {
+      console.error("Failed to send message");
       setError('Failed to send message. Please try again.');
     }
   };

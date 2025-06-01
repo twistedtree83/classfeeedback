@@ -26,7 +26,8 @@ import {
   ArrowRightCircle,
   BookOpen,
   MessageSquareText,
-  MessageSquare
+  MessageSquare,
+  Bell
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
@@ -49,37 +50,7 @@ export function StudentTeachingView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [audioLoaded, setAudioLoaded] = useState(false);
-  const [isMessagePanelVisible, setIsMessagePanelVisible] = useState(false); // Debug state
-
-  // Create audio element for notifications
-  useEffect(() => {
-    const audio = new Audio('/notification.mp3');
-    
-    // Set up event listeners
-    audio.addEventListener('canplaythrough', () => {
-      console.log('Audio loaded and ready to play');
-      setAudioLoaded(true);
-    });
-    
-    audio.addEventListener('error', (e) => {
-      console.error('Audio loading error:', e);
-    });
-    
-    // Preload the audio
-    audio.load();
-    
-    audioRef.current = audio;
-    
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
-
+  
   // Extract code from URL query params if present
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -102,20 +73,22 @@ export function StudentTeachingView() {
 
   // Load past teacher messages when joining a session
   useEffect(() => {
-    const loadTeacherMessages = async () => {
-      if (!presentation?.id) return;
+    if (!presentation?.id) return;
 
+    const loadTeacherMessages = async () => {
       try {
         console.log("Loading teacher messages for presentation:", presentation.id);
         const messages = await getTeacherMessagesForPresentation(presentation.id);
-        console.log("Loaded messages:", messages);
+        console.log("LOADED TEACHER MESSAGES:", messages);
         
         if (messages && Array.isArray(messages)) {
           setAllMessages(messages);
           
-          // If there are unread messages, set the count
+          // If there are messages, show a notification
           if (messages.length > 0) {
             setNewMessageCount(messages.length);
+            // Set the most recent message as the toast notification
+            setTeacherMessage(messages[messages.length - 1]);
           }
         }
       } catch (err) {
@@ -123,9 +96,7 @@ export function StudentTeachingView() {
       }
     };
 
-    if (presentation?.id) {
-      loadTeacherMessages();
-    }
+    loadTeacherMessages();
   }, [presentation?.id]);
 
   // Subscribe to presentation updates
@@ -164,68 +135,61 @@ export function StudentTeachingView() {
   useEffect(() => {
     if (!presentation?.id || !joined) return;
     
-    console.log("Setting up teacher message subscription for presentation:", presentation.id);
+    console.log("SETTING UP MESSAGE SUBSCRIPTION for presentation:", presentation.id);
+    
+    // Create a new audio element each time to avoid playback issues
+    const notificationSound = new Audio('/notification.mp3');
+    notificationSound.volume = 0.5;
+    
     const messageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
-        console.log("DEBUG: Received new teacher message:", newMessage);
+        console.log("🔔 RECEIVED NEW TEACHER MESSAGE:", newMessage);
         
-        // Add message to the messages array
+        // Play sound
+        try {
+          notificationSound.play().catch(e => {
+            console.warn("Audio play prevented:", e);
+          });
+        } catch (err) {
+          console.error("Error playing notification sound:", err);
+        }
+        
+        // Update messages list
         setAllMessages(prevMessages => {
-          // Check if this message is already in the array to prevent duplicates
+          // Check for duplicates
           const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
           if (isDuplicate) {
-            console.log("DEBUG: Duplicate message detected, skipping");
+            console.log("⚠️ Duplicate message detected, skipping");
             return prevMessages;
           }
-          console.log("DEBUG: Adding new message to state", newMessage);
-          return [...prevMessages, newMessage];
+          console.log("✅ Adding message to state:", newMessage);
+          return [...prevMessages, newMessage]; 
         });
         
         // Show toast notification
         setTeacherMessage(newMessage);
-        console.log("DEBUG: Set teacher message for toast", newMessage);
+        console.log("✅ Set teacher message toast:", newMessage);
         
-        // Play notification sound
-        if (audioRef.current && audioLoaded) {
-          console.log("Attempting to play notification sound");
-          const playPromise = audioRef.current.play();
-          
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => console.log("Audio played successfully"))
-              .catch(error => {
-                console.warn("Audio play was prevented:", error);
-                // If autoplay is prevented, we can inform the user
-                // or try again when they interact with the page
-              });
-          }
-        } else {
-          console.warn("Audio element not ready yet");
-        }
-        
-        // Increment new message counter if panel is not open
+        // Increment counter if panel is closed
         if (!showMessagePanel) {
-          setNewMessageCount(count => count + 1);
+          setNewMessageCount(prev => prev + 1);
+          console.log("✅ Incremented message count - panel is closed");
         }
       }
     );
 
     return () => {
-      console.log("Unsubscribing from teacher messages");
+      console.log("Cleaning up teacher messages subscription");
       messageSubscription.unsubscribe();
     };
-  }, [presentation?.id, joined, showMessagePanel, audioLoaded]);
+  }, [presentation?.id, joined]);
 
-  // Reset new message count when opening the message panel
+  // Reset message count when panel is opened
   useEffect(() => {
+    console.log("Message panel visibility changed:", showMessagePanel);
     if (showMessagePanel) {
       setNewMessageCount(0);
-      setIsMessagePanelVisible(true); // Debug: confirm panel visibility
-      console.log("DEBUG: Message panel opened, resetting count and setting visible flag");
-    } else {
-      setIsMessagePanelVisible(false); // Debug: confirm panel visibility
-      console.log("DEBUG: Message panel closed, setting visible flag to false");
     }
   }, [showMessagePanel]);
 
@@ -335,18 +299,17 @@ export function StudentTeachingView() {
           setShowSuccessMessage(false);
         }, 2000);
       } else {
-        console.error("Failed to submit question");
-        setError("Failed to submit question. Please try again.");
+        setError('Failed to submit question. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting question:', err);
-      setError('Error submitting question. Please try again.');
+      setError('An error occurred. Please try again.');
     }
   };
 
   const toggleMessagePanel = () => {
-    console.log("DEBUG: Toggling message panel, current state:", showMessagePanel);
-    setShowMessagePanel(!showMessagePanel);
+    console.log("TOGGLING MESSAGE PANEL - Current state:", showMessagePanel, "Messages:", allMessages.length);
+    setShowMessagePanel(prev => !prev);
     if (!showMessagePanel) {
       setNewMessageCount(0);
     }
@@ -450,7 +413,7 @@ export function StudentTeachingView() {
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleMessagePanel}
-                className="relative p-1 rounded-full hover:bg-gray-100"
+                className="relative p-2 rounded-full hover:bg-gray-100 border border-gray-200"
                 title="View messages"
               >
                 <MessageSquare className="h-5 w-5 text-indigo-600" />
@@ -488,15 +451,15 @@ export function StudentTeachingView() {
             </div>
           )}
 
-          {/* Teacher Message Toast - Removed animation for debugging */}
+          {/* Teacher Message Toast - No animation for better visibility during debugging */}
           {teacherMessage && (
             <div 
               ref={messageToastRef}
-              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm"
+              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm border border-blue-200"
             >
               <MessageSquareText className="h-6 w-6 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Message from {teacherMessage.teacher_name}:</p>
+              <div className="flex-1">
+                <p className="font-semibold">{teacherMessage.teacher_name}:</p>
                 <p className="text-sm">{teacherMessage.message_content}</p>
                 <button 
                   onClick={toggleMessagePanel}
@@ -505,17 +468,15 @@ export function StudentTeachingView() {
                   View all messages
                 </button>
               </div>
+              <button 
+                onClick={() => setTeacherMessage(null)}
+                className="p-1 text-blue-500 hover:bg-blue-100 rounded-full"
+                title="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
-
-          {/* Debug information - for development only */}
-          <div className="bg-red-50 p-3 mb-4 rounded-md text-sm">
-            <p>DEBUG INFO:</p>
-            <p>Messages Count: {allMessages.length}</p>
-            <p>Message Panel Visible: {isMessagePanelVisible ? 'Yes' : 'No'}</p>
-            <p>New Message Count: {newMessageCount}</p>
-            <p>Current Card Index: {presentation.current_card_index}</p>
-          </div>
 
           <div className="flex justify-between items-center lg:hidden">
             <Button
@@ -672,17 +633,26 @@ export function StudentTeachingView() {
                   Send
                 </Button>
               </div>
+              {error && (
+                <div className="mt-2 text-sm text-red-600">{error}</div>
+              )}
             </form>
           </div>
+
+          {/* Message indicator button that's always visible */}
+          {newMessageCount > 0 && !showMessagePanel && (
+            <div className="fixed bottom-6 right-6 z-50">
+              <button
+                onClick={toggleMessagePanel}
+                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
+              </button>
+            </div>
+          )}
         </div>
       </main>
-
-      {/* Hidden audio element for notifications */}
-      <audio 
-        id="notification-sound" 
-        src="/notification.mp3" 
-        preload="auto" 
-      />
 
       {/* Message Panel */}
       <MessagePanel
