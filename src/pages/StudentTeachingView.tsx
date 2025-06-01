@@ -28,7 +28,8 @@ import {
   MessageSquareText,
   MessageSquare,
   Bell,
-  X
+  X,
+  Split
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
@@ -49,6 +50,7 @@ export function StudentTeachingView() {
   const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
   
@@ -64,12 +66,15 @@ export function StudentTeachingView() {
   const currentCard = presentation?.cards?.[presentation.current_card_index];
   const isFirstCard = presentation?.current_card_index === 0;
   const isLastCard = presentation?.current_card_index === presentation?.cards.length - 1;
+  const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
 
   // Scroll to top when card changes
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
+    // Reset differentiated view when card changes
+    setViewingDifferentiated(false);
   }, [presentation?.current_card_index]);
 
   // Load past teacher messages when joining a session
@@ -316,6 +321,10 @@ export function StudentTeachingView() {
     }
   };
 
+  const toggleDifferentiatedView = () => {
+    setViewingDifferentiated(!viewingDifferentiated);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
@@ -401,6 +410,9 @@ export function StudentTeachingView() {
   }
 
   const progressPercentage = ((presentation.current_card_index + 1) / presentation.cards.length) * 100;
+  const cardContent = viewingDifferentiated && currentCard.differentiatedContent 
+    ? currentCard.differentiatedContent 
+    : currentCard.content;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -526,9 +538,22 @@ export function StudentTeachingView() {
                   )}
                 </div>
 
-                <div className="hidden lg:flex bg-white rounded-full w-14 h-14 items-center justify-center shadow">
-                  <div className="text-indigo-800 font-medium">
-                    {Math.round(progressPercentage)}%
+                <div className="flex items-center gap-2">
+                  {hasDifferentiated && (
+                    <Button
+                      onClick={toggleDifferentiatedView}
+                      variant={viewingDifferentiated ? "primary" : "outline"}
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <Split className="h-4 w-4" />
+                      {viewingDifferentiated ? "Standard View" : "Simplified View"}
+                    </Button>
+                  )}
+                  <div className="hidden lg:flex bg-white rounded-full w-14 h-14 items-center justify-center shadow">
+                    <div className="text-indigo-800 font-medium">
+                      {Math.round(progressPercentage)}%
+                    </div>
                   </div>
                 </div>
               </div>
@@ -539,10 +564,24 @@ export function StudentTeachingView() {
               className="p-6 overflow-auto max-h-[calc(100vh-22rem)]"
             >
               <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-                {typeof currentCard.content === 'string' && currentCard.content.split('\n').map((line, i) => (
+                {typeof cardContent === 'string' && cardContent.split('\n').map((line, i) => (
                   <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                 ))}
               </div>
+              
+              {/* Differentiate button for when there's no differentiated content yet */}
+              {!hasDifferentiated && (
+                <div className="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                  <p className="text-purple-800 mb-2">Need a simpler explanation?</p>
+                  <Button
+                    variant="outline"
+                    className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
+                  >
+                    <Split className="h-4 w-4 mr-2" />
+                    Differentiate Content
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="hidden lg:flex justify-between items-center p-4 bg-gray-50 border-t border-gray-100">

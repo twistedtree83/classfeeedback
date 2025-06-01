@@ -13,9 +13,14 @@ import {
   Sparkles, 
   Target, 
   Loader2, 
-  CheckSquare 
+  CheckSquare,
+  Split
 } from 'lucide-react';
-import { makeContentStudentFriendly, generateSuccessCriteria } from '../lib/aiService';
+import { 
+  makeContentStudentFriendly, 
+  generateSuccessCriteria,
+  generateDifferentiatedContent
+} from '../lib/aiService';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -33,6 +38,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const [processingAllCards, setProcessingAllCards] = useState(false);
   const [successCriteria, setSuccessCriteria] = useState<string[]>(lesson.success_criteria || []);
   const [generatingCriteria, setGeneratingCriteria] = useState(false);
+  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [differentiatingCardId, setDifferentiatingCardId] = useState<string | null>(null);
 
   // Update local cards state when selectedCards changes from parent
   useEffect(() => {
@@ -294,6 +301,90 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     }
   };
 
+  // Create differentiated version of all cards
+  const createDifferentiatedCards = async () => {
+    if (generatingDifferentiated || cards.length === 0) return;
+    
+    setGeneratingDifferentiated(true);
+    
+    try {
+      // Process each card sequentially to avoid rate limits
+      let updatedCards = [...cards];
+      
+      for (let i = 0; i < updatedCards.length; i++) {
+        const card = updatedCards[i];
+        
+        // Skip cards that already have differentiated content
+        if (card.differentiatedContent) continue;
+        
+        // Use the student-friendly content as base if available, otherwise use original
+        const contentToAdapt = card.studentFriendly && card.originalContent 
+          ? card.content 
+          : card.originalContent || card.content;
+        
+        // Generate differentiated content
+        const differentiatedContent = await generateDifferentiatedContent(
+          contentToAdapt,
+          card.type,
+          lesson.level
+        );
+        
+        // Update the card
+        updatedCards[i] = {
+          ...card,
+          differentiatedContent
+        };
+      }
+      
+      setCards(updatedCards);
+      onSave(updatedCards);
+    } catch (error) {
+      console.error('Error creating differentiated cards:', error);
+    } finally {
+      setGeneratingDifferentiated(false);
+    }
+  };
+
+  // Create differentiated version of a single card
+  const createDifferentiatedCard = async (cardId: string) => {
+    if (differentiatingCardId) return;
+    
+    setDifferentiatingCardId(cardId);
+    
+    try {
+      const cardIndex = cards.findIndex(card => card.id === cardId);
+      if (cardIndex === -1) return;
+      
+      const card = cards[cardIndex];
+      
+      // Use the student-friendly content as base if available, otherwise use original
+      const contentToAdapt = card.studentFriendly && card.originalContent 
+        ? card.content 
+        : card.originalContent || card.content;
+      
+      // Generate differentiated content
+      const differentiatedContent = await generateDifferentiatedContent(
+        contentToAdapt,
+        card.type,
+        lesson.level
+      );
+      
+      // Update the card
+      const updatedCards = [...cards];
+      updatedCards[cardIndex] = {
+        ...card,
+        differentiatedContent
+      };
+      
+      setCards(updatedCards);
+      onSave(updatedCards);
+    } catch (error) {
+      console.error('Error creating differentiated card:', error);
+    } finally {
+      setDifferentiatingCardId(null);
+    }
+  };
+
   // Toggle a card between teacher and student versions
   const toggleCardMode = (cardId: string) => {
     const cardIndex = cards.findIndex(card => card.id === cardId);
@@ -308,7 +399,34 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     updatedCards[cardIndex] = {
       ...card,
       content: card.studentFriendly ? card.originalContent : card.content,
-      studentFriendly: !card.studentFriendly
+      studentFriendly: !card.studentFriendly,
+      isDifferentiated: false // Reset differentiated state when toggling
+    };
+    
+    setCards(updatedCards);
+    onSave(updatedCards);
+  };
+
+  // Toggle a card between standard and differentiated versions
+  const toggleDifferentiated = (cardId: string) => {
+    const cardIndex = cards.findIndex(card => card.id === cardId);
+    if (cardIndex === -1) return;
+    
+    const card = cards[cardIndex];
+    
+    // Only toggle if differentiated content exists
+    if (!card.differentiatedContent) return;
+    
+    // Keep track of which content we should revert to
+    const regularContent = card.isDifferentiated 
+      ? (card.studentFriendly ? card.content : card.originalContent || card.content)
+      : card.content;
+    
+    const updatedCards = [...cards];
+    updatedCards[cardIndex] = {
+      ...card,
+      content: card.isDifferentiated ? regularContent : card.differentiatedContent,
+      isDifferentiated: !card.isDifferentiated
     };
     
     setCards(updatedCards);
@@ -319,6 +437,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const renderCard = (card: LessonCard, index: number) => {
     const isEditing = editingCardId === card.id;
     const isProcessing = processingCardId === card.id;
+    const isDifferentiating = differentiatingCardId === card.id;
     
     return (
       <Draggable key={card.id} draggableId={card.id} index={index}>
@@ -355,6 +474,11 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     Student-Friendly
                   </span>
                 )}
+                {!isEditing && card.isDifferentiated && (
+                  <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-md mr-2">
+                    Differentiated
+                  </span>
+                )}
                 {!isEditing && (
                   <>
                     <button
@@ -369,6 +493,18 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         <Sparkles className="h-4 w-4" />
                       )}
                     </button>
+                    <button
+                      onClick={() => isDifferentiating ? null : createDifferentiatedCard(card.id)}
+                      className={`p-1 text-gray-500 hover:text-purple-600 rounded-full ${isDifferentiating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Create differentiated version"
+                      disabled={isDifferentiating}
+                    >
+                      {isDifferentiating ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Split className="h-4 w-4" />
+                      )}
+                    </button>
                     {card.studentFriendly && card.originalContent && (
                       <button
                         onClick={() => toggleCardMode(card.id)}
@@ -379,6 +515,19 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                           <Target className="h-4 w-4" />
                         ) : (
                           <CheckSquare className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                    {card.differentiatedContent && (
+                      <button
+                        onClick={() => toggleDifferentiated(card.id)}
+                        className="p-1 text-gray-500 hover:text-purple-600 rounded-full"
+                        title={card.isDifferentiated ? "Show standard version" : "Show differentiated version"}
+                      >
+                        {card.isDifferentiated ? (
+                          <Target className="h-4 w-4" />
+                        ) : (
+                          <Split className="h-4 w-4" />
                         )}
                       </button>
                     )}
@@ -516,25 +665,46 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       <div className="border-t pt-4">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-medium">Card Sequence ({cards.length} cards)</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={makeAllCardsStudentFriendly}
-            disabled={processingAllCards || cards.length === 0}
-            className="flex items-center gap-1"
-          >
-            {processingAllCards ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Make Accessible for Students
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={makeAllCardsStudentFriendly}
+              disabled={processingAllCards || cards.length === 0}
+              className="flex items-center gap-1"
+            >
+              {processingAllCards ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Make Accessible for Students
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={createDifferentiatedCards}
+              disabled={generatingDifferentiated || cards.length === 0}
+              className="flex items-center gap-1"
+            >
+              {generatingDifferentiated ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Split className="h-4 w-4" />
+                  Generate Differentiated Cards
+                </>
+              )}
+            </Button>
+          </div>
         </div>
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="cards">

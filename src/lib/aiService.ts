@@ -319,3 +319,81 @@ function defaultSuccessCriteria(objectives: string[]): string[] {
     return `I can demonstrate that I ${bulletRemoved.charAt(0).toLowerCase() + bulletRemoved.slice(1)}`;
   });
 }
+
+export async function generateDifferentiatedContent(content: string, cardType: string, level: string = ''): Promise<string> {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    
+    if (!apiKey) {
+      console.error('OpenAI API key is missing');
+      return defaultDifferentiatedContent(content, cardType);
+    }
+
+    const systemPrompt = `You are an expert at differentiating educational content for students who need additional support.
+    Simplify complex concepts without losing the core meaning.
+    Use clearer, more concrete language with examples that relate to everyday experiences.
+    Break down multi-step processes into smaller steps.
+    Use simpler vocabulary while maintaining academic integrity.
+    Include visual cues through text (like "Picture this:" or "Imagine that:").
+    For learning objectives, make them more specific and achievable.
+    Your goal is to make the content accessible to students who find the original difficult to understand.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `This is ${cardType} content that students are finding difficult to understand. It's intended for ${level || 'students'}. Please create a differentiated, simpler version: ${content}` }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return defaultDifferentiatedContent(content, cardType);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid AI response format:', data);
+      return defaultDifferentiatedContent(content, cardType);
+    }
+
+    return data.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error generating differentiated content:', error);
+    return defaultDifferentiatedContent(content, cardType);
+  }
+}
+
+function defaultDifferentiatedContent(content: string, cardType: string): string {
+  // Create a simplified version with more basic language
+  if (cardType === 'objective') {
+    const objectives = content.split('\n').map(line => {
+      const bulletRemoved = line.replace(/^[•\-*]\s*/, '');
+      return `• I can ${bulletRemoved.toLowerCase()}. This means I will be able to...`;
+    });
+    return objectives.join('\n');
+  }
+  
+  // For other types, make a simplified version
+  const sentences = content.split('. ');
+  const simplifiedSentences = sentences.map(sentence => {
+    // Shorten long sentences
+    if (sentence.length > 80) {
+      return sentence.substring(0, 80) + '...';
+    }
+    return sentence;
+  });
+  
+  // Add helper text at the beginning
+  return `Let's break this down simply:\n\n${simplifiedSentences.join('. ')}\n\nStill confused? Just remember the main idea: ${sentences[0]}`;
+}

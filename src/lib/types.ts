@@ -41,6 +41,8 @@ export interface LessonCard {
   activityIndex: number | null;
   studentFriendly?: boolean;
   originalContent?: string;
+  differentiatedContent?: string;
+  isDifferentiated?: boolean;
 }
 
 export interface LessonPresentation {

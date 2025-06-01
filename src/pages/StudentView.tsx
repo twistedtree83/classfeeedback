@@ -28,7 +28,8 @@ import {
   Clock, 
   MessageSquareText, 
   CheckCircle2,
-  User 
+  User,
+  Split
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
@@ -51,6 +52,7 @@ export function StudentView() {
   const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
@@ -278,9 +280,9 @@ export function StudentView() {
       );
       
       if (success) {
-        setSuccessMessage('Question sent to teacher!');
         setQuestion('');
         setShowQuestionForm(false);
+        setSuccessMessage('Question sent successfully!');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         setError('Failed to send question. Please try again.');
@@ -318,6 +320,10 @@ export function StudentView() {
     } finally {
       setIsSendingFeedback(false);
     }
+  };
+
+  const toggleDifferentiatedView = () => {
+    setViewingDifferentiated(!viewingDifferentiated);
   };
 
   // Render join form
@@ -449,6 +455,10 @@ export function StudentView() {
 
   // Render teaching view
   const currentCard = presentation?.cards?.[presentation.current_card_index];
+  const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
+  const cardContent = viewingDifferentiated && currentCard?.differentiatedContent 
+    ? currentCard.differentiatedContent 
+    : currentCard?.content;
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -514,25 +524,47 @@ export function StudentView() {
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6 flex-1">
             {currentCard ? (
               <>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
                     {currentCard.title}
                   </h2>
-                  {currentCard.duration && (
-                    <p className="text-gray-500">{currentCard.duration}</p>
+                  {hasDifferentiatedContent && (
+                    <Button
+                      onClick={toggleDifferentiatedView}
+                      variant={viewingDifferentiated ? "primary" : "outline"}
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <Split className="h-4 w-4" />
+                      {viewingDifferentiated ? "Standard View" : "Simplified View"}
+                    </Button>
                   )}
                 </div>
 
                 <div className="prose max-w-none whitespace-pre-wrap text-gray-700">
-                  {typeof currentCard.content === 'string' ? 
-                    currentCard.content.split('\n').map((line, i) => (
+                  {typeof cardContent === 'string' ? 
+                    cardContent.split('\n').map((line, i) => (
                       <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                     )) : 
-                    (currentCard.content as string[]).map((line, i) => (
+                    (cardContent as string[]).map((line, i) => (
                       <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                     ))
                   }
                 </div>
+                
+                {/* Differentiate button when there's no differentiated content yet */}
+                {!hasDifferentiatedContent && (
+                  <div className="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                    <p className="text-purple-800 mb-2">Need a simpler explanation?</p>
+                    <Button
+                      variant="outline"
+                      className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
+                    >
+                      <Split className="h-4 w-4 mr-2" />
+                      Differentiate Content
+                    </Button>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex items-center justify-center h-full">
