@@ -28,6 +28,7 @@ export interface ProcessedLesson {
   materials: string[];
   level: string;
   topic_background?: string;
+  success_criteria?: string[];
 }
 
 export interface LessonCard {
@@ -38,6 +39,8 @@ export interface LessonCard {
   duration: string | null;
   sectionId: string | null;
   activityIndex: number | null;
+  studentFriendly?: boolean;
+  originalContent?: string;
 }
 
 export interface LessonPresentation {

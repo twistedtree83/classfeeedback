@@ -34,7 +34,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       <div>
         <div className="flex items-center mb-3">
           <Target className="h-5 w-5 text-indigo-600 mr-2" />
-          <h3 className="text-lg font-semibold">Learning Objectives</h3>
+          <h3 className="text-lg font-semibold">Learning Intentions</h3>
         </div>
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
@@ -42,14 +42,35 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
               <li key={index}>{objective}</li>
             ))}
           </ul>
+          
+          {lesson.success_criteria && lesson.success_criteria.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-medium text-gray-800 flex items-center mb-2">
+                <CheckSquare className="h-4 w-4 mr-2 text-indigo-600" />
+                Success Criteria
+              </h4>
+              <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
+                {lesson.success_criteria.map((criteria, index) => (
+                  <li key={index}>{criteria}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
           {onAddToTeaching && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onAddToTeaching('objective', {
-                title: 'Learning Objectives',
-                content: lesson.objectives.map(obj => `• ${obj}`).join('\n')
-              })}
+              onClick={() => {
+                const content = lesson.success_criteria && lesson.success_criteria.length > 0
+                  ? `${lesson.objectives.map(obj => `• ${obj}`).join('\n')}\n\n**Success Criteria:**\n${lesson.success_criteria.map(sc => `• ${sc}`).join('\n')}`
+                  : lesson.objectives.map(obj => `• ${obj}`).join('\n');
+                
+                onAddToTeaching('objective', {
+                  title: 'Learning Intentions and Success Criteria',
+                  content
+                });
+              }}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />

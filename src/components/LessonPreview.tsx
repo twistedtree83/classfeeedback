@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
-import { Clock, Target, FileText, GraduationCap, BookOpen } from 'lucide-react';
+import { Clock, Target, FileText, GraduationCap, BookOpen, CheckSquare } from 'lucide-react';
 
 interface LessonPreviewProps {
   lesson: ProcessedLesson;
@@ -28,7 +28,7 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
       <div>
         <div className="flex items-center mb-3">
           <Target className="w-5 h-5 text-indigo-600 mr-2" />
-          <h3 className="font-semibold text-gray-900">Learning Objectives</h3>
+          <h3 className="font-semibold text-gray-900">Learning Intentions</h3>
         </div>
         <ul className="list-disc list-inside space-y-1 text-gray-700">
           {lesson.objectives.map((objective, index) => (
@@ -36,6 +36,20 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
           ))}
         </ul>
       </div>
+
+      {lesson.success_criteria && lesson.success_criteria.length > 0 && (
+        <div>
+          <div className="flex items-center mb-3">
+            <CheckSquare className="w-5 h-5 text-indigo-600 mr-2" />
+            <h3 className="font-semibold text-gray-900">Success Criteria</h3>
+          </div>
+          <ul className="list-disc list-inside space-y-1 text-gray-700">
+            {lesson.success_criteria.map((criteria, index) => (
+              <li key={index}>{criteria}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {lesson.topic_background && (
         <div>

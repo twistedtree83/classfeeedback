@@ -175,3 +175,147 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
     ]
   };
 }
+
+export async function makeContentStudentFriendly(content: string, cardType: string, level: string = ''): Promise<string> {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    
+    if (!apiKey) {
+      console.error('OpenAI API key is missing');
+      return defaultStudentFriendlyContent(content, cardType);
+    }
+
+    const systemPrompt = `You are an expert at adapting teacher materials into student-friendly content. 
+    Make the content more engaging, accessible, and appropriate for students. 
+    Adjust language, remove teacher-specific notes, and present information in a clear, friendly way.
+    For Learning Intentions, transform the objectives into "I can" statements.
+    If the content includes Success Criteria, make these clear, specific, and achievable.
+    Maintain all important educational content but make it directly address the student.
+    For Topic Background, include only the most interesting and relevant facts that will engage students.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `This is ${cardType} content intended for ${level || 'students'}. Please adapt it to be student-friendly: ${content}` }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return defaultStudentFriendlyContent(content, cardType);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid AI response format:', data);
+      return defaultStudentFriendlyContent(content, cardType);
+    }
+
+    return data.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error making content student-friendly:', error);
+    return defaultStudentFriendlyContent(content, cardType);
+  }
+}
+
+function defaultStudentFriendlyContent(content: string, cardType: string): string {
+  if (cardType === 'objective') {
+    const objectives = content.split('\n').map(line => {
+      // Convert each line to an "I can" statement
+      const bulletRemoved = line.replace(/^[•\-*]\s*/, '');
+      if (bulletRemoved.startsWith('I can')) {
+        return bulletRemoved;
+      }
+      return `I can ${bulletRemoved.charAt(0).toLowerCase() + bulletRemoved.slice(1)}`;
+    });
+    return objectives.join('\n');
+  }
+  
+  if (cardType === 'topic_background') {
+    return `Did you know? ${content}`;
+  }
+  
+  // For other types, just make a simple adjustment
+  return content.replace(/students will/gi, 'you will')
+    .replace(/students should/gi, 'you should')
+    .replace(/the students/gi, 'you')
+    .replace(/teachers/gi, 'we');
+}
+
+export async function generateSuccessCriteria(objectives: string[], level: string = ''): Promise<string[]> {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    
+    if (!apiKey || objectives.length === 0) {
+      console.error('OpenAI API key is missing or no objectives provided');
+      return defaultSuccessCriteria(objectives);
+    }
+
+    const systemPrompt = `You are an expert at creating clear success criteria from learning objectives.
+    For each learning objective, create 1-2 specific, measurable success criteria that would help students 
+    understand exactly what successful completion looks like.
+    Format each as a simple statement starting with "I can" or "I am able to".
+    Make the criteria appropriate for the specified grade level.
+    Ensure criteria are concrete and observable actions or products.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `For these learning objectives intended for ${level || 'students'}, generate appropriate success criteria:\n\n${objectives.join('\n')}` }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return defaultSuccessCriteria(objectives);
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid AI response format:', data);
+      return defaultSuccessCriteria(objectives);
+    }
+
+    const criteriaText = data.choices[0].message.content.trim();
+    // Parse the response into an array of criteria
+    const criteria = criteriaText.split(/\n+/).filter(line => 
+      line.trim().length > 0 && 
+      !line.trim().match(/^[0-9]+\.?\s*$/) && // Remove numbered lines with no content
+      !line.trim().match(/success criteria/i) // Remove headers
+    );
+    
+    return criteria;
+  } catch (error) {
+    console.error('Error generating success criteria:', error);
+    return defaultSuccessCriteria(objectives);
+  }
+}
+
+function defaultSuccessCriteria(objectives: string[]): string[] {
+  return objectives.map(objective => {
+    const bulletRemoved = objective.replace(/^[•\-*]\s*/, '');
+    return `I can demonstrate that I ${bulletRemoved.charAt(0).toLowerCase() + bulletRemoved.slice(1)}`;
+  });
+}

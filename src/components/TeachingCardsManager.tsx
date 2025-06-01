@@ -3,7 +3,19 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import type { LessonCard, ProcessedLesson } from '../lib/types';
-import { Plus, X, GripVertical, Edit, Save, BookOpen } from 'lucide-react';
+import { 
+  Plus, 
+  X, 
+  GripVertical, 
+  Edit, 
+  Save, 
+  BookOpen, 
+  Sparkles, 
+  Target, 
+  Loader2, 
+  CheckSquare 
+} from 'lucide-react';
+import { makeContentStudentFriendly, generateSuccessCriteria } from '../lib/aiService';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -17,6 +29,10 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editDuration, setEditDuration] = useState('');
+  const [processingCardId, setProcessingCardId] = useState<string | null>(null);
+  const [processingAllCards, setProcessingAllCards] = useState(false);
+  const [successCriteria, setSuccessCriteria] = useState<string[]>(lesson.success_criteria || []);
+  const [generatingCriteria, setGeneratingCriteria] = useState(false);
 
   // Update local cards state when selectedCards changes from parent
   useEffect(() => {
@@ -102,11 +118,18 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Create an objective card from lesson
   const createObjectiveCard = () => {
+    const objectives = lesson.objectives.map(obj => `• ${obj}`).join('\n');
+    
+    // Add success criteria if available
+    const content = successCriteria.length > 0 
+      ? `${objectives}\n\n**Success Criteria:**\n${successCriteria.map(sc => `• ${sc}`).join('\n')}`
+      : objectives;
+    
     const newCard: LessonCard = {
       id: crypto.randomUUID(),
       type: 'objective',
-      title: 'Learning Objectives',
-      content: lesson.objectives.map(obj => `• ${obj}`).join('\n'),
+      title: 'Learning Intentions and Success Criteria',
+      content: content,
       duration: null,
       sectionId: null,
       activityIndex: null
@@ -153,9 +176,149 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     onSave(updatedCards);
   };
 
+  // Generate success criteria from learning objectives
+  const handleGenerateSuccessCriteria = async () => {
+    if (generatingCriteria || lesson.objectives.length === 0) return;
+    
+    setGeneratingCriteria(true);
+    
+    try {
+      const criteria = await generateSuccessCriteria(lesson.objectives, lesson.level);
+      setSuccessCriteria(criteria);
+      
+      // Update any existing objective cards with the new success criteria
+      const updatedCards = cards.map(card => {
+        if (card.type === 'objective') {
+          const objectives = lesson.objectives.map(obj => `• ${obj}`).join('\n');
+          const content = `${objectives}\n\n**Success Criteria:**\n${criteria.map(sc => `• ${sc}`).join('\n')}`;
+          
+          return {
+            ...card,
+            content,
+            title: 'Learning Intentions and Success Criteria'
+          };
+        }
+        return card;
+      });
+      
+      setCards(updatedCards);
+      onSave(updatedCards);
+    } catch (error) {
+      console.error('Error generating success criteria:', error);
+    } finally {
+      setGeneratingCriteria(false);
+    }
+  };
+
+  // Make all cards student-friendly
+  const makeAllCardsStudentFriendly = async () => {
+    if (processingAllCards || cards.length === 0) return;
+    
+    setProcessingAllCards(true);
+    
+    try {
+      // Process each card sequentially to avoid rate limits
+      let updatedCards = [...cards];
+      
+      for (let i = 0; i < updatedCards.length; i++) {
+        const card = updatedCards[i];
+        
+        // Skip cards that are already student-friendly
+        if (card.studentFriendly) continue;
+        
+        // Save original content if not already saved
+        const originalContent = card.originalContent || card.content;
+        
+        // Make content student-friendly
+        const studentFriendlyContent = await makeContentStudentFriendly(
+          originalContent,
+          card.type,
+          lesson.level
+        );
+        
+        // Update the card
+        updatedCards[i] = {
+          ...card,
+          content: studentFriendlyContent,
+          originalContent: originalContent,
+          studentFriendly: true
+        };
+      }
+      
+      setCards(updatedCards);
+      onSave(updatedCards);
+    } catch (error) {
+      console.error('Error making cards student-friendly:', error);
+    } finally {
+      setProcessingAllCards(false);
+    }
+  };
+
+  // Make a single card student-friendly
+  const makeCardStudentFriendly = async (cardId: string) => {
+    if (processingCardId) return;
+    
+    setProcessingCardId(cardId);
+    
+    try {
+      const cardIndex = cards.findIndex(card => card.id === cardId);
+      if (cardIndex === -1) return;
+      
+      const card = cards[cardIndex];
+      
+      // Save original content if not already saved
+      const originalContent = card.originalContent || card.content;
+      
+      // Make content student-friendly
+      const studentFriendlyContent = await makeContentStudentFriendly(
+        originalContent,
+        card.type,
+        lesson.level
+      );
+      
+      // Update the card
+      const updatedCards = [...cards];
+      updatedCards[cardIndex] = {
+        ...card,
+        content: studentFriendlyContent,
+        originalContent: originalContent,
+        studentFriendly: true
+      };
+      
+      setCards(updatedCards);
+      onSave(updatedCards);
+    } catch (error) {
+      console.error('Error making card student-friendly:', error);
+    } finally {
+      setProcessingCardId(null);
+    }
+  };
+
+  // Toggle a card between teacher and student versions
+  const toggleCardMode = (cardId: string) => {
+    const cardIndex = cards.findIndex(card => card.id === cardId);
+    if (cardIndex === -1) return;
+    
+    const card = cards[cardIndex];
+    
+    // Only toggle if we have both versions
+    if (!card.studentFriendly || !card.originalContent) return;
+    
+    const updatedCards = [...cards];
+    updatedCards[cardIndex] = {
+      ...card,
+      content: card.studentFriendly ? card.originalContent : card.content,
+      studentFriendly: !card.studentFriendly
+    };
+    
+    setCards(updatedCards);
+    onSave(updatedCards);
+  };
+
   // Render a card based on its state (normal or editing)
   const renderCard = (card: LessonCard, index: number) => {
     const isEditing = editingCardId === card.id;
+    const isProcessing = processingCardId === card.id;
     
     return (
       <Draggable key={card.id} draggableId={card.id} index={index}>
@@ -228,6 +391,36 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     )}
                   </div>
                   <div className="flex gap-1">
+                    {card.studentFriendly && (
+                      <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md mr-2">
+                        Student-Friendly
+                      </span>
+                    )}
+                    <button
+                      onClick={() => isProcessing ? null : makeCardStudentFriendly(card.id)}
+                      className={`p-1 text-gray-500 hover:text-indigo-600 rounded-full ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Make student-friendly"
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                    </button>
+                    {card.studentFriendly && card.originalContent && (
+                      <button
+                        onClick={() => toggleCardMode(card.id)}
+                        className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
+                        title={card.studentFriendly ? "Show teacher version" : "Show student version"}
+                      >
+                        {card.studentFriendly ? (
+                          <Target className="h-4 w-4" />
+                        ) : (
+                          <CheckSquare className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleEditCard(card)}
                       className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
@@ -263,10 +456,24 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
           <Button
             variant="outline"
             size="sm"
+            onClick={handleGenerateSuccessCriteria}
+            disabled={generatingCriteria}
+            className="flex items-center gap-1"
+          >
+            {generatingCriteria ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckSquare className="h-4 w-4" />
+            )}
+            Generate Success Criteria
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={createObjectiveCard}
           >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Objectives
+            <Target className="h-4 w-4 mr-1" />
+            Add Learning Intentions
           </Button>
           <Button
             variant="outline"
@@ -298,7 +505,28 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       </div>
       
       <div className="border-t pt-4">
-        <h3 className="font-medium mb-4">Card Sequence ({cards.length} cards)</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-medium">Card Sequence ({cards.length} cards)</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={makeAllCardsStudentFriendly}
+            disabled={processingAllCards || cards.length === 0}
+            className="flex items-center gap-1"
+          >
+            {processingAllCards ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Make Accessible for Students
+              </>
+            )}
+          </Button>
+        </div>
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="cards">
             {(provided) => (

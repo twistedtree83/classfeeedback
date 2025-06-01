@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from '../components/FileUpload';
 import { extractTextFromFile } from '../lib/documentParser';
-import { aiAnalyzeLesson } from '../lib/aiService';
+import { aiAnalyzeLesson, generateSuccessCriteria } from '../lib/aiService';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import type { ProcessedLesson } from '../lib/types';
@@ -48,11 +48,15 @@ export function CreateLesson() {
         throw new Error('Failed to analyze lesson plan');
       }
       
+      // Generate success criteria based on objectives
+      const criteria = await generateSuccessCriteria(analyzed.objectives, level);
+      
       const processedLesson: ProcessedLesson = {
         id: crypto.randomUUID(),
         ...analyzed,
         title: title.trim(), // Override the AI-generated title with user's title
-        level: level.trim() // Add the lesson level
+        level: level.trim(), // Add the lesson level
+        success_criteria: criteria // Add success criteria
       };
       
       console.log('Saving lesson plan:', processedLesson);

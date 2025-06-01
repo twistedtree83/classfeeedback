@@ -5,8 +5,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { SectionEditor } from '../components/SectionEditor';
 import type { ProcessedLesson, LessonSection } from '../lib/types';
-import { aiAnalyzeLesson } from '../lib/aiService';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { aiAnalyzeLesson, generateSuccessCriteria } from '../lib/aiService';
+import { Sparkles, Loader2, CheckSquare } from 'lucide-react';
 
 export function EditLesson() {
   const { id } = useParams<{ id: string }>();
@@ -19,11 +19,14 @@ export function EditLesson() {
   const [materials, setMaterials] = useState<string[]>([]);
   const [sections, setSections] = useState<LessonSection[]>([]);
   const [topicBackground, setTopicBackground] = useState('');
+  const [successCriteria, setSuccessCriteria] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatingBackground, setGeneratingBackground] = useState(false);
   const [backgroundMessage, setBackgroundMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  const [generatingCriteria, setGeneratingCriteria] = useState(false);
+  const [criteriaMessage, setCriteriaMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -48,6 +51,7 @@ export function EditLesson() {
         setMaterials(lessonContent.materials);
         setSections(lessonContent.sections);
         setTopicBackground(lessonContent.topic_background || '');
+        setSuccessCriteria(lessonContent.success_criteria || []);
       } catch (err) {
         console.error('Error fetching lesson:', err);
         setError(err instanceof Error ? err.message : 'Failed to load lesson');
@@ -74,7 +78,8 @@ export function EditLesson() {
         objectives,
         materials,
         sections,
-        topic_background: topicBackground
+        topic_background: topicBackground,
+        success_criteria: successCriteria
       };
 
       const { error: updateError } = await supabase
@@ -147,6 +152,47 @@ export function EditLesson() {
     }
   };
 
+  const handleGenerateSuccessCriteria = async () => {
+    if (objectives.length === 0) {
+      setCriteriaMessage({
+        text: 'Please add learning objectives before generating success criteria',
+        type: 'error'
+      });
+      return;
+    }
+
+    setGeneratingCriteria(true);
+    setCriteriaMessage(null);
+
+    try {
+      const criteria = await generateSuccessCriteria(objectives, level);
+      
+      if (criteria && criteria.length > 0) {
+        setSuccessCriteria(criteria);
+        setCriteriaMessage({
+          text: 'Success criteria generated successfully',
+          type: 'success'
+        });
+      } else {
+        throw new Error('Failed to generate success criteria');
+      }
+    } catch (err) {
+      console.error('Error generating success criteria:', err);
+      setCriteriaMessage({
+        text: err instanceof Error ? err.message : 'Failed to generate success criteria',
+        type: 'error'
+      });
+    } finally {
+      setGeneratingCriteria(false);
+      // Clear success message after 5 seconds
+      if (criteriaMessage?.type === 'success') {
+        setTimeout(() => {
+          setCriteriaMessage(null);
+        }, 5000);
+      }
+    }
+  };
+
   const handleAddObjective = () => {
     setObjectives([...objectives, '']);
   };
@@ -159,6 +205,20 @@ export function EditLesson() {
 
   const handleRemoveObjective = (index: number) => {
     setObjectives(objectives.filter((_, i) => i !== index));
+  };
+
+  const handleAddSuccessCriteria = () => {
+    setSuccessCriteria([...successCriteria, '']);
+  };
+
+  const handleSuccessCriteriaChange = (index: number, value: string) => {
+    const newCriteria = [...successCriteria];
+    newCriteria[index] = value;
+    setSuccessCriteria(newCriteria);
+  };
+
+  const handleRemoveSuccessCriteria = (index: number) => {
+    setSuccessCriteria(successCriteria.filter((_, i) => i !== index));
   };
 
   const handleAddMaterial = () => {
@@ -264,14 +324,14 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Learning Objectives</h2>
+            <h2 className="text-lg font-medium text-gray-900">Learning Intentions</h2>
             <Button
               onClick={handleAddObjective}
               variant="outline"
               size="sm"
               disabled={saving}
             >
-              Add Objective
+              Add Learning Intention
             </Button>
           </div>
           {objectives.map((objective, index) => (
@@ -280,10 +340,75 @@ export function EditLesson() {
                 value={objective}
                 onChange={(e) => handleObjectiveChange(index, e.target.value)}
                 disabled={saving}
-                placeholder={`Objective ${index + 1}`}
+                placeholder={`Learning Intention ${index + 1}`}
               />
               <Button
                 onClick={() => handleRemoveObjective(index)}
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700"
+                disabled={saving}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Success Criteria</h2>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleGenerateSuccessCriteria}
+                variant="outline"
+                size="sm"
+                disabled={saving || generatingCriteria}
+                className="flex items-center gap-1"
+              >
+                {generatingCriteria ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-4 w-4" />
+                    Generate
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleAddSuccessCriteria}
+                variant="outline"
+                size="sm"
+                disabled={saving}
+              >
+                Add Criteria
+              </Button>
+            </div>
+          </div>
+          
+          {criteriaMessage && (
+            <div className={`p-3 rounded-lg ${
+              criteriaMessage.type === 'success' 
+                ? 'bg-green-50 text-green-700' 
+                : 'bg-red-50 text-red-700'
+            }`}>
+              {criteriaMessage.text}
+            </div>
+          )}
+          
+          {successCriteria.map((criteria, index) => (
+            <div key={index} className="flex gap-2">
+              <Input
+                value={criteria}
+                onChange={(e) => handleSuccessCriteriaChange(index, e.target.value)}
+                disabled={saving}
+                placeholder={`Success Criteria ${index + 1}`}
+              />
+              <Button
+                onClick={() => handleRemoveSuccessCriteria(index)}
                 variant="outline"
                 size="sm"
                 className="text-red-600 hover:text-red-700"
