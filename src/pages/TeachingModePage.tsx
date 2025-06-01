@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Users, BarChart3 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, BarChart3, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ParticipantsList } from '../components/ParticipantsList';
 import { TeachingFeedbackPanel } from '../components/TeachingFeedbackPanel';
-import { 
+import { SendMessageModal } from '../components/SendMessageModal';
+import {
   getLessonPresentationByCode,
   updateLessonPresentationCardIndex,
   endLessonPresentation,
-  subscribeToTeachingQuestions
+  subscribeToTeachingQuestions,
+  getSessionByCode,
+  sendTeacherMessage
 } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard } from '../lib/types';
 
@@ -20,34 +23,41 @@ export function TeachingModePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showParticipants, setShowParticipants] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(true); // Changed to true by default
+  const [showFeedback, setShowFeedback] = useState(true);
   const [hasNewQuestions, setHasNewQuestions] = useState(false);
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [teacherName, setTeacherName] = useState<string>('');
 
   useEffect(() => {
-    const loadPresentation = async () => {
+    const loadPresentationAndSession = async () => {
       if (!code) return;
 
       try {
-        const data = await getLessonPresentationByCode(code);
-        if (!data) throw new Error('Presentation not found');
-        
-        setPresentation(data);
-        setCurrentCard(data.cards[data.current_card_index]);
+        const presentationData = await getLessonPresentationByCode(code);
+        if (!presentationData) throw new Error('Presentation not found');
+
+        const sessionData = await getSessionByCode(code);
+        if (sessionData) {
+          setTeacherName(sessionData.teacher_name);
+        }
+
+        setPresentation(presentationData);
+        setCurrentCard(presentationData.cards[presentationData.current_card_index]);
       } catch (err) {
-        console.error('Error loading presentation:', err);
+        console.error('Error loading presentation or session:', err);
         setError(err instanceof Error ? err.message : 'Failed to load presentation');
       } finally {
         setLoading(false);
       }
     };
 
-    loadPresentation();
+    loadPresentationAndSession();
   }, [code]);
 
-  // Subscribe to new questions to show notification
   useEffect(() => {
     if (!presentation?.id) return;
-    
+
     const subscription = subscribeToTeachingQuestions(
       presentation.id,
       (newQuestion) => {
@@ -56,25 +66,42 @@ export function TeachingModePage() {
         }
       }
     );
-    
+
     return () => {
       subscription.unsubscribe();
     };
   }, [presentation?.id, showFeedback]);
 
-  // Reset new questions flag when feedback panel is shown
   useEffect(() => {
     if (showFeedback) {
       setHasNewQuestions(false);
     }
   }, [showFeedback]);
 
+  const handleSendMessage = async (message: string) => {
+    if (!presentation?.id || !teacherName) return false;
+    setIsSendingMessage(true);
+    try {
+      const success = await sendTeacherMessage(presentation.id, teacherName, message);
+      if (!success) {
+        setError('Failed to send message.');
+      }
+      return success;
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('An unexpected error occurred while sending message.');
+      return false;
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   const handlePrevious = async () => {
     if (!presentation || presentation.current_card_index <= 0) return;
-    
+
     const newIndex = presentation.current_card_index - 1;
     const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
-    
+
     if (success) {
       setPresentation({ ...presentation, current_card_index: newIndex });
       setCurrentCard(presentation.cards[newIndex]);
@@ -83,10 +110,10 @@ export function TeachingModePage() {
 
   const handleNext = async () => {
     if (!presentation || presentation.current_card_index >= presentation.cards.length - 1) return;
-    
+
     const newIndex = presentation.current_card_index + 1;
     const success = await updateLessonPresentationCardIndex(presentation.id, newIndex);
-    
+
     if (success) {
       setPresentation({ ...presentation, current_card_index: newIndex });
       setCurrentCard(presentation.cards[newIndex]);
@@ -159,6 +186,13 @@ export function TeachingModePage() {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => setShowSendMessageModal(true)}
+                size="sm"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
                 className="text-red-600 hover:text-red-700"
                 onClick={handleEndSession}
               >
@@ -185,16 +219,16 @@ export function TeachingModePage() {
                   <p className="text-gray-500 mt-1">{currentCard.duration}</p>
                 )}
               </div>
-              
+
               {/* Card content */}
               <div className="p-6">
-                {typeof currentCard.content === 'string' && 
+                {typeof currentCard.content === 'string' &&
                   currentCard.content.split('\n').map((line, i) => (
                     <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
                   ))
                 }
               </div>
-              
+
               {/* Card navigation */}
               <div className="border-t border-gray-100 bg-gray-50 p-4 flex justify-between items-center">
                 <Button
@@ -217,7 +251,7 @@ export function TeachingModePage() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Student join instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
               <h3 className="font-bold mb-2">Student Join Instructions</h3>
@@ -229,7 +263,7 @@ export function TeachingModePage() {
             </div>
           </div>
         </main>
-        
+
         {/* Sidebar */}
         {(showParticipants || showFeedback) && (
           <aside className="hidden lg:block w-96 border-l border-gray-200 bg-white overflow-y-auto">
@@ -237,7 +271,7 @@ export function TeachingModePage() {
               {showFeedback && (
                 <TeachingFeedbackPanel presentationId={presentation.id} />
               )}
-              
+
               {showParticipants && (
                 <ParticipantsList sessionCode={presentation.session_code} />
               )}
@@ -245,6 +279,14 @@ export function TeachingModePage() {
           </aside>
         )}
       </div>
+
+      {/* Send Message Modal */}
+      <SendMessageModal
+        isOpen={showSendMessageModal}
+        onClose={() => setShowSendMessageModal(false)}
+        onSendMessage={handleSendMessage}
+        isSending={isSendingMessage}
+      />
     </div>
   );
 }

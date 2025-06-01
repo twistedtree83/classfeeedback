@@ -48,3 +48,11 @@ export interface LessonPresentation {
   created_at: string;
   realtime_enabled: boolean;
 }
+
+export interface TeacherMessage {
+  id: string;
+  presentation_id: string;
+  teacher_name: string;
+  message_content: string;
+  created_at: string;
+}

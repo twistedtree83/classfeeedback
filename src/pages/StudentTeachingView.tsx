@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  getLessonPresentationByCode, 
+import {
+  getLessonPresentationByCode,
   subscribeToLessonPresentation,
   getSessionByCode,
   addSessionParticipant,
   submitTeachingFeedback,
-  submitTeachingQuestion
+  submitTeachingQuestion,
+  subscribeToTeacherMessages,
+  TeacherMessage
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { 
-  ThumbsUp, 
-  ThumbsDown, 
-  Clock, 
-  Send, 
-  User, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Clock,
+  Send,
+  User,
+  AlertCircle,
+  CheckCircle2,
   ArrowLeftCircle,
   ArrowRightCircle,
-  BookOpen
+  BookOpen,
+  MessageSquareText
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 
@@ -37,9 +40,9 @@ export function StudentTeachingView() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<string | null>(null);
   const [feedbackCooldown, setFeedbackCooldown] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Extract code from URL query params if available
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const codeParam = params.get('code');
@@ -52,7 +55,6 @@ export function StudentTeachingView() {
   const isFirstCard = presentation?.current_card_index === 0;
   const isLastCard = presentation?.current_card_index === presentation?.cards.length - 1;
 
-  // Scroll to top when card changes
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
@@ -61,16 +63,15 @@ export function StudentTeachingView() {
 
   useEffect(() => {
     if (!presentation?.session_code || !joined) return;
-    
-    const subscription = subscribeToLessonPresentation(
+
+    const presentationSubscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
         getLessonPresentationByCode(presentation.session_code)
           .then(fullPresentation => {
             if (fullPresentation) {
               setPresentation(fullPresentation);
-              
-              // Reset feedback status on card change
+
               if (fullPresentation.current_card_index !== presentation.current_card_index) {
                 setFeedbackSubmitted(null);
               }
@@ -80,19 +81,30 @@ export function StudentTeachingView() {
       }
     );
 
+    const teacherMessageSubscription = subscribeToTeacherMessages(
+      presentation.id,
+      (newMessage) => {
+        setTeacherMessage(newMessage);
+        setTimeout(() => {
+          setTeacherMessage(null);
+        }, 5000);
+      }
+    );
+
     return () => {
-      subscription.unsubscribe();
+      presentationSubscription.unsubscribe();
+      teacherMessageSubscription.unsubscribe();
     };
-  }, [presentation?.session_code, presentation?.current_card_index, joined]);
+  }, [presentation?.session_code, presentation?.id, presentation?.current_card_index, joined]);
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!sessionCode.trim()) {
       setError('Please enter a session code');
       return;
     }
-    
+
     if (!studentName.trim()) {
       setError('Please enter your name');
       return;
@@ -102,31 +114,28 @@ export function StudentTeachingView() {
     setError(null);
 
     try {
-      // First check if the session exists and is active
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
       if (!session) {
         throw new Error('Session not found or has ended');
       }
 
-      // Add participant to session
       const participant = await addSessionParticipant(
-        sessionCode.trim().toUpperCase(), 
+        sessionCode.trim().toUpperCase(),
         studentName.trim()
       );
-      
+
       if (!participant) {
         throw new Error('Failed to join session');
       }
-      
+
       const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
       if (!presentationData) {
         throw new Error('Presentation not found');
       }
-      
+
       setPresentation(presentationData);
       setJoined(true);
-      
-      // Update URL with code parameter without reloading
+
       const url = new URL(window.location.href);
       url.searchParams.set('code', sessionCode.trim().toUpperCase());
       window.history.pushState({}, '', url);
@@ -140,25 +149,23 @@ export function StudentTeachingView() {
 
   const handleFeedback = async (type: string) => {
     if (!presentation || feedbackCooldown) return;
-    
+
     setFeedbackCooldown(true);
-    
+
     try {
       await submitTeachingFeedback(
         presentation.id,
         studentName,
         type
       );
-      
+
       setFeedbackSubmitted(type);
       setShowSuccessMessage(true);
-      
-      // Hide success message after 2 seconds
+
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 2000);
-      
-      // Set cooldown to prevent spam
+
       setTimeout(() => {
         setFeedbackCooldown(false);
       }, 3000);
@@ -169,20 +176,19 @@ export function StudentTeachingView() {
 
   const handleSubmitQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!presentation || !question.trim()) return;
-    
+
     try {
       await submitTeachingQuestion(
         presentation.id,
         studentName,
         question.trim()
       );
-      
+
       setQuestion('');
       setShowSuccessMessage(true);
-      
-      // Hide success message after 2 seconds
+
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 2000);
@@ -207,11 +213,11 @@ export function StudentTeachingView() {
             <div className="flex justify-center mb-6">
               <BookOpen className="h-12 w-12 text-indigo-600" />
             </div>
-            
+
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Join Classroom Session
             </h2>
-            
+
             <form onSubmit={handleJoinSession} className="space-y-5">
               <Input
                 label="Session Code"
@@ -223,7 +229,7 @@ export function StudentTeachingView() {
                 className="uppercase text-lg tracking-wide"
                 autoFocus
               />
-              
+
               <Input
                 label="Your Name"
                 value={studentName}
@@ -231,14 +237,14 @@ export function StudentTeachingView() {
                 placeholder="Enter your name"
                 disabled={loading}
               />
-              
+
               {error && (
                 <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
                   <AlertCircle className="h-5 w-5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
-              
+
               <Button
                 type="submit"
                 disabled={loading || !sessionCode.trim() || !studentName.trim()}
@@ -275,12 +281,10 @@ export function StudentTeachingView() {
     );
   }
 
-  // Calculate progress percentage
   const progressPercentage = ((presentation.current_card_index + 1) / presentation.cards.length) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header with session info and progress bar */}
       <header className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-2">
@@ -297,8 +301,7 @@ export function StudentTeachingView() {
               </span>
             </div>
           </div>
-          
-          {/* Progress bar */}
+
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
@@ -308,18 +311,25 @@ export function StudentTeachingView() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="flex-grow overflow-auto">
         <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-          {/* Success message toast */}
           {showSuccessMessage && (
             <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2 animate-fade-in-out">
               <CheckCircle2 className="h-5 w-5" />
               <span>Successfully sent to teacher!</span>
             </div>
           )}
-          
-          {/* Card navigation for smaller screens */}
+
+          {teacherMessage && (
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 animate-fade-in-out max-w-sm">
+              <MessageSquareText className="h-6 w-6 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Message from {teacherMessage.teacher_name}:</p>
+                <p className="text-sm">{teacherMessage.message_content}</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center lg:hidden">
             <Button
               onClick={() => setPresentation({
@@ -332,13 +342,13 @@ export function StudentTeachingView() {
             >
               <ArrowLeftCircle className="h-5 w-5" />
             </Button>
-            
+
             <div className="text-center">
               <div className="inline-flex items-center justify-center bg-indigo-100 text-indigo-800 font-medium rounded-full h-10 w-10">
                 {Math.round(progressPercentage)}%
               </div>
             </div>
-            
+
             <Button
               onClick={() => setPresentation({
                 ...presentation,
@@ -352,9 +362,7 @@ export function StudentTeachingView() {
             </Button>
           </div>
 
-          {/* Content card */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {/* Card header */}
             <div className="bg-indigo-50 p-4 border-b border-indigo-100">
               <div className="flex justify-between items-start">
                 <div>
@@ -368,8 +376,7 @@ export function StudentTeachingView() {
                     </div>
                   )}
                 </div>
-                
-                {/* Progress circle for larger screens */}
+
                 <div className="hidden lg:flex bg-white rounded-full w-14 h-14 items-center justify-center shadow">
                   <div className="text-indigo-800 font-medium">
                     {Math.round(progressPercentage)}%
@@ -377,9 +384,8 @@ export function StudentTeachingView() {
                 </div>
               </div>
             </div>
-            
-            {/* Card content */}
-            <div 
+
+            <div
               ref={contentRef}
               className="p-6 overflow-auto max-h-[calc(100vh-22rem)]"
             >
@@ -389,8 +395,7 @@ export function StudentTeachingView() {
                 ))}
               </div>
             </div>
-            
-            {/* Card navigation for larger screens */}
+
             <div className="hidden lg:flex justify-between items-center p-4 bg-gray-50 border-t border-gray-100">
               <Button
                 onClick={() => setPresentation({
@@ -404,11 +409,11 @@ export function StudentTeachingView() {
                 <ArrowLeftCircle className="h-5 w-5" />
                 Previous
               </Button>
-              
+
               <span className="text-gray-500">
                 {presentation.current_card_index + 1} / {presentation.cards.length}
               </span>
-              
+
               <Button
                 onClick={() => setPresentation({
                   ...presentation,
@@ -423,12 +428,11 @@ export function StudentTeachingView() {
             </div>
           </div>
 
-          {/* Feedback section */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-800">
               How are you following along?
             </h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
               <Button
                 onClick={() => handleFeedback('understand')}
@@ -439,7 +443,7 @@ export function StudentTeachingView() {
                 <ThumbsUp className="h-5 w-5 mr-2" />
                 I understand
               </Button>
-              
+
               <Button
                 onClick={() => handleFeedback('confused')}
                 disabled={feedbackCooldown}
@@ -449,7 +453,7 @@ export function StudentTeachingView() {
                 <ThumbsDown className="h-5 w-5 mr-2" />
                 I'm confused
               </Button>
-              
+
               <Button
                 onClick={() => handleFeedback('slower')}
                 disabled={feedbackCooldown}
@@ -460,8 +464,7 @@ export function StudentTeachingView() {
                 Slow down
               </Button>
             </div>
-            
-            {/* Question form */}
+
             <form onSubmit={handleSubmitQuestion} className="mt-6">
               <h3 className="text-lg font-semibold mb-3 text-gray-800">
                 Ask a question

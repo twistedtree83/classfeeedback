@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProcessedLesson } from './types';
+import type { ProcessedLesson, LessonCard, TeacherMessage } from './types';
 
 // In a real application, use environment variables to secure these values
 const supabaseUrl = 'https://luxanhwgynfazfrzapto.supabase.co';
@@ -605,6 +605,48 @@ export const subscribeToTeachingQuestions = (
         filter: `presentation_id=eq.${presentationId}`,
       },
       (payload) => callback(payload.new)
+    )
+    .subscribe();
+};
+
+// Teacher messages functions
+export const sendTeacherMessage = async (
+  presentationId: string,
+  teacherName: string,
+  messageContent: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('teacher_messages')
+      .insert([{
+        presentation_id: presentationId,
+        teacher_name: teacherName,
+        message_content: messageContent
+      }]);
+
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error('Error sending teacher message:', err);
+    return false;
+  }
+};
+
+export const subscribeToTeacherMessages = (
+  presentationId: string,
+  callback: (message: TeacherMessage) => void
+) => {
+  return supabase
+    .channel('teacher_messages_channel')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'teacher_messages',
+        filter: `presentation_id=eq.${presentationId}`,
+      },
+      (payload) => callback(payload.new as TeacherMessage)
     )
     .subscribe();
 };
