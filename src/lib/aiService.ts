@@ -5,21 +5,23 @@ const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuri
 1. Title: Keep the provided title
 2. Summary: A brief 2-3 sentence overview of what students will learn
 3. Duration: Total lesson time (e.g. "45 minutes", "1 hour")
-4. Learning Objectives: 3-5 specific, measurable objectives starting with action verbs
-5. Required Materials: All physical and digital resources needed
-6. Lesson Sections: Organized teaching segments, each with:
+4. Level: The appropriate level for this lesson (e.g. "Beginner", "Grade 3-5", "High School")
+5. Learning Objectives: 3-5 specific, measurable objectives starting with action verbs
+6. Required Materials: All physical and digital resources needed
+7. Lesson Sections: Organized teaching segments, each with:
    - Title: Clear section heading
    - Duration: Time allocation
    - Content: Main teaching points and explanations
    - Activities: Specific exercises or tasks
    - Assessment: How to check understanding
 
-Format your response as a JSON object with these exact fields: title, summary, duration, objectives (array), materials (array), and sections (array of objects with id, title, duration, content, activities array, and assessment).`;
+Format your response as a JSON object with these exact fields: title, summary, duration, level, objectives (array), materials (array), and sections (array of objects with id, title, duration, content, activities array, and assessment).`;
 
 interface AIResponse {
   title: string;
   summary: string;
   duration: string;
+  level: string;
   objectives: string[];
   materials: string[];
   sections: {
@@ -91,6 +93,7 @@ function validateAndCleanResponse(response: any): AIResponse {
     title: response.title || 'Untitled Lesson',
     summary: response.summary || 'No summary provided',
     duration: response.duration || '60 minutes',
+    level: response.level || 'All Levels',
     objectives: Array.isArray(response.objectives) ? response.objectives : [],
     materials: Array.isArray(response.materials) ? response.materials : [],
     sections: Array.isArray(response.sections) ? response.sections.map((section: any, index: number) => ({
@@ -127,6 +130,7 @@ function fallbackAnalysis(content: string): AIResponse {
     title: 'Untitled Lesson',
     summary: `This lesson covers ${content.slice(0, 100)}...`,
     duration: '60 minutes',
+    level: 'All Levels',
     objectives: [
       'Understand key concepts from the material',
       'Apply learning to practical examples',

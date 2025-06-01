@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowLeft } from 'lucide-react';
+import { BookOpen, ArrowLeft, GraduationCap, Clock } from 'lucide-react';
 import type { ProcessedLesson } from '../lib/types';
 import { supabase } from '../lib/supabaseClient';
 
@@ -101,7 +101,18 @@ export function LessonPlannerPage() {
                 className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
                 <h3 className="text-lg font-semibold mb-2">{lesson.processed_content.title}</h3>
-                <p className="text-gray-600 mb-4">{lesson.processed_content.duration}</p>
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span>{lesson.processed_content.duration}</span>
+                  </div>
+                  {lesson.processed_content.level && (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <GraduationCap className="w-4 h-4 mr-1" />
+                      <span>{lesson.processed_content.level}</span>
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   {lesson.processed_content.objectives.slice(0, 2).map((objective, i) => (
                     <p key={i} className="text-sm text-gray-500">• {objective}</p>

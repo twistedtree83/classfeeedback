@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabaseClient';
 export function CreateLesson() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
+  const [level, setLevel] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +51,8 @@ export function CreateLesson() {
       const processedLesson: ProcessedLesson = {
         id: crypto.randomUUID(),
         ...analyzed,
-        title: title.trim() // Override the AI-generated title with user's title
+        title: title.trim(), // Override the AI-generated title with user's title
+        level: level.trim() // Add the lesson level
       };
       
       console.log('Saving lesson plan:', processedLesson);
@@ -62,7 +64,8 @@ export function CreateLesson() {
         .insert([{
           id: processedLesson.id,
           title: processedLesson.title,
-          processed_content: processedLesson
+          processed_content: processedLesson,
+          level: level.trim()
         }]);
 
       if (saveError) {
@@ -98,6 +101,14 @@ export function CreateLesson() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter a title for your lesson"
+            disabled={isProcessing}
+          />
+
+          <Input
+            label="Lesson Level"
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+            placeholder="e.g., Beginner, Intermediate, Advanced, Grade 3-5, etc."
             disabled={isProcessing}
           />
 

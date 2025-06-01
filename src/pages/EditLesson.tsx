@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { SectionEditor } from '../components/SectionEditor';
-import type { ProcessedLesson } from '../lib/types';
+import type { ProcessedLesson, LessonSection } from '../lib/types';
 
 export function EditLesson() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +12,7 @@ export function EditLesson() {
   const [lesson, setLesson] = useState<ProcessedLesson | null>(null);
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
+  const [level, setLevel] = useState('');
   const [objectives, setObjectives] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [sections, setSections] = useState<LessonSection[]>([]);
@@ -37,6 +38,7 @@ export function EditLesson() {
         setLesson(lessonContent);
         setTitle(lessonContent.title);
         setDuration(lessonContent.duration);
+        setLevel(lessonContent.level || '');
         setObjectives(lessonContent.objectives);
         setMaterials(lessonContent.materials);
         setSections(lessonContent.sections);
@@ -62,6 +64,7 @@ export function EditLesson() {
         ...lesson,
         title,
         duration,
+        level,
         objectives,
         materials,
         sections
@@ -71,6 +74,7 @@ export function EditLesson() {
         .from('lesson_plans')
         .update({
           title,
+          level,
           processed_content: updatedLesson
         })
         .eq('id', id);
@@ -161,6 +165,14 @@ export function EditLesson() {
           label="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          disabled={saving}
+        />
+
+        <Input
+          label="Level"
+          value={level}
+          onChange={(e) => setLevel(e.target.value)}
+          placeholder="e.g., Beginner, Intermediate, Advanced, Grade 3-5, etc."
           disabled={saving}
         />
 

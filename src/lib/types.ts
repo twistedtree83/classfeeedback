@@ -6,6 +6,7 @@ export interface LessonPlan {
   duration: string;
   materials: string[];
   created_at: string;
+  level?: string;
 }
 
 export interface LessonSection {
@@ -25,6 +26,7 @@ export interface ProcessedLesson {
   sections: LessonSection[];
   duration: string;
   materials: string[];
+  level: string;
 }
 
 export interface LessonCard {

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ProcessedLesson } from '../lib/types';
-import { Clock, Target, FileText } from 'lucide-react';
+import { Clock, Target, FileText, GraduationCap } from 'lucide-react';
 
 interface LessonPreviewProps {
   lesson: ProcessedLesson;
@@ -11,9 +11,17 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
     <div className="bg-white rounded-lg shadow p-6 space-y-6">
       <div className="border-b pb-4">
         <h2 className="text-xl font-bold text-gray-900">{lesson.title}</h2>
-        <div className="flex items-center mt-2 text-gray-600">
-          <Clock className="w-4 h-4 mr-2" />
-          <span>{lesson.duration}</span>
+        <div className="flex flex-wrap items-center gap-4 mt-2 text-gray-600">
+          <div className="flex items-center">
+            <Clock className="w-4 h-4 mr-2" />
+            <span>{lesson.duration}</span>
+          </div>
+          {lesson.level && (
+            <div className="flex items-center">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              <span>Level: {lesson.level}</span>
+            </div>
+          )}
         </div>
       </div>
 
