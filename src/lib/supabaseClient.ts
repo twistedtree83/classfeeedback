@@ -685,22 +685,32 @@ export const subscribeToTeacherMessages = (
 ) => {
   console.log('Setting up subscription for teacher messages on presentation:', presentationId);
   
-  return supabase
-    .channel('teacher_messages_channel')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'teacher_messages',
-        filter: `presentation_id=eq.${presentationId}`,
-      },
-      (payload) => {
-        console.log('Received new teacher message via subscription:', payload.new);
-        callback(payload.new as TeacherMessage);
-      }
-    )
-    .subscribe((status) => {
-      console.log('Teacher messages subscription status:', status);
-    });
+  try {
+    const channel = supabase
+      .channel(`teacher_messages_${presentationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'teacher_messages',
+          filter: `presentation_id=eq.${presentationId}`,
+        },
+        (payload) => {
+          console.log('Received new teacher message via subscription:', payload.new);
+          callback(payload.new as TeacherMessage);
+        }
+      )
+      .subscribe((status) => {
+        console.log('Teacher messages subscription status:', status);
+      });
+    
+    return channel;
+  } catch (error) {
+    console.error('Error setting up teacher messages subscription:', error);
+    // Return a dummy subscription with unsubscribe method to prevent crashes
+    return {
+      unsubscribe: () => console.log('Dummy unsubscribe called')
+    };
+  }
 };

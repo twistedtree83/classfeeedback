@@ -95,8 +95,6 @@ export function StudentTeachingView() {
           if (messages.length > 0) {
             setNewMessageCount(messages.length);
           }
-        } else {
-          console.error("Unexpected messages format:", messages);
         }
       } catch (err) {
         console.error('Error loading teacher messages:', err);
@@ -141,10 +139,10 @@ export function StudentTeachingView() {
     if (!presentation?.id || !joined) return;
     
     console.log("Setting up teacher message subscription for presentation:", presentation.id);
-    const teacherMessageSubscription = subscribeToTeacherMessages(
+    const messageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (newMessage) => {
-        console.log("Received new teacher message via subscription:", newMessage);
+        console.log("Received new teacher message:", newMessage);
         
         // Add message to the messages array
         setAllMessages(prevMessages => {
@@ -159,9 +157,14 @@ export function StudentTeachingView() {
         // Show toast notification
         setTeacherMessage(newMessage);
         
-        // Play a notification sound
+        // Play notification sound
         if (audioRef.current) {
-          audioRef.current.play().catch(e => console.log("Audio play prevented by browser policy"));
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => {
+              console.log("Audio play prevented:", e);
+            });
+          }
         }
         
         // Clear toast after 5 seconds
@@ -178,7 +181,7 @@ export function StudentTeachingView() {
 
     return () => {
       console.log("Unsubscribing from teacher messages");
-      teacherMessageSubscription.unsubscribe();
+      messageSubscription.unsubscribe();
     };
   }, [presentation?.id, joined, showMessagePanel]);
 
