@@ -493,6 +493,29 @@ export const addSessionParticipant = async (
   }
 };
 
+export const getPendingParticipantsForSession = async (
+  sessionCode: string
+): Promise<SessionParticipant[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_participants')
+      .select('*')
+      .eq('session_code', sessionCode)
+      .eq('status', 'pending')
+      .order('joined_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching pending participants:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching pending participants:', err);
+    return [];
+  }
+};
+
 export const updateParticipantStatus = async (
   participantId: string,
   status: 'approved' | 'rejected'
