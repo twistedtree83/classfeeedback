@@ -9,7 +9,8 @@ import {
   submitTeachingQuestion,
   subscribeToTeacherMessages,
   getTeacherMessagesForPresentation,
-  TeacherMessage
+  TeacherMessage,
+  checkParticipantStatus
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -30,7 +31,8 @@ import {
   Bell,
   X,
   Split,
-  Loader2
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -57,6 +59,9 @@ export function StudentTeachingView() {
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
+  const [checking, setChecking] = useState(false);
   
   // Extract code from URL query params if present
   useEffect(() => {
@@ -66,6 +71,43 @@ export function StudentTeachingView() {
       setSessionCode(codeParam);
     }
   }, [location]);
+
+  // Check participant approval status
+  useEffect(() => {
+    if (!participantId) return;
+    
+    const checkStatus = async () => {
+      setChecking(true);
+      try {
+        const currentStatus = await checkParticipantStatus(participantId);
+        
+        if (currentStatus === 'approved') {
+          setStatus('approved');
+          setJoined(true);
+          
+          // Get presentation data
+          const presentationData = await getLessonPresentationByCode(sessionCode);
+          if (presentationData) {
+            setPresentation(presentationData);
+          } else {
+            setError('Presentation not found');
+          }
+        } else if (currentStatus === 'rejected') {
+          setStatus('rejected');
+          setParticipantId(null);
+        } else {
+          // Still pending, check again in a few seconds
+          setTimeout(() => checkStatus(), 3000);
+        }
+      } catch (err) {
+        console.error('Error checking participant status:', err);
+      } finally {
+        setChecking(false);
+      }
+    };
+    
+    checkStatus();
+  }, [participantId, sessionCode]);
 
   const currentCard = presentation?.cards?.[presentation.current_card_index];
   const isFirstCard = presentation?.current_card_index === 0;
@@ -239,14 +281,10 @@ export function StudentTeachingView() {
       }
 
       console.log("Added as participant:", participant);
-      const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
-      if (!presentationData) {
-        throw new Error('Presentation not found');
-      }
-
-      console.log("Presentation data retrieved:", presentationData);
-      setPresentation(presentationData);
-      setJoined(true);
+      
+      // Store participant id and status
+      setParticipantId(participant.id);
+      setStatus('pending');
 
       // Update URL with session code for easy rejoining
       const url = new URL(window.location.href);
@@ -384,6 +422,62 @@ export function StudentTeachingView() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Render rejected view
+  if (status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <XCircle className="h-12 w-12 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Name Not Approved
+            </h2>
+            <p className="text-gray-600 mb-6">
+              The teacher did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
+            </p>
+            <Button
+              onClick={() => setStatus(null)}
+              className="w-full"
+              size="lg"
+            >
+              Try Again with a Different Name
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render pending view
+  if (status === 'pending') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              {checking ? (
+                <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+              ) : (
+                <AlertCircle className="h-12 w-12 text-yellow-500" />
+              )}
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Waiting for Approval
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your request to join this session is being reviewed by the teacher.
+            </p>
+            <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
+              Please wait while the teacher approves your name...
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

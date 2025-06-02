@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClassCodeGenerator } from '../components/ClassCodeGenerator';
 import { LiveFeedbackPanel } from '../components/LiveFeedbackPanel';
 import { SessionInfo } from '../components/SessionInfo';
 import { ParticipantsList } from '../components/ParticipantsList';
 import { BookOpen, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getPendingParticipantsForSession } from '../lib/supabaseClient';
 
 interface ActiveSession {
   code: string;
@@ -13,6 +14,7 @@ interface ActiveSession {
 
 export function TeacherDashboard() {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const handleCodeGenerated = (code: string) => {
     const teacherName = 'Ms. Johnson'; // In a real app, this would come from auth or form input
@@ -21,7 +23,32 @@ export function TeacherDashboard() {
 
   const handleEndSession = () => {
     setActiveSession(null);
+    setPendingCount(0);
   };
+  
+  // Poll for pending participants
+  useEffect(() => {
+    if (!activeSession) return;
+    
+    const checkPendingParticipants = async () => {
+      try {
+        const pendingParticipants = await getPendingParticipantsForSession(activeSession.code);
+        setPendingCount(pendingParticipants.length);
+      } catch (err) {
+        console.error('Error checking pending participants:', err);
+      }
+    };
+    
+    // Initial check
+    checkPendingParticipants();
+    
+    // Set up polling every 5 seconds
+    const interval = setInterval(checkPendingParticipants, 5000);
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, [activeSession]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -44,7 +71,14 @@ export function TeacherDashboard() {
                   <LiveFeedbackPanel sessionCode={activeSession.code} />
                 </div>
                 <div className="lg:col-span-1">
-                  <ParticipantsList sessionCode={activeSession.code} />
+                  <div className="relative">
+                    <ParticipantsList sessionCode={activeSession.code} />
+                    {pendingCount > 0 && (
+                      <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
+                        {pendingCount}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               

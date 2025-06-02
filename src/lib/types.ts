@@ -64,3 +64,5 @@ export interface TeacherMessage {
   message_content: string;
   created_at: string;
 }
+
+export type ParticipantStatus = 'pending' | 'approved' | 'rejected';
