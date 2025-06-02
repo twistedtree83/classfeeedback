@@ -161,7 +161,7 @@ export function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Link to="/dashboard">
-                <Button variant="originui" size="originui">
+                <Button variant="originui\" size="originui">
                   Go to Dashboard
                 </Button>
               </Link>
