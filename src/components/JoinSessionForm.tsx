@@ -3,7 +3,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { getSessionByCode, addSessionParticipant, checkParticipantStatus } from '../lib/supabaseClient';
 import { generateRandomName } from '../lib/utils';
-import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface JoinSessionFormProps {
   onJoinSession: (code: string, name: string) => void;
@@ -31,7 +31,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         setStatus('approved');
         // Call onJoinSession after a short delay to show the success message
         setTimeout(() => {
-          onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim());
+          onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
         }, 1500);
       } else if (currentStatus === 'rejected') {
         setStatus('rejected');
@@ -89,6 +89,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
+      setStudentName(name);
       setIsJoining(false);
       
     } catch (err) {
@@ -127,13 +128,14 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
         <div className="text-center py-6">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-12 h-12 text-green-500" />
+            <CheckCircle2 className="w-12 h-12 text-green-500" />
           </div>
           <h2 className="text-xl font-semibold mb-2">Approved!</h2>
           <p className="text-gray-600 mb-4">
             Your name has been approved by the teacher.
             Joining session...
           </p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
         </div>
       </div>
     );

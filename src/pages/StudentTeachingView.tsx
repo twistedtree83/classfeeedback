@@ -34,7 +34,7 @@ import {
   Loader2,
   XCircle
 } from 'lucide-react';
-import type { LessonPresentation } from '../lib/types';
+import type { LessonPresentation, ParticipantStatus } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
 import { sanitizeHtml } from '../lib/utils';
 
@@ -57,11 +57,11 @@ export function StudentTeachingView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ParticipantStatus | null>(null);
+  const [checking, setChecking] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const messageToastRef = useRef<HTMLDivElement>(null);
-  const [participantId, setParticipantId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
-  const [checking, setChecking] = useState(false);
   
   // Extract code from URL query params if present
   useEffect(() => {
@@ -262,6 +262,7 @@ export function StudentTeachingView() {
 
     setLoading(true);
     setError(null);
+    setStatus(null);
 
     try {
       console.log("Joining session with code:", sessionCode.trim().toUpperCase());
@@ -282,7 +283,7 @@ export function StudentTeachingView() {
 
       console.log("Added as participant:", participant);
       
-      // Store participant id and status
+      // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
 
