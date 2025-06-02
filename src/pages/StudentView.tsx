@@ -245,32 +245,6 @@ export function StudentView() {
     }
   }, [showMessagePanel]);
 
-  // Subscribe to presentation updates
-  useEffect(() => {
-    if (!presentation?.session_code) return;
-    
-    const presentationSubscription = subscribeToLessonPresentation(
-      presentation.session_code,
-      (updatedPresentation) => {
-        console.log("Received presentation update");
-        
-        // Get the full presentation data to ensure we have parsed cards
-        getLessonPresentationByCode(presentation.session_code)
-          .then(fullPresentation => {
-            if (fullPresentation) {
-              setPresentation(fullPresentation);
-            }
-          })
-          .catch(err => console.error('Error refreshing presentation:', err));
-      }
-    );
-
-    return () => {
-      console.log("Cleaning up presentation subscription");
-      presentationSubscription.unsubscribe();
-    };
-  }, [presentation?.session_code]);
-
   const toggleMessagePanel = () => {
     console.log("Toggling message panel - Current state:", showMessagePanel, "Messages:", allMessages.length);
     setShowMessagePanel(prev => !prev);
@@ -308,7 +282,7 @@ export function StudentView() {
       console.log("Session found:", session);
       
       // Use entered name or generate a random one if empty
-      const name = studentName.trim() || generateRandomName();
+      const name = studentName.trim();
       
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),

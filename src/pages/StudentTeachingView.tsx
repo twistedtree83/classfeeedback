@@ -338,6 +338,7 @@ export function StudentTeachingView() {
       const url = new URL(window.location.href);
       url.searchParams.set('code', sessionCode.trim().toUpperCase());
       window.history.pushState({}, '', url);
+      
     } catch (err) {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
@@ -571,11 +572,11 @@ export function StudentTeachingView() {
 
               <Button
                 type="submit"
-                disabled={loading || !sessionCode.trim() || !studentName.trim()}
+                disabled={loading || !sessionCode.trim()}
                 className="w-full"
                 size="lg"
               >
-                {loading ? 'Joining...' : 'Join Lesson'}
+                {loading ? 'Joining...' : 'Join Session'}
               </Button>
             </form>
           </div>
