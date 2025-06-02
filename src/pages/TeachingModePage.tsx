@@ -352,18 +352,9 @@ Click "Next" to begin your lesson presentation.
 
               {/* Card content */}
               <div className="p-6">
-                {typeof currentCard.content === 'string' ? (
-                  <div 
-                    className="prose max-w-none" 
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentCard.content) }}
-                  ></div>
-                ) : (
-                  <div className="prose max-w-none">
-                    {(currentCard.content as string[]).map((line, i) => (
-                      <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
-                    ))}
-                  </div>
-                )}
+                <div className="prose max-w-none" dangerouslySetInnerHTML={{ 
+                  __html: sanitizeHtml(currentCard.content) 
+                }}></div>
               </div>
 
               {/* Card navigation */}

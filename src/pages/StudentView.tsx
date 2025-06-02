@@ -609,16 +609,7 @@ export function StudentView() {
                 </div>
 
                 <div className="prose max-w-none">
-                  {typeof cardContent === 'string' ? (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
-                  ) : (
-                    <div>
-                      {(cardContent as string[]).map((line, i) => (
-                        <p key={i} className="mb-4 leading-relaxed" 
-                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
-                      ))}
-                    </div>
-                  )}
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent || '') }}></div>
                 </div>
                 
                 {/* Differentiate button when there's no differentiated content yet */}

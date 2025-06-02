@@ -618,8 +618,8 @@ export function StudentTeachingView() {
               ref={contentRef}
               className="p-6 overflow-auto max-h-[calc(100vh-22rem)]"
             >
-              <div className="prose max-w-none whitespace-pre-wrap">
-                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
+              <div className="prose max-w-none">
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent || '') }}></div>
               </div>
               
               {/* Differentiate button when there's no differentiated content yet */}
