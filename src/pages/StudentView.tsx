@@ -13,8 +13,8 @@ import {
   TeacherMessage,
   checkParticipantStatus
 } from '../lib/supabaseClient';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { MessagePanel } from '../components/MessagePanel';
 import { generateRandomName } from '../lib/utils';
 import { 
@@ -643,7 +643,6 @@ export function StudentView() {
       {/* Teacher Message Toast */}
       {teacherMessage && (
         <div 
-          ref={messageToastRef}
           className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-md border border-blue-200"
         >
           <MessageSquareText className="h-6 w-6 flex-shrink-0" />
