@@ -24,7 +24,11 @@ export function HomePage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <Link to="/dashboard">
-                    <Button size="lg\" className="w-full sm:w-auto">
+                    <Button
+                      variant="originui"
+                      size="originui"
+                      className="w-full sm:w-auto"
+                    >
                       Go to Dashboard
                     </Button>
                   </Link>
@@ -157,7 +161,7 @@ export function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Link to="/dashboard">
-                <Button size="lg">
+                <Button variant="originui\" size="originui">
                   Go to Dashboard
                 </Button>
               </Link>
