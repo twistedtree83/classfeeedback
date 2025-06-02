@@ -560,7 +560,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    rows={4}
+                    rows={6}
                   />
                 </div>
                 
@@ -591,16 +591,10 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </div>
               </div>
             ) : (
-              <div className="p-3 text-sm text-gray-700">
-                {card.content.length > 150 ? (
-                  <div>
-                    <div dangerouslySetInnerHTML={{ 
-                      __html: sanitizeHtml(card.content.substring(0, 150) + '...') 
-                    }}></div>
-                  </div>
-                ) : (
-                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.content) }}></div>
-                )}
+              <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-64">
+                <div dangerouslySetInnerHTML={{ 
+                  __html: sanitizeHtml(card.content)
+                }}></div>
               </div>
             )}
           </div>

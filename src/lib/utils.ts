@@ -65,8 +65,51 @@ export function groupFeedbackByType(feedback: Array<{ value: string }>) {
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
   
+  // Replace newlines with <br> tags for proper line breaks
+  let formattedHtml = html.replace(/\n/g, '<br>');
+  
+  // Convert markdown-style bullet points to HTML lists
+  if (formattedHtml.includes('• ')) {
+    const lines = formattedHtml.split('<br>');
+    let inList = false;
+    let result = '';
+    
+    for (const line of lines) {
+      if (line.trim().startsWith('• ')) {
+        if (!inList) {
+          inList = true;
+          result += '<ul class="list-disc pl-5 my-3">';
+        }
+        result += `<li>${line.trim().substring(2)}</li>`;
+      } else {
+        if (inList) {
+          inList = false;
+          result += '</ul>';
+        }
+        result += line + '<br>';
+      }
+    }
+    
+    if (inList) {
+      result += '</ul>';
+    }
+    
+    formattedHtml = result;
+  }
+  
+  // Process markdown-style headers (##, ###)
+  formattedHtml = formattedHtml.replace(/##\s+([^\n<]+)/g, '<h2 class="text-xl font-bold my-3">$1</h2>');
+  formattedHtml = formattedHtml.replace(/###\s+([^\n<]+)/g, '<h3 class="text-lg font-bold my-2">$1</h3>');
+  
+  // Process markdown-style bold and italic
+  formattedHtml = formattedHtml.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  formattedHtml = formattedHtml.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  
+  // Process markdown-style links
+  formattedHtml = formattedHtml.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
+  
   // Remove potentially dangerous tags and attributes while preserving links
-  return html
+  return formattedHtml
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+="[^"]*"/g, '')
     .replace(/on\w+='[^']*'/g, '')
