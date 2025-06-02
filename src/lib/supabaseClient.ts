@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProcessedLesson, LessonCard, TeacherMessage, ParticipantStatus } from './types';
+import type { ProcessedLesson, LessonCard, TeacherMessage } from './types';
 
 // In a real application, use environment variables to secure these values
 const supabaseUrl = 'https://luxanhwgynfazfrzapto.supabase.co';
@@ -103,7 +103,9 @@ export const resetPassword = async (email: string): Promise<{ error: string | nu
 
 export const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
   try {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
 
     if (error) {
       return { error: error.message };
@@ -472,8 +474,7 @@ export const addSessionParticipant = async (
       .insert([
         {
           session_code: sessionCode,
-          student_name: studentName,
-          status: 'pending'
+          student_name: studentName
         }
       ])
       .select()
@@ -487,77 +488,6 @@ export const addSessionParticipant = async (
     return data;
   } catch (err) {
     console.error('Exception adding session participant:', err);
-    return null;
-  }
-};
-
-export const getPendingParticipantsForSession = async (
-  sessionCode: string
-): Promise<SessionParticipant[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('session_participants')
-      .select('*')
-      .eq('session_code', sessionCode)
-      .eq('status', 'pending')
-      .order('joined_at', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching pending participants:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (err) {
-    console.error('Exception fetching pending participants:', err);
-    return [];
-  }
-};
-
-export const updateParticipantStatus = async (
-  participantId: string,
-  status: 'approved' | 'rejected'
-): Promise<boolean> => {
-  try {
-    console.log(`Updating participant ${participantId} status to ${status}`);
-    const { error } = await supabase
-      .from('session_participants')
-      .update({ status })
-      .eq('id', participantId);
-    
-    if (error) {
-      console.error('Error updating participant status:', error);
-      return false;
-    }
-    
-    console.log(`Successfully updated participant ${participantId} status to ${status}`);
-    return true;
-  } catch (err) {
-    console.error('Exception updating participant status:', err);
-    return false;
-  }
-};
-
-export const checkParticipantStatus = async (
-  participantId: string
-): Promise<ParticipantStatus | null> => {
-  try {
-    console.log(`Checking status for participant ${participantId}`);
-    const { data, error } = await supabase
-      .from('session_participants')
-      .select('status')
-      .eq('id', participantId)
-      .single();
-    
-    if (error) {
-      console.error('Error checking participant status:', error);
-      return null;
-    }
-    
-    console.log(`Participant ${participantId} status: ${data.status}`);
-    return data.status as ParticipantStatus;
-  } catch (err) {
-    console.error('Exception checking participant status:', err);
     return null;
   }
 };
@@ -591,31 +521,66 @@ export const subscribeToSessionParticipants = (
     .on(
       'postgres_changes',
       {
-        event: '*', // Subscribe to all events (INSERT, UPDATE, DELETE)
+        event: 'INSERT',
         schema: 'public',
         table: 'session_participants',
         filter: `session_code=eq.${sessionCode}`,
       },
-      (payload) => {
-        console.log('Participant change detected:', payload);
-        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          callback(payload.new as SessionParticipant);
-        }
-      }
+      (payload) => callback(payload.new as SessionParticipant)
     )
     .subscribe();
 };
 
-// Create a specific subscription for a single participant
+// Function to check participant status
+export const checkParticipantStatus = async (participantId: string): Promise<string | null> => {
+  try {
+    console.log('Checking status for participant', participantId);
+    const { data, error } = await supabase
+      .from('session_participants')
+      .select('status')
+      .eq('id', participantId)
+      .single();
+    
+    if (error) {
+      console.error('Error checking participant status:', error);
+      return null;
+    }
+    
+    console.log('Participant', participantId, 'status:', data.status);
+    return data.status;
+  } catch (err) {
+    console.error('Exception checking participant status:', err);
+    return null;
+  }
+};
+
+// Function to approve a participant
+export const approveParticipant = async (participantId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('session_participants')
+      .update({ status: 'approved' })
+      .eq('id', participantId);
+    
+    if (error) {
+      console.error('Error approving participant:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Exception approving participant:', err);
+    return false;
+  }
+};
+
+// Subscribe to participant status changes
 export const subscribeToParticipantStatus = (
   participantId: string,
-  callback: (status: ParticipantStatus) => void
+  callback: (status: string) => void
 ) => {
-  const channelId = `participant_status_${participantId}_${Math.random().toString(36).substring(2, 9)}`;
-  console.log(`Creating participant status subscription channel: ${channelId}`);
-  
   return supabase
-    .channel(channelId)
+    .channel(`participant_status_${participantId}`)
     .on(
       'postgres_changes',
       {
@@ -625,15 +590,12 @@ export const subscribeToParticipantStatus = (
         filter: `id=eq.${participantId}`,
       },
       (payload) => {
-        console.log(`Participant ${participantId} status change detected:`, payload);
         if (payload.new && payload.new.status) {
-          callback(payload.new.status as ParticipantStatus);
+          callback(payload.new.status);
         }
       }
     )
-    .subscribe((status) => {
-      console.log(`Participant status subscription status: ${status}`);
-    });
+    .subscribe();
 };
 
 // Helper functions for feedback
