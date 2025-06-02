@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KeySquare, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
 
 export const ResetPasswordForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ export const ResetPasswordForm: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const { resetPassword } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +33,10 @@ export const ResetPasswordForm: React.FC = () => {
         setError(error);
       } else {
         setSuccessMessage('Password reset link has been sent to your email');
+        toast({
+          title: "Reset link sent",
+          description: "Password reset link has been sent to your email",
+        });
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -41,30 +47,30 @@ export const ResetPasswordForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
+    <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-xl shadow-lg">
       <div className="text-center">
-        <KeySquare className="mx-auto h-12 w-12 text-indigo-600" />
-        <h2 className="mt-6 text-3xl font-bold text-gray-900">Reset your password</h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <KeySquare className="mx-auto h-12 w-12 text-primary" />
+        <h2 className="mt-6 text-3xl font-bold text-foreground">Reset your password</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           We'll send you a link to reset your password
         </p>
       </div>
       
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div className="rounded-md shadow-sm">
+        <div className="rounded-md">
           <Input
             label="Email address"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            icon={<Mail className="h-5 w-5 text-gray-400" />}
+            icon={<Mail className="h-5 w-5 text-muted-foreground" />}
             placeholder="you@example.com"
             required
           />
         </div>
         
         {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-700 flex items-start">
+          <div className="p-3 rounded-md bg-destructive/10 text-destructive flex items-start">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -83,11 +89,12 @@ export const ResetPasswordForm: React.FC = () => {
             className="w-full"
             size="lg"
             disabled={isSubmitting || !!successMessage}
+            isLoading={isSubmitting}
           >
-            {isSubmitting ? 'Sending...' : 'Send reset link'}
+            Send reset link
           </Button>
           
-          <Link to="/login" className="text-center text-sm text-indigo-600 hover:text-indigo-500">
+          <Link to="/login" className="text-center text-sm text-primary hover:text-primary/90">
             Return to sign in
           </Link>
         </div>

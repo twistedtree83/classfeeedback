@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KeySquare, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
 
 export const UpdatePasswordForm: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -14,6 +15,7 @@ export const UpdatePasswordForm: React.FC = () => {
   
   const { updatePassword, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Verify we have a valid user session
   useEffect(() => {
@@ -50,6 +52,10 @@ export const UpdatePasswordForm: React.FC = () => {
         setError(error);
       } else {
         setSuccessMessage('Password has been updated successfully');
+        toast({
+          title: "Success",
+          description: "Password has been updated successfully",
+        });
         setTimeout(() => {
           navigate('/');
         }, 3000);
@@ -63,23 +69,23 @@ export const UpdatePasswordForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
+    <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-xl shadow-lg">
       <div className="text-center">
-        <KeySquare className="mx-auto h-12 w-12 text-indigo-600" />
-        <h2 className="mt-6 text-3xl font-bold text-gray-900">Update your password</h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <KeySquare className="mx-auto h-12 w-12 text-primary" />
+        <h2 className="mt-6 text-3xl font-bold text-foreground">Update your password</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Please enter your new password below
         </p>
       </div>
       
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div className="rounded-md shadow-sm space-y-4">
+        <div className="rounded-md space-y-4">
           <Input
             label="New Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            icon={<Lock className="h-5 w-5 text-gray-400" />}
+            icon={<Lock className="h-5 w-5 text-muted-foreground" />}
             placeholder="••••••••"
             required
           />
@@ -89,14 +95,14 @@ export const UpdatePasswordForm: React.FC = () => {
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            icon={<Lock className="h-5 w-5 text-gray-400" />}
+            icon={<Lock className="h-5 w-5 text-muted-foreground" />}
             placeholder="••••••••"
             required
           />
         </div>
         
         {error && (
-          <div className="p-3 rounded-md bg-red-50 text-red-700 flex items-start">
+          <div className="p-3 rounded-md bg-destructive/10 text-destructive flex items-start">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -114,8 +120,9 @@ export const UpdatePasswordForm: React.FC = () => {
           className="w-full"
           size="lg"
           disabled={isSubmitting || !!successMessage}
+          isLoading={isSubmitting}
         >
-          {isSubmitting ? 'Updating...' : 'Update password'}
+          Update password
         </Button>
       </form>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
+import { Button } from '@/components/ui/button';
 import { Send, X } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface SendMessageModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface SendMessageModalProps {
 export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: SendMessageModalProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +28,20 @@ export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: 
     
     if (success) {
       console.log("Message sent successfully");
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent to all students",
+      });
       setMessage('');
       onClose(); // Close modal on success
     } else {
       console.error("Failed to send message");
       setError('Failed to send message. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive"
+      });
     }
   };
 
@@ -39,16 +49,16 @@ export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
+      <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 shadow-lg">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Send Message to Students</h3>
+          <h3 className="text-lg font-semibold">Send Message to Students</h3>
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isSending}>
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="message" className="block text-sm font-medium mb-1">
               Your Message
             </label>
             <textarea
@@ -57,14 +67,14 @@ export function SendMessageModal({ isOpen, onClose, onSendMessage, isSending }: 
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your message here..."
               disabled={isSending}
-              className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
               rows={4}
             />
-            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
           </div>
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSending || !message.trim()}>
-              {isSending ? 'Sending...' : 'Send Message'}
+            <Button type="submit" disabled={isSending || !message.trim()} isLoading={isSending}>
+              Send Message
               <Send className="h-4 w-4 ml-2" />
             </Button>
           </div>

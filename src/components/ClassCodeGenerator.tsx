@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { createSession } from '../lib/supabaseClient';
+import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui-shadcn/card';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ClassCodeGeneratorProps {
   onCodeGenerated: (code: string) => void;
@@ -11,6 +13,7 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
   const [teacherName, setTeacherName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
+  const { toast } = useToast();
 
   const handleGenerateCode = async () => {
     if (!teacherName.trim()) {
@@ -25,8 +28,17 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
       const session = await createSession(teacherName);
       if (session) {
         onCodeGenerated(session.code);
+        toast({
+          title: "Success",
+          description: `Class code generated: ${session.code}`,
+        });
       } else {
         setError('Failed to generate class code. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to generate class code. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (err) {
       console.error('Error generating code:', err);
@@ -37,10 +49,12 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Generate Class Code</h2>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Generate Class Code</CardTitle>
+      </CardHeader>
       
-      <div className="space-y-4">
+      <CardContent className="space-y-4">
         <Input
           label="Teacher Name"
           value={teacherName}
@@ -49,16 +63,19 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
           error={error}
           disabled={isGenerating}
         />
+      </CardContent>
 
+      <CardFooter>
         <Button
           onClick={handleGenerateCode}
           disabled={isGenerating}
           className="w-full"
           size="lg"
+          isLoading={isGenerating}
         >
-          {isGenerating ? 'Generating...' : 'Generate Class Code'}
+          Generate Class Code
         </Button>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }
