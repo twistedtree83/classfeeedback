@@ -7,7 +7,8 @@ import {
   subscribeToSessionParticipants,
   subscribeToParticipantStatusUpdates,
   approveParticipant,
-  rejectParticipant
+  rejectParticipant,
+  supabase
 } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
 import { Button } from './ui/Button';
