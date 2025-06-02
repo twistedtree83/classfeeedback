@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProcessedLesson, LessonCard, TeacherMessage } from './types';
+import type { ProcessedLesson, LessonCard, TeacherMessage, ParticipantStatus } from './types';
 
 // In a real application, use environment variables to secure these values
 const supabaseUrl = 'https://luxanhwgynfazfrzapto.supabase.co';
@@ -535,6 +535,28 @@ export const updateParticipantStatus = async (
   } catch (err) {
     console.error('Exception updating participant status:', err);
     return false;
+  }
+};
+
+export const checkParticipantStatus = async (
+  participantId: string
+): Promise<ParticipantStatus | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('session_participants')
+      .select('status')
+      .eq('id', participantId)
+      .single();
+    
+    if (error) {
+      console.error('Error checking participant status:', error);
+      return null;
+    }
+    
+    return data.status as ParticipantStatus;
+  } catch (err) {
+    console.error('Exception checking participant status:', err);
+    return null;
   }
 };
 

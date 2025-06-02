@@ -10,7 +10,8 @@ import {
   submitTeachingFeedback,
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
-  TeacherMessage
+  TeacherMessage,
+  checkParticipantStatus
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -30,9 +31,11 @@ import {
   CheckCircle2,
   User,
   Split,
-  Loader2
+  Loader2,
+  AlertCircle,
+  XCircle
 } from 'lucide-react';
-import type { LessonPresentation } from '../lib/types';
+import type { LessonPresentation, ParticipantStatus } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
 import { sanitizeHtml } from '../lib/utils';
 
@@ -57,6 +60,9 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ParticipantStatus | null>(null);
+  const [checking, setChecking] = useState(false);
   const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
@@ -67,6 +73,46 @@ export function StudentView() {
       setSessionCode(codeParam.toUpperCase());
     }
   }, [location]);
+
+  // Check participant approval status
+  useEffect(() => {
+    if (!participantId) return;
+    
+    const checkStatus = async () => {
+      setChecking(true);
+      try {
+        const currentStatus = await checkParticipantStatus(participantId);
+        console.log("Current participant status:", currentStatus);
+        
+        if (currentStatus === 'approved') {
+          setStatus('approved');
+          
+          // Get presentation data if it exists
+          const presentationData = await getLessonPresentationByCode(sessionCode);
+          if (presentationData) {
+            // This is a teaching session
+            setPresentation(presentationData);
+            setStep('teaching');
+          } else {
+            // This is a regular feedback session
+            setStep('feedback');
+          }
+        } else if (currentStatus === 'rejected') {
+          setStatus('rejected');
+          setParticipantId(null);
+        } else {
+          // Still pending, check again in a few seconds
+          setTimeout(() => checkStatus(), 3000);
+        }
+      } catch (err) {
+        console.error('Error checking participant status:', err);
+      } finally {
+        setChecking(false);
+      }
+    };
+    
+    checkStatus();
+  }, [participantId, sessionCode]);
 
   // Load past teacher messages when joining a session
   useEffect(() => {
@@ -206,6 +252,7 @@ export function StudentView() {
 
     setIsJoining(true);
     setError('');
+    setStatus(null);
     
     try {
       console.log("Joining session with code:", sessionCode.trim().toUpperCase());
@@ -215,36 +262,34 @@ export function StudentView() {
       }
 
       console.log("Session found:", session);
+      
+      // Use entered name or generate a random one if empty
+      const name = studentName.trim() || generateRandomName();
+      
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
-        studentName.trim()
+        name
       );
-
+      
       if (!participant) {
         throw new Error('Failed to join session');
       }
-
+      
       console.log("Added as participant:", participant);
-      const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
-      if (!presentationData) {
-        // If there's no presentation, this is just a regular feedback session
-        console.log("No presentation found, joining standard feedback session");
-        setStep('feedback');
-      } else {
-        // If there's a presentation, this is a teaching session
-        console.log("Presentation data retrieved:", presentationData);
-        setPresentation(presentationData);
-        setStep('teaching');
-      }
+      
+      // Store participant id for status checking
+      setParticipantId(participant.id);
+      setStatus('pending');
+      setStudentName(name);
 
       // Update URL with session code for easy rejoining
       const url = new URL(window.location.href);
       url.searchParams.set('code', sessionCode.trim().toUpperCase());
       window.history.pushState({}, '', url);
+      
     } catch (err) {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
-    } finally {
       setIsJoining(false);
     }
   };
@@ -386,6 +431,88 @@ export function StudentView() {
 
   // Render join form
   if (step === 'join') {
+    // Render rejected view
+    if (status === 'rejected') {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="flex justify-center mb-6">
+                <XCircle className="h-12 w-12 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Name Not Approved
+              </h2>
+              <p className="text-gray-600 mb-6">
+                The teacher did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
+              </p>
+              <Button
+                onClick={() => {
+                  setStatus(null);
+                  setStudentName('');
+                  setSessionCode('');
+                }}
+                className="w-full"
+                size="lg"
+              >
+                Try Again with a Different Name
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render pending view
+    if (status === 'pending') {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="flex justify-center mb-6">
+                {checking ? (
+                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                ) : (
+                  <AlertCircle className="h-12 w-12 text-yellow-500" />
+                )}
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Waiting for Approval
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Your request to join this session is being reviewed by the teacher.
+              </p>
+              <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
+                Please wait while the teacher approves your name...
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Render approved transition view
+    if (status === 'approved') {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+              <div className="flex justify-center mb-6">
+                <CheckCircle2 className="h-12 w-12 text-green-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Approved!
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Your name has been approved by the teacher. Joining the session...
+              </p>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -420,7 +547,7 @@ export function StudentView() {
 
               {error && (
                 <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
-                  <HelpCircle className="h-5 w-5 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
@@ -610,7 +737,7 @@ export function StudentView() {
 
                 <div className="prose max-w-none">
                   {typeof cardContent === 'string' ? (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent || '') }}></div>
                   ) : (
                     <div>
                       {(cardContent as string[]).map((line, i) => (
