@@ -2,7 +2,7 @@ import React from 'react';
 import { SignupForm } from '../components/auth/SignupForm';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import { LogoWrapper } from '@/components/LogoWrapper';
 
 export function Signup() {
   return (
@@ -16,7 +16,7 @@ export function Signup() {
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8 flex items-center justify-center">
-          <Logo size="lg" />
+          <LogoWrapper size="lg" />
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md">

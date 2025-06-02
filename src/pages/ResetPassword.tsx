@@ -2,7 +2,7 @@ import React from 'react';
 import { ResetPasswordForm } from '../components/auth/ResetPasswordForm';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Logo } from '@/components/Logo';
+import { LogoWrapper } from '@/components/LogoWrapper';
 
 export function ResetPassword() {
   return (
@@ -16,7 +16,7 @@ export function ResetPassword() {
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8 flex items-center justify-center">
-          <Logo size="lg" />
+          <LogoWrapper size="lg" />
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md">

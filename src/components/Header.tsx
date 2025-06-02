@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Logo } from './Logo';
+import { LogoWrapper } from './LogoWrapper';
 
 export function Header() {
   const location = useLocation();
@@ -47,7 +47,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <Logo size="md" />
+              <LogoWrapper size="md" />
             </Link>
           </div>
           
