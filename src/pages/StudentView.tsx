@@ -10,8 +10,7 @@ import {
   submitTeachingFeedback,
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
-  TeacherMessage,
-  checkParticipantStatus
+  TeacherMessage
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -31,9 +30,7 @@ import {
   CheckCircle2,
   User,
   Split,
-  Loader2,
-  AlertCircle,
-  XCircle
+  Loader2
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -42,17 +39,16 @@ import { sanitizeHtml } from '../lib/utils';
 export function StudentView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState<'join' | 'pending' | 'feedback' | 'teaching' | 'rejected'>('join');
+  const [step, setStep] = useState<'join' | 'feedback' | 'teaching'>('join');
   const [sessionCode, setSessionCode] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
+  const [question, setQuestion] = useState('');
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
-  const [participantId, setParticipantId] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
   
   // New state variables for teacher messages
   const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
@@ -61,7 +57,7 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
-  const [question, setQuestion] = useState('');
+  const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
   useEffect(() => {
@@ -71,43 +67,6 @@ export function StudentView() {
       setSessionCode(codeParam.toUpperCase());
     }
   }, [location]);
-  
-  // Check participant approval status
-  useEffect(() => {
-    if (!participantId || step !== 'pending') return;
-    
-    const checkStatus = async () => {
-      setChecking(true);
-      try {
-        const status = await checkParticipantStatus(participantId);
-        
-        if (status === 'approved') {
-          // Check if there's a presentation for this session
-          const presentationData = await getLessonPresentationByCode(sessionCode);
-          
-          if (presentationData) {
-            // If there's a presentation, this is a teaching session
-            setPresentation(presentationData);
-            setStep('teaching');
-          } else {
-            // If no presentation, this is just a feedback session
-            setStep('feedback');
-          }
-        } else if (status === 'rejected') {
-          setStep('rejected');
-        } else {
-          // Still pending, check again in a few seconds
-          setTimeout(() => checkStatus(), 3000);
-        }
-      } catch (err) {
-        console.error('Error checking participant status:', err);
-      } finally {
-        setChecking(false);
-      }
-    };
-    
-    checkStatus();
-  }, [participantId, step, sessionCode]);
 
   // Load past teacher messages when joining a session
   useEffect(() => {
@@ -266,10 +225,17 @@ export function StudentView() {
       }
 
       console.log("Added as participant:", participant);
-      
-      // Store participant ID and move to pending state
-      setParticipantId(participant.id);
-      setStep('pending');
+      const presentationData = await getLessonPresentationByCode(sessionCode.trim().toUpperCase());
+      if (!presentationData) {
+        // If there's no presentation, this is just a regular feedback session
+        console.log("No presentation found, joining standard feedback session");
+        setStep('feedback');
+      } else {
+        // If there's a presentation, this is a teaching session
+        console.log("Presentation data retrieved:", presentationData);
+        setPresentation(presentationData);
+        setStep('teaching');
+      }
 
       // Update URL with session code for easy rejoining
       const url = new URL(window.location.href);
@@ -417,62 +383,6 @@ export function StudentView() {
       setGeneratingDifferentiated(false);
     }
   };
-
-  // Render pending approval screen
-  if (step === 'pending') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="flex justify-center mb-6">
-              {checking ? (
-                <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
-              ) : (
-                <AlertCircle className="h-12 w-12 text-yellow-500" />
-              )}
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Waiting for Approval
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Your request to join this session is being reviewed by the teacher.
-            </p>
-            <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
-              Please wait while the teacher approves your name...
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Render rejected screen
-  if (step === 'rejected') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="flex justify-center mb-6">
-              <XCircle className="h-12 w-12 text-red-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Name Not Approved
-            </h2>
-            <p className="text-gray-600 mb-6">
-              The teacher did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
-            </p>
-            <Button
-              onClick={() => setStep('join')}
-              className="w-full"
-              size="lg"
-            >
-              Try Again with a Different Name
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Render join form
   if (step === 'join') {
@@ -643,6 +553,7 @@ export function StudentView() {
       {/* Teacher Message Toast */}
       {teacherMessage && (
         <div 
+          ref={messageToastRef}
           className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-md border border-blue-200"
         >
           <MessageSquareText className="h-6 w-6 flex-shrink-0" />
@@ -698,7 +609,16 @@ export function StudentView() {
                 </div>
 
                 <div className="prose max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent || '') }}></div>
+                  {typeof cardContent === 'string' ? (
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
+                  ) : (
+                    <div>
+                      {(cardContent as string[]).map((line, i) => (
+                        <p key={i} className="mb-4 leading-relaxed" 
+                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Differentiate button when there's no differentiated content yet */}

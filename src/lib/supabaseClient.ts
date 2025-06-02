@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
-import type { ProcessedLesson, LessonCard, TeacherMessage, ParticipantStatus } from './types';
+import type { ProcessedLesson, LessonCard, TeacherMessage } from './types';
 
 // In a real application, use environment variables to secure these values
 const supabaseUrl = 'https://luxanhwgynfazfrzapto.supabase.co';
@@ -140,7 +140,7 @@ export interface SessionParticipant {
   session_code: string;
   student_name: string;
   joined_at: string;
-  status?: ParticipantStatus;
+  status: string;
 }
 
 export interface LessonPlan {
@@ -475,7 +475,7 @@ export const addSessionParticipant = async (
         {
           session_code: sessionCode,
           student_name: studentName,
-          status: 'pending' // All new participants start as pending
+          status: 'pending'
         }
       ])
       .select()
@@ -490,6 +490,28 @@ export const addSessionParticipant = async (
   } catch (err) {
     console.error('Exception adding session participant:', err);
     return null;
+  }
+};
+
+export const updateParticipantStatus = async (
+  participantId: string,
+  status: 'approved' | 'rejected'
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('session_participants')
+      .update({ status })
+      .eq('id', participantId);
+    
+    if (error) {
+      console.error('Error updating participant status:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Exception updating participant status:', err);
+    return false;
   }
 };
 
@@ -513,94 +535,6 @@ export const getParticipantsForSession = async (sessionCode: string): Promise<Se
   }
 };
 
-// Get pending participants for a session
-export const getPendingParticipantsForSession = async (sessionCode: string): Promise<SessionParticipant[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('session_participants')
-      .select('*')
-      .eq('session_code', sessionCode)
-      .eq('status', 'pending')
-      .order('joined_at', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching pending participants:', error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (err) {
-    console.error('Exception fetching pending participants:', err);
-    return [];
-  }
-};
-
-// Approve a participant
-export const approveParticipant = async (participantId: string): Promise<boolean> => {
-  try {
-    console.log("Approving participant ID:", participantId);
-    const { data, error } = await supabase
-      .from('session_participants')
-      .update({ status: 'approved' })
-      .eq('id', participantId)
-      .select();
-    
-    if (error) {
-      console.error('Error approving participant:', error);
-      return false;
-    }
-    
-    console.log("Approval response:", data);
-    return true;
-  } catch (err) {
-    console.error('Exception approving participant:', err);
-    return false;
-  }
-};
-
-// Reject a participant
-export const rejectParticipant = async (participantId: string): Promise<boolean> => {
-  try {
-    console.log("Rejecting participant ID:", participantId);
-    const { data, error } = await supabase
-      .from('session_participants')
-      .update({ status: 'rejected' })
-      .eq('id', participantId)
-      .select();
-    
-    if (error) {
-      console.error('Error rejecting participant:', error);
-      return false;
-    }
-    
-    console.log("Rejection response:", data);
-    return true;
-  } catch (err) {
-    console.error('Exception rejecting participant:', err);
-    return false;
-  }
-};
-
-export const checkParticipantStatus = async (participantId: string): Promise<ParticipantStatus | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('session_participants')
-      .select('status')
-      .eq('id', participantId)
-      .single();
-    
-    if (error) {
-      console.error('Error checking participant status:', error);
-      return null;
-    }
-    
-    return data.status as ParticipantStatus;
-  } catch (err) {
-    console.error('Exception checking participant status:', err);
-    return null;
-  }
-};
-
 export const subscribeToSessionParticipants = (
   sessionCode: string,
   callback: (payload: SessionParticipant) => void
@@ -620,28 +554,6 @@ export const subscribeToSessionParticipants = (
     .subscribe();
 };
 
-// Subscribe to participant status updates
-export const subscribeToParticipantStatusUpdates = (
-  sessionCode: string,
-  callback: (payload: SessionParticipant) => void
-) => {
-  const channelId = `participant_status_${sessionCode}_${Math.random().toString(36).substring(2, 9)}`;
-  
-  return supabase
-    .channel(channelId)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'session_participants',
-        filter: `session_code=eq.${sessionCode}`,
-      },
-      (payload) => callback(payload.new as SessionParticipant)
-    )
-    .subscribe();
-};
-
 // Helper functions for feedback
 export const submitFeedback = async (
   sessionCode: string, 
@@ -649,30 +561,6 @@ export const submitFeedback = async (
   value: string
 ): Promise<Feedback | null> => {
   try {
-    // First check if participant is approved
-    const { data: participants, error: participantError } = await supabase
-      .from('session_participants')
-      .select('id, status')
-      .eq('session_code', sessionCode)
-      .eq('student_name', studentName)
-      .limit(1);
-    
-    if (participantError) {
-      console.error('Error checking participant status:', participantError);
-      return null;
-    }
-    
-    if (!participants || participants.length === 0) {
-      console.error('Participant not found');
-      return null;
-    }
-    
-    // Only allow feedback from approved participants
-    if (participants[0].status !== 'approved') {
-      console.error('Participant not approved');
-      return null;
-    }
-    
     const { data, error } = await supabase
       .from('feedback')
       .insert([
@@ -744,43 +632,6 @@ export const submitTeachingFeedback = async (
   content?: string
 ): Promise<boolean> => {
   try {
-    // First check if participant is approved
-    const { data: presentation, error: presentationError } = await supabase
-      .from('lesson_presentations')
-      .select('session_code')
-      .eq('id', presentationId)
-      .single();
-    
-    if (presentationError) {
-      console.error('Error getting presentation:', presentationError);
-      return false;
-    }
-    
-    const sessionCode = presentation.session_code;
-    
-    const { data: participants, error: participantError } = await supabase
-      .from('session_participants')
-      .select('id, status')
-      .eq('session_code', sessionCode)
-      .eq('student_name', studentName)
-      .limit(1);
-    
-    if (participantError) {
-      console.error('Error checking participant status:', participantError);
-      return false;
-    }
-    
-    if (!participants || participants.length === 0) {
-      console.error('Participant not found');
-      return false;
-    }
-    
-    // Only allow feedback from approved participants
-    if (participants[0].status !== 'approved' && participants[0].status !== undefined) {
-      console.error('Participant not approved');
-      return false;
-    }
-    
     const { error } = await supabase
       .from('teaching_feedback')
       .insert([{
@@ -809,43 +660,6 @@ export const submitTeachingQuestion = async (
       student_name: studentName,
       question: question
     });
-    
-    // First check if participant is approved
-    const { data: presentation, error: presentationError } = await supabase
-      .from('lesson_presentations')
-      .select('session_code')
-      .eq('id', presentationId)
-      .single();
-    
-    if (presentationError) {
-      console.error('Error getting presentation:', presentationError);
-      return false;
-    }
-    
-    const sessionCode = presentation.session_code;
-    
-    const { data: participants, error: participantError } = await supabase
-      .from('session_participants')
-      .select('id, status')
-      .eq('session_code', sessionCode)
-      .eq('student_name', studentName)
-      .limit(1);
-    
-    if (participantError) {
-      console.error('Error checking participant status:', participantError);
-      return false;
-    }
-    
-    if (!participants || participants.length === 0) {
-      console.error('Participant not found');
-      return false;
-    }
-    
-    // Only allow questions from approved participants
-    if (participants[0].status !== 'approved' && participants[0].status !== undefined) {
-      console.error('Participant not approved');
-      return false;
-    }
     
     const { data, error } = await supabase
       .from('teaching_questions')

@@ -27,8 +27,8 @@ export function TeachingModePage() {
   const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showParticipants, setShowParticipants] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(true);
+  const [showParticipants, setShowParticipants] = useState(true); // Show participants by default
+  const [showFeedback, setShowFeedback] = useState(false);
   const [hasNewQuestions, setHasNewQuestions] = useState(false);
   const [showSendMessageModal, setShowSendMessageModal] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -134,9 +134,16 @@ export function TeachingModePage() {
 
   // Create a welcome card that shows the lesson title and participants
   const createWelcomeCard = (participantsList: SessionParticipant[]): LessonCard => {
-    const participantsContent = participantsList.length > 0 
-      ? participantsList.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
-      : 'No students have joined yet.';
+    const pendingParticipants = participantsList.filter(p => p.status === 'pending');
+    const approvedParticipants = participantsList.filter(p => p.status === 'approved');
+    
+    const pendingContent = pendingParticipants.length > 0 
+      ? pendingParticipants.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
+      : 'No pending students.';
+      
+    const approvedContent = approvedParticipants.length > 0 
+      ? approvedParticipants.map(p => `- ${p.student_name} (joined at ${new Date(p.joined_at).toLocaleTimeString()})`).join('\n')
+      : 'No approved students yet.';
 
     return {
       id: 'welcome-card',
@@ -147,8 +154,11 @@ export function TeachingModePage() {
 
 This is the welcome screen for your lesson. Students can join using the code: **${code}**
 
-### Students who have joined:
-${participantsContent}
+### Pending Students:
+${pendingContent}
+
+### Approved Students:
+${approvedContent}
 
 Click "Next" to begin your lesson presentation.
       `,
@@ -285,7 +295,12 @@ Click "Next" to begin your lesson presentation.
             <div className="flex items-center space-x-2">
               <Button
                 variant={showFeedback ? "primary" : "outline"}
-                onClick={() => setShowFeedback(!showFeedback)}
+                onClick={() => {
+                  setShowFeedback(!showFeedback);
+                  if (showFeedback) {
+                    setShowParticipants(true);
+                  }
+                }}
                 size="sm"
                 className="relative"
               >
@@ -298,7 +313,12 @@ Click "Next" to begin your lesson presentation.
               </Button>
               <Button
                 variant={showParticipants ? "primary" : "outline"}
-                onClick={() => setShowParticipants(!showParticipants)}
+                onClick={() => {
+                  setShowParticipants(!showParticipants);
+                  if (showParticipants) {
+                    setShowFeedback(true);
+                  }
+                }}
                 size="sm"
               >
                 <Users className="h-5 w-5" />
@@ -352,9 +372,18 @@ Click "Next" to begin your lesson presentation.
 
               {/* Card content */}
               <div className="p-6">
-                <div className="prose max-w-none" dangerouslySetInnerHTML={{ 
-                  __html: sanitizeHtml(currentCard.content) 
-                }}></div>
+                {typeof currentCard.content === 'string' ? (
+                  <div 
+                    className="prose max-w-none" 
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentCard.content) }}
+                  ></div>
+                ) : (
+                  <div className="prose max-w-none">
+                    {(currentCard.content as string[]).map((line, i) => (
+                      <p key={i} className="mb-4 leading-relaxed">{line || '\u00A0'}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Card navigation */}

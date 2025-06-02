@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { 
-  SessionParticipant, 
-  getParticipantsForSession,
-  getPendingParticipantsForSession, 
-  subscribeToSessionParticipants,
-  subscribeToParticipantStatusUpdates,
-  approveParticipant,
-  rejectParticipant,
-  supabase
-} from '../lib/supabaseClient';
+import { Users, CheckSquare, X, UserCheck, UserX, Loader2 } from 'lucide-react';
+import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants, updateParticipantStatus } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { Button } from './ui/Button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '../components/ui/Button';
 
 interface ParticipantsListProps {
   sessionCode: string;
@@ -20,31 +10,16 @@ interface ParticipantsListProps {
 
 export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const [participants, setParticipants] = useState<SessionParticipant[]>([]);
-  const [pendingParticipants, setPendingParticipants] = useState<SessionParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending');
   const [processingIds, setProcessingIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState("approved");
 
-  // Load initial participants
   useEffect(() => {
     async function loadParticipants() {
       try {
-        const [allData, pendingData] = await Promise.all([
-          getParticipantsForSession(sessionCode),
-          getPendingParticipantsForSession(sessionCode)
-        ]);
-        
-        // Set approved participants
-        setParticipants(allData.filter(p => p.status === 'approved' || p.status === undefined));
-        
-        // Set pending participants
-        setPendingParticipants(pendingData);
-        
-        // If there are pending participants, switch to the pending tab
-        if (pendingData.length > 0) {
-          setActiveTab("pending");
-        }
+        const data = await getParticipantsForSession(sessionCode);
+        setParticipants(data);
       } catch (err) {
         console.error('Error loading participants:', err);
         setError('Failed to load participants');
@@ -56,141 +31,62 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
     loadParticipants();
   }, [sessionCode]);
 
-  // Subscribe to new participants joining
   useEffect(() => {
     const subscription = subscribeToSessionParticipants(
       sessionCode,
       (newParticipant) => {
-        console.log("New participant subscription event:", newParticipant);
-        if (newParticipant.status === 'pending') {
-          setPendingParticipants(current => {
-            // Check if already exists
-            if (current.some(p => p.id === newParticipant.id)) {
-              return current;
-            }
-            return [...current, newParticipant];
-          });
-          
-          // Switch to pending tab if it's not active
-          if (activeTab !== "pending") {
-            setActiveTab("pending");
-          }
-        } else if (newParticipant.status === 'approved') {
-          setParticipants(current => {
-            // Check if already exists
-            if (current.some(p => p.id === newParticipant.id)) {
-              return current;
-            }
-            return [...current, newParticipant];
-          });
-        }
+        setParticipants(current => {
+          // Check if participant already exists to avoid duplicates
+          const exists = current.some(p => p.id === newParticipant.id);
+          if (exists) return current;
+          return [...current, newParticipant];
+        });
       }
     );
     
     return () => {
       subscription.unsubscribe();
     };
-  }, [sessionCode, activeTab]);
-
-  // Subscribe to status updates
-  useEffect(() => {
-    const channelId = `participant_status_${sessionCode}_${Math.random().toString(36).substring(2, 9)}`;
-    
-    const subscription = supabase
-      .channel(channelId)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'session_participants',
-          filter: `session_code=eq.${sessionCode}`,
-        },
-        (payload) => {
-          console.log("Participant status update received:", payload);
-          const updatedParticipant = payload.new as SessionParticipant;
-          
-          // Remove from processing state
-          setProcessingIds(current => current.filter(id => id !== updatedParticipant.id));
-          
-          if (updatedParticipant.status === 'approved') {
-            // Remove from pending and add to approved
-            setPendingParticipants(current => 
-              current.filter(p => p.id !== updatedParticipant.id)
-            );
-            
-            setParticipants(current => {
-              // Check if already exists
-              if (current.some(p => p.id === updatedParticipant.id)) {
-                return current;
-              }
-              return [...current, updatedParticipant];
-            });
-          } else if (updatedParticipant.status === 'rejected') {
-            // Remove from pending
-            setPendingParticipants(current => 
-              current.filter(p => p.id !== updatedParticipant.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [sessionCode]);
 
-  const handleApprove = async (participant: SessionParticipant) => {
-    console.log("Approving participant:", participant.id);
-    setProcessingIds(current => [...current, participant.id]);
-    
+  const handleApprove = async (participantId: string) => {
+    setProcessingIds(prev => [...prev, participantId]);
     try {
-      const success = await approveParticipant(participant.id);
-      console.log("Approve result:", success);
-      
-      if (!success) {
-        throw new Error("Failed to approve participant");
+      const success = await updateParticipantStatus(participantId, 'approved');
+      if (success) {
+        setParticipants(current => 
+          current.map(p => 
+            p.id === participantId ? { ...p, status: 'approved' } : p
+          )
+        );
       }
-      
-      // Manually update UI state immediately for better UX
-      setPendingParticipants(current => current.filter(p => p.id !== participant.id));
-      setParticipants(current => [...current, {...participant, status: 'approved'}]);
-      
-      // Remove from processing even though we'll also do this in the subscription
-      setProcessingIds(current => current.filter(id => id !== participant.id));
     } catch (err) {
       console.error('Error approving participant:', err);
-      setProcessingIds(current => current.filter(id => id !== participant.id));
+    } finally {
+      setProcessingIds(prev => prev.filter(id => id !== participantId));
     }
   };
 
-  const handleReject = async (participant: SessionParticipant) => {
-    console.log("Rejecting participant:", participant.id);
-    setProcessingIds(current => [...current, participant.id]);
-    
+  const handleReject = async (participantId: string) => {
+    setProcessingIds(prev => [...prev, participantId]);
     try {
-      const success = await rejectParticipant(participant.id);
-      console.log("Reject result:", success);
-      
-      if (!success) {
-        throw new Error("Failed to reject participant");
+      const success = await updateParticipantStatus(participantId, 'rejected');
+      if (success) {
+        setParticipants(current => 
+          current.map(p => 
+            p.id === participantId ? { ...p, status: 'rejected' } : p
+          )
+        );
       }
-      
-      // Manually update UI state immediately for better UX
-      setPendingParticipants(current => current.filter(p => p.id !== participant.id));
-      
-      // Remove from processing even though we'll also do this in the subscription
-      setProcessingIds(current => current.filter(id => id !== participant.id));
     } catch (err) {
       console.error('Error rejecting participant:', err);
-      setProcessingIds(current => current.filter(id => id !== participant.id));
+    } finally {
+      setProcessingIds(prev => prev.filter(id => id !== participantId));
     }
   };
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-  };
+  const pendingParticipants = participants.filter(p => p.status === 'pending');
+  const approvedParticipants = participants.filter(p => p.status === 'approved');
 
   if (loading) {
     return (
@@ -212,31 +108,107 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   return (
     <div className="w-full p-6 bg-white rounded-xl shadow-lg">
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-indigo-600" />
-            <h2 className="text-2xl font-bold text-gray-800">Participants</h2>
-          </div>
-          
-          <TabsList>
-            <TabsTrigger value="approved" className="relative">
-              Approved
-              <span className="ml-1.5">{participants.length}</span>
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="relative">
-              Pending
-              {pendingParticipants.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  {pendingParticipants.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6 text-indigo-600" />
+          <h2 className="text-2xl font-bold text-gray-800">Participants</h2>
         </div>
+        <div className="flex gap-2">
+          <Button
+            variant={activeTab === 'pending' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('pending')}
+            className="relative"
+          >
+            Pending
+            {pendingParticipants.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {pendingParticipants.length}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant={activeTab === 'approved' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('approved')}
+          >
+            Approved
+            <span className="ml-1 text-xs bg-gray-200 text-gray-800 rounded-full px-2">
+              {approvedParticipants.length}
+            </span>
+          </Button>
+        </div>
+      </div>
 
-        <TabsContent value="approved">
-          {participants.length === 0 ? (
+      {activeTab === 'pending' && (
+        <>
+          {pendingParticipants.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No pending participants
+            </div>
+          ) : (
+            <div className="overflow-auto max-h-[calc(100vh-24rem)]">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Student Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Joined At
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {pendingParticipants.map((participant) => (
+                    <tr key={participant.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {participant.student_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatTime(participant.joined_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApprove(participant.id)}
+                            disabled={processingIds.includes(participant.id)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            {processingIds.includes(participant.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckSquare className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReject(participant.id)}
+                            disabled={processingIds.includes(participant.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'approved' && (
+        <>
+          {approvedParticipants.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No approved participants yet
             </div>
@@ -251,10 +223,13 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Joined At
                     </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {participants.map((participant) => (
+                  {approvedParticipants.map((participant) => (
                     <tr key={participant.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {participant.student_name}
@@ -262,65 +237,20 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatTime(participant.joined_at)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Approved
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </TabsContent>
-        
-        <TabsContent value="pending">
-          {pendingParticipants.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No pending approvals
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pendingParticipants.map((participant) => (
-                <div key={participant.id} className="border rounded-lg p-4 bg-yellow-50">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="text-lg font-medium">{participant.student_name}</div>
-                      <div className="text-sm text-gray-500">Joined at {formatTime(participant.joined_at)}</div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                        onClick={() => handleApprove(participant)}
-                        disabled={processingIds.includes(participant.id)}
-                      >
-                        {processingIds.includes(participant.id) ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                        )}
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                        onClick={() => handleReject(participant)}
-                        disabled={processingIds.includes(participant.id)}
-                      >
-                        {processingIds.includes(participant.id) ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                        ) : (
-                          <XCircle className="h-4 w-4 mr-1" />
-                        )}
-                        Reject
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+        </>
+      )}
     </div>
   );
 }
