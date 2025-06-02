@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { getSessionByCode, addSessionParticipant, checkParticipantStatus } from '../lib/supabaseClient';
+import { getSessionByCode, addSessionParticipant, checkParticipantStatus, subscribeToParticipantStatus } from '../lib/supabaseClient';
 import { generateRandomName } from '../lib/utils';
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
@@ -17,96 +17,97 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [checking, setChecking] = useState(false);
-  
-  // For polling status
+
+  // Check participant approval status with direct subscription
   useEffect(() => {
     if (!participantId || !sessionCode) return;
     
+    console.log(`Setting up direct participant status subscription for ${participantId}`);
+    
+    const subscription = subscribeToParticipantStatus(
+      participantId,
+      (newStatus) => {
+        console.log(`Received status update for participant ${participantId}: ${newStatus}`);
+        
+        // Update the status state
+        setStatus(newStatus);
+        
+        // Handle approval
+        if (newStatus === 'approved') {
+          console.log('Participant approved - joining session');
+          
+          // Call onJoinSession after a short delay to show the success message
+          setTimeout(() => {
+            onJoinSession(sessionCode.trim().toUpperCase(), studentName);
+          }, 1500);
+        } else if (newStatus === 'rejected') {
+          setError('Your name was not approved by the teacher. Please try again with a different name.');
+          setIsJoining(false);
+          setParticipantId(null);
+        }
+      }
+    );
+    
+    // Initial status check
     const checkStatus = async () => {
       setChecking(true);
       try {
+        console.log(`Performing initial status check for participant ${participantId}`);
         const currentStatus = await checkParticipantStatus(participantId);
-        console.log(`Status check for participant ${participantId}:`, currentStatus);
+        console.log("Current participant status:", currentStatus);
+        
+        setStatus(currentStatus);
         
         if (currentStatus === 'approved') {
-          setStatus('approved');
-          // Call onJoinSession after a short delay to show the success message
-          setTimeout(() => {
-            onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
-          }, 1500);
+          // Already approved, join immediately
+          onJoinSession(sessionCode.trim().toUpperCase(), studentName);
         } else if (currentStatus === 'rejected') {
-          setStatus('rejected');
-          setParticipantId(null);
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setIsJoining(false);
-        } else if (currentStatus === 'pending') {
-          // Still pending, check again in a few seconds
-          setTimeout(() => checkStatus(), 3000);
+          setParticipantId(null);
         }
       } catch (err) {
-        console.error('Error checking participant status:', err);
-        setIsJoining(false);
+        console.error('Error in initial status check:', err);
       } finally {
         setChecking(false);
       }
     };
     
+    // Run the initial check
     checkStatus();
-  }, [participantId, sessionCode, studentName, onJoinSession]);
-
-  // Subscribe to participant status changes
-  useEffect(() => {
-    if (!participantId || !sessionCode) return;
     
-    console.log(`Setting up subscription for participant status: ${participantId}`);
-    
-    const subscription = supabase
-      .channel(`participant_status_${participantId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'session_participants',
-          filter: `id=eq.${participantId}`,
-        },
-        (payload) => {
-          console.log('Participant status change detected:', payload);
-          if (payload.new && payload.new.status) {
-            setStatus(payload.new.status as 'pending' | 'approved' | 'rejected');
-            
-            if (payload.new.status === 'approved') {
-              // Call onJoinSession after a short delay to show the success message
-              setTimeout(() => {
-                onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
-              }, 1500);
-            } else if (payload.new.status === 'rejected') {
-              setError('Your name was not approved by the teacher. Please try again with a different name.');
-              setIsJoining(false);
-            }
-          }
+    // Set up a polling fallback just in case the subscription doesn't work
+    const pollingInterval = setInterval(async () => {
+      if (status !== 'pending') return;
+      
+      try {
+        const currentStatus = await checkParticipantStatus(participantId);
+        if (currentStatus === 'approved') {
+          setStatus('approved');
+          onJoinSession(sessionCode.trim().toUpperCase(), studentName);
+        } else if (currentStatus === 'rejected') {
+          setStatus('rejected');
+          setError('Your name was not approved by the teacher. Please try again with a different name.');
+          setIsJoining(false);
+          setParticipantId(null);
         }
-      )
-      .subscribe((status) => {
-        console.log(`Participant status subscription status: ${status}`);
-      });
+      } catch (err) {
+        console.error('Error checking participant status:', err);
+      }
+    }, 5000);
     
     return () => {
-      console.log("Cleaning up participant status subscription");
+      console.log("Cleaning up participant status subscription and polling");
       subscription.unsubscribe();
+      clearInterval(pollingInterval);
     };
-  }, [participantId, sessionCode, studentName, onJoinSession]);
+  }, [participantId, sessionCode, studentName, onJoinSession, status]);
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!sessionCode.trim()) {
       setError('Please enter a class code');
-      return;
-    }
-
-    if (!studentName.trim()) {
-      setError('Please enter your name');
       return;
     }
 

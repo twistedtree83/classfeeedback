@@ -12,6 +12,7 @@ import {
   subscribeToTeacherMessages,
   TeacherMessage,
   checkParticipantStatus,
+  subscribeToParticipantStatus,
   subscribeToSessionParticipants
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
@@ -75,68 +76,27 @@ export function StudentView() {
     }
   }, [location]);
 
-  // Check participant approval status
+  // Check participant approval status directly with specific subscription
   useEffect(() => {
     if (!participantId || !sessionCode) return;
     
-    const checkStatus = async () => {
-      setChecking(true);
-      try {
-        const currentStatus = await checkParticipantStatus(participantId);
-        console.log("Current participant status:", currentStatus);
+    console.log(`Setting up direct participant status subscription for ${participantId}`);
+    
+    const subscription = subscribeToParticipantStatus(
+      participantId,
+      (newStatus) => {
+        console.log(`Received status update for participant ${participantId}: ${newStatus}`);
         
-        if (currentStatus === 'approved') {
-          setStatus('approved');
+        // Update the status state
+        setStatus(newStatus);
+        
+        // Handle approval
+        if (newStatus === 'approved') {
+          console.log('Participant approved - transitioning to appropriate view');
           
           // Get presentation data if it exists
-          const presentationData = await getLessonPresentationByCode(sessionCode);
-          if (presentationData) {
-            // This is a teaching session
-            console.log("Approved for teaching session:", presentationData);
-            setPresentation(presentationData);
-            setStep('teaching');
-          } else {
-            // This is a regular feedback session
-            console.log("Approved for regular feedback session");
-            setStep('feedback');
-          }
-        } else if (currentStatus === 'rejected') {
-          setStatus('rejected');
-          setParticipantId(null);
-        } else {
-          // Still pending, check again in a few seconds
-          setTimeout(() => checkStatus(), 3000);
-        }
-      } catch (err) {
-        console.error('Error checking participant status:', err);
-      } finally {
-        setChecking(false);
-      }
-    };
-    
-    checkStatus();
-  }, [participantId, sessionCode]);
-
-  // Subscribe to participant status changes
-  useEffect(() => {
-    if (!participantId || !sessionCode) return;
-    
-    console.log(`Setting up participant status subscription for ${participantId}`);
-    
-    const subscription = subscribeToSessionParticipants(
-      sessionCode,
-      (updatedParticipant) => {
-        console.log("Participant update received:", updatedParticipant);
-        
-        // Check if this update is for our participant
-        if (updatedParticipant.id === participantId) {
-          console.log(`Status update for our participant: ${updatedParticipant.status}`);
-          setStatus(updatedParticipant.status as ParticipantStatus);
-          
-          // Handle approval
-          if (updatedParticipant.status === 'approved') {
-            // Get presentation data if it exists
-            getLessonPresentationByCode(sessionCode).then(presentationData => {
+          getLessonPresentationByCode(sessionCode)
+            .then(presentationData => {
               if (presentationData) {
                 console.log("Approved for teaching session:", presentationData);
                 setPresentation(presentationData);
@@ -145,15 +105,55 @@ export function StudentView() {
                 console.log("Approved for regular feedback session");
                 setStep('feedback');
               }
+            })
+            .catch(err => {
+              console.error('Error loading presentation after approval:', err);
+              // Default to feedback mode if we can't load the presentation
+              setStep('feedback');
             });
-          }
         }
       }
     );
     
+    // Initial status check
+    const checkStatus = async () => {
+      setChecking(true);
+      try {
+        console.log(`Performing initial status check for participant ${participantId}`);
+        const currentStatus = await checkParticipantStatus(participantId);
+        console.log("Current participant status:", currentStatus);
+        
+        setStatus(currentStatus);
+        
+        if (currentStatus === 'approved') {
+          // Get presentation data if it exists
+          const presentationData = await getLessonPresentationByCode(sessionCode);
+          if (presentationData) {
+            console.log("Initially approved for teaching session:", presentationData);
+            setPresentation(presentationData);
+            setStep('teaching');
+          } else {
+            console.log("Initially approved for regular feedback session");
+            setStep('feedback');
+          }
+        }
+      } catch (err) {
+        console.error('Error in initial status check:', err);
+      } finally {
+        setChecking(false);
+      }
+    };
+    
+    // Run the initial check
+    checkStatus();
+    
+    // Set up a polling fallback just in case the subscription doesn't work
+    const pollingInterval = setInterval(checkStatus, 5000);
+    
     return () => {
-      console.log("Cleaning up participant status subscription");
+      console.log("Cleaning up participant status subscription and polling");
       subscription.unsubscribe();
+      clearInterval(pollingInterval);
     };
   }, [participantId, sessionCode]);
 
@@ -245,6 +245,35 @@ export function StudentView() {
     }
   }, [showMessagePanel]);
 
+  // Subscribe to presentation updates
+  useEffect(() => {
+    if (!presentation?.session_code || !joined) return;
+    
+    console.log("Setting up presentation subscription for:", presentation.session_code);
+    
+    const presentationSubscription = subscribeToLessonPresentation(
+      presentation.session_code,
+      (updatedPresentation) => {
+        console.log("Received presentation update");
+        
+        // Get the full presentation data to ensure we have parsed cards
+        getLessonPresentationByCode(presentation.session_code)
+          .then(fullPresentation => {
+            if (fullPresentation) {
+              console.log("Updating presentation with new data");
+              setPresentation(fullPresentation);
+            }
+          })
+          .catch(err => console.error('Error refreshing presentation:', err));
+      }
+    );
+
+    return () => {
+      console.log("Cleaning up presentation subscription");
+      presentationSubscription.unsubscribe();
+    };
+  }, [presentation?.session_code, joined]);
+
   const toggleMessagePanel = () => {
     console.log("Toggling message panel - Current state:", showMessagePanel, "Messages:", allMessages.length);
     setShowMessagePanel(prev => !prev);
@@ -263,11 +292,6 @@ export function StudentView() {
       return;
     }
 
-    if (!studentName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-
     setIsJoining(true);
     setError('');
     setStatus(null);
@@ -275,6 +299,7 @@ export function StudentView() {
     try {
       console.log("Joining session with code:", sessionCode.trim().toUpperCase());
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
+      
       if (!session) {
         throw new Error('Session not found or has ended');
       }
@@ -282,7 +307,7 @@ export function StudentView() {
       console.log("Session found:", session);
       
       // Use entered name or generate a random one if empty
-      const name = studentName.trim();
+      const name = studentName.trim() || generateRandomName();
       
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
@@ -290,7 +315,7 @@ export function StudentView() {
       );
       
       if (!participant) {
-        throw new Error('Failed to join session');
+        throw new Error('Failed to join session. Please try again.');
       }
       
       console.log("Added as participant:", participant);

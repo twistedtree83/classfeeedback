@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, BarChart3, MessageSquare, Shield } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ParticipantsList } from '../components/ParticipantsList';
 import { TeachingFeedbackPanel } from '../components/TeachingFeedbackPanel';
@@ -15,7 +15,8 @@ import {
   getParticipantsForSession,
   subscribeToSessionParticipants,
   SessionParticipant,
-  getLessonPlanById
+  getLessonPlanById,
+  getPendingParticipantsForSession
 } from '../lib/supabaseClient';
 import type { LessonPresentation, LessonCard, ProcessedLesson } from '../lib/types';
 import { sanitizeHtml } from '../lib/utils';
@@ -37,6 +38,7 @@ export function TeachingModePage() {
   const [lessonTitle, setLessonTitle] = useState<string>('');
   const [displayedCardIndex, setDisplayedCardIndex] = useState<number>(0);
   const [actualCardIndex, setActualCardIndex] = useState<number>(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const loadPresentationAndSession = async () => {
@@ -64,6 +66,10 @@ export function TeachingModePage() {
         // Load initial participants
         const participantsData = await getParticipantsForSession(code);
         setParticipants(participantsData);
+        
+        // Check for pending participants
+        const pendingParticipants = await getPendingParticipantsForSession(code);
+        setPendingCount(pendingParticipants.length);
 
         // Set presentation data
         setPresentation(presentationData);
@@ -83,6 +89,28 @@ export function TeachingModePage() {
     };
 
     loadPresentationAndSession();
+    
+    // Set up polling for pending participants
+    const checkPendingInterval = setInterval(async () => {
+      if (!code) return;
+      
+      try {
+        const pendingParticipants = await getPendingParticipantsForSession(code);
+        setPendingCount(pendingParticipants.length);
+        
+        // If there are pending participants, switch to the participants tab
+        if (pendingParticipants.length > 0 && !showParticipants) {
+          setShowParticipants(true);
+          setShowFeedback(false);
+        }
+      } catch (err) {
+        console.error('Error checking pending participants:', err);
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(checkPendingInterval);
+    };
   }, [code]);
 
   // Subscribe to session participants
@@ -92,15 +120,42 @@ export function TeachingModePage() {
     const subscription = subscribeToSessionParticipants(
       code,
       (newParticipant) => {
-        console.log("New participant joined:", newParticipant);
-        setParticipants(prev => [...prev, newParticipant]);
+        console.log("Participant update received:", newParticipant);
+        
+        if (newParticipant.status === 'pending') {
+          // If a new pending participant joins, increment count and switch to participants tab
+          setPendingCount(prev => prev + 1);
+          setShowParticipants(true);
+          setShowFeedback(false);
+        } else if (newParticipant.status === 'approved') {
+          // If a participant gets approved, decrement pending count
+          setPendingCount(prev => Math.max(0, prev - 1));
+        }
+        
+        setParticipants(current => {
+          // Check if this is an update to an existing participant
+          const index = current.findIndex(p => p.id === newParticipant.id);
+          if (index >= 0) {
+            // Update the existing participant
+            const updated = [...current];
+            updated[index] = newParticipant;
+            return updated;
+          }
+          // Add new participant
+          return [...current, newParticipant];
+        });
+        
+        // Update welcome card
+        if (displayedCardIndex === 0 && presentation) {
+          updateCurrentCardDisplay(presentation, 0, [...participants, newParticipant]);
+        }
       }
     );
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [code]);
+  }, [code, participants, displayedCardIndex, presentation, showParticipants, showFeedback]);
 
   // Update welcome card when participants change
   useEffect(() => {
@@ -320,8 +375,14 @@ Click "Next" to begin your lesson presentation.
                   }
                 }}
                 size="sm"
+                className="relative"
               >
                 <Users className="h-5 w-5" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
+                    {pendingCount}
+                  </span>
+                )}
               </Button>
               <Button
                 variant="outline"

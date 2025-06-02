@@ -11,7 +11,7 @@ import {
   getTeacherMessagesForPresentation,
   TeacherMessage,
   checkParticipantStatus,
-  subscribeToSessionParticipants
+  subscribeToParticipantStatus
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -73,81 +73,83 @@ export function StudentTeachingView() {
     }
   }, [location]);
 
-  // Check participant approval status
+  // Check participant approval status with direct subscription
   useEffect(() => {
-    if (!participantId) return;
+    if (!participantId || !sessionCode) return;
     
-    const checkStatus = async () => {
-      setChecking(true);
-      try {
-        const currentStatus = await checkParticipantStatus(participantId);
+    console.log(`Setting up direct participant status subscription for ${participantId}`);
+    
+    const subscription = subscribeToParticipantStatus(
+      participantId,
+      (newStatus) => {
+        console.log(`Received status update for participant ${participantId}: ${newStatus}`);
         
-        if (currentStatus === 'approved') {
-          setStatus('approved');
+        // Update the status state
+        setStatus(newStatus);
+        
+        // Handle approval
+        if (newStatus === 'approved') {
+          console.log('Participant approved - transitioning to teaching view');
           setJoined(true);
           
           // Get presentation data
+          getLessonPresentationByCode(sessionCode)
+            .then(presentationData => {
+              if (presentationData) {
+                console.log("Approved for teaching session:", presentationData);
+                setPresentation(presentationData);
+              } else {
+                console.error('Presentation not found after approval');
+                setError('Presentation not found');
+              }
+            })
+            .catch(err => {
+              console.error('Error loading presentation after approval:', err);
+              setError('Error loading presentation');
+            });
+        }
+      }
+    );
+    
+    // Initial status check
+    const checkStatus = async () => {
+      setChecking(true);
+      try {
+        console.log(`Performing initial status check for participant ${participantId}`);
+        const currentStatus = await checkParticipantStatus(participantId);
+        console.log("Current participant status:", currentStatus);
+        
+        setStatus(currentStatus);
+        
+        if (currentStatus === 'approved') {
+          setJoined(true);
+          // Get presentation data
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
+            console.log("Initially approved for teaching session:", presentationData);
             setPresentation(presentationData);
           } else {
+            console.error('Presentation not found on initial check');
             setError('Presentation not found');
           }
-        } else if (currentStatus === 'rejected') {
-          setStatus('rejected');
-          setParticipantId(null);
-        } else {
-          // Still pending, check again in a few seconds
-          setTimeout(() => checkStatus(), 3000);
         }
       } catch (err) {
-        console.error('Error checking participant status:', err);
+        console.error('Error in initial status check:', err);
       } finally {
         setChecking(false);
       }
     };
     
+    // Run the initial check
     checkStatus();
-  }, [participantId, sessionCode]);
-
-  // Subscribe to participant status changes
-  useEffect(() => {
-    if (!participantId || !sessionCode) return;
     
-    console.log(`Setting up participant status subscription for ${participantId}`);
-    
-    const subscription = subscribeToSessionParticipants(
-      sessionCode,
-      (updatedParticipant) => {
-        console.log("Participant update received:", updatedParticipant);
-        
-        // Check if this update is for our participant
-        if (updatedParticipant.id === participantId) {
-          console.log(`Status update for our participant: ${updatedParticipant.status}`);
-          setStatus(updatedParticipant.status as ParticipantStatus);
-          
-          // Handle approval
-          if (updatedParticipant.status === 'approved') {
-            setJoined(true);
-            
-            // Get presentation data if it exists
-            getLessonPresentationByCode(sessionCode).then(presentationData => {
-              if (presentationData) {
-                console.log("Approved for teaching session:", presentationData);
-                setPresentation(presentationData);
-              } else {
-                console.log("Presentation not found for teaching session");
-                setError('Presentation not found');
-              }
-            });
-          }
-        }
-      }
-    );
+    // Set up a polling fallback just in case the subscription doesn't work
+    const pollingInterval = setInterval(checkStatus, 5000);
     
     return () => {
-      console.log("Cleaning up participant status subscription");
+      console.log("Cleaning up participant status subscription and polling");
       subscription.unsubscribe();
+      clearInterval(pollingInterval);
     };
   }, [participantId, sessionCode]);
 
@@ -297,11 +299,6 @@ export function StudentTeachingView() {
       return;
     }
 
-    if (!studentName.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setStatus(null);
@@ -316,7 +313,7 @@ export function StudentTeachingView() {
       console.log("Session found:", session);
       
       // Use entered name or generate a random name if empty
-      const name = studentName.trim();
+      const name = studentName.trim() || generateRandomName();
       
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),

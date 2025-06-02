@@ -606,6 +606,36 @@ export const subscribeToSessionParticipants = (
     .subscribe();
 };
 
+// Create a specific subscription for a single participant
+export const subscribeToParticipantStatus = (
+  participantId: string,
+  callback: (status: ParticipantStatus) => void
+) => {
+  const channelId = `participant_status_${participantId}_${Math.random().toString(36).substring(2, 9)}`;
+  console.log(`Creating participant status subscription channel: ${channelId}`);
+  
+  return supabase
+    .channel(channelId)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `id=eq.${participantId}`,
+      },
+      (payload) => {
+        console.log(`Participant ${participantId} status change detected:`, payload);
+        if (payload.new && payload.new.status) {
+          callback(payload.new.status as ParticipantStatus);
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(`Participant status subscription status: ${status}`);
+    });
+};
+
 // Helper functions for feedback
 export const submitFeedback = async (
   sessionCode: string, 

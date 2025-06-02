@@ -3,7 +3,6 @@ import { Users, CheckSquare, X, UserCheck, UserX, Loader2 } from 'lucide-react';
 import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants, updateParticipantStatus } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
 import { Button } from './ui/Button';
-import { supabase } from '../lib/supabaseClient';
 
 interface ParticipantsListProps {
   sessionCode: string;
