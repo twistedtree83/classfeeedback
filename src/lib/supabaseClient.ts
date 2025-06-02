@@ -103,9 +103,7 @@ export const resetPassword = async (email: string): Promise<{ error: string | nu
 
 export const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
   try {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
       return { error: error.message };
@@ -521,6 +519,7 @@ export const updateParticipantStatus = async (
   status: 'approved' | 'rejected'
 ): Promise<boolean> => {
   try {
+    console.log(`Updating participant ${participantId} status to ${status}`);
     const { error } = await supabase
       .from('session_participants')
       .update({ status })
@@ -531,6 +530,7 @@ export const updateParticipantStatus = async (
       return false;
     }
     
+    console.log(`Successfully updated participant ${participantId} status to ${status}`);
     return true;
   } catch (err) {
     console.error('Exception updating participant status:', err);
@@ -542,6 +542,7 @@ export const checkParticipantStatus = async (
   participantId: string
 ): Promise<ParticipantStatus | null> => {
   try {
+    console.log(`Checking status for participant ${participantId}`);
     const { data, error } = await supabase
       .from('session_participants')
       .select('status')
@@ -553,6 +554,7 @@ export const checkParticipantStatus = async (
       return null;
     }
     
+    console.log(`Participant ${participantId} status: ${data.status}`);
     return data.status as ParticipantStatus;
   } catch (err) {
     console.error('Exception checking participant status:', err);
@@ -589,12 +591,17 @@ export const subscribeToSessionParticipants = (
     .on(
       'postgres_changes',
       {
-        event: 'INSERT',
+        event: '*', // Subscribe to all events (INSERT, UPDATE, DELETE)
         schema: 'public',
         table: 'session_participants',
         filter: `session_code=eq.${sessionCode}`,
       },
-      (payload) => callback(payload.new as SessionParticipant)
+      (payload) => {
+        console.log('Participant change detected:', payload);
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          callback(payload.new as SessionParticipant);
+        }
+      }
     )
     .subscribe();
 };

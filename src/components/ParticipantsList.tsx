@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Users, CheckSquare, X, UserCheck, UserX, Loader2 } from 'lucide-react';
 import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants, updateParticipantStatus } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { Button } from '../components/ui/Button';
+import { Button } from './ui/Button';
+import { supabase } from '../lib/supabaseClient';
 
 interface ParticipantsListProps {
   sessionCode: string;
@@ -18,7 +19,9 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   useEffect(() => {
     async function loadParticipants() {
       try {
+        console.log(`Loading participants for session: ${sessionCode}`);
         const data = await getParticipantsForSession(sessionCode);
+        console.log(`Loaded ${data.length} participants:`, data);
         setParticipants(data);
       } catch (err) {
         console.error('Error loading participants:', err);
@@ -32,19 +35,34 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   }, [sessionCode]);
 
   useEffect(() => {
+    console.log(`Setting up participants subscription for session: ${sessionCode}`);
+    
     const subscription = subscribeToSessionParticipants(
       sessionCode,
-      (newParticipant) => {
+      (participantUpdate) => {
+        console.log("Participant update received:", participantUpdate);
+        
         setParticipants(current => {
-          // Check if participant already exists to avoid duplicates
-          const exists = current.some(p => p.id === newParticipant.id);
-          if (exists) return current;
-          return [...current, newParticipant];
+          // Check if this is a new participant or an update to an existing one
+          const existingIndex = current.findIndex(p => p.id === participantUpdate.id);
+          
+          if (existingIndex >= 0) {
+            // Update existing participant
+            console.log(`Updating existing participant at index ${existingIndex}`);
+            const updated = [...current];
+            updated[existingIndex] = participantUpdate;
+            return updated;
+          } else {
+            // Add new participant
+            console.log('Adding new participant');
+            return [...current, participantUpdate];
+          }
         });
       }
     );
     
     return () => {
+      console.log("Cleaning up participants subscription");
       subscription.unsubscribe();
     };
   }, [sessionCode]);
@@ -52,13 +70,19 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const handleApprove = async (participantId: string) => {
     setProcessingIds(prev => [...prev, participantId]);
     try {
+      console.log(`Approving participant: ${participantId}`);
       const success = await updateParticipantStatus(participantId, 'approved');
+      
       if (success) {
+        console.log(`Successfully approved participant: ${participantId}`);
+        // Update local state
         setParticipants(current => 
           current.map(p => 
             p.id === participantId ? { ...p, status: 'approved' } : p
           )
         );
+      } else {
+        console.error(`Failed to approve participant: ${participantId}`);
       }
     } catch (err) {
       console.error('Error approving participant:', err);
@@ -70,13 +94,19 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const handleReject = async (participantId: string) => {
     setProcessingIds(prev => [...prev, participantId]);
     try {
+      console.log(`Rejecting participant: ${participantId}`);
       const success = await updateParticipantStatus(participantId, 'rejected');
+      
       if (success) {
+        console.log(`Successfully rejected participant: ${participantId}`);
+        // Update local state
         setParticipants(current => 
           current.map(p => 
             p.id === participantId ? { ...p, status: 'rejected' } : p
           )
         );
+      } else {
+        console.error(`Failed to reject participant: ${participantId}`);
       }
     } catch (err) {
       console.error('Error rejecting participant:', err);
@@ -87,6 +117,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   const pendingParticipants = participants.filter(p => p.status === 'pending');
   const approvedParticipants = participants.filter(p => p.status === 'approved');
+  const rejectedParticipants = participants.filter(p => p.status === 'rejected');
 
   if (loading) {
     return (

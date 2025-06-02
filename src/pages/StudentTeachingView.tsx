@@ -10,7 +10,8 @@ import {
   subscribeToTeacherMessages,
   getTeacherMessagesForPresentation,
   TeacherMessage,
-  checkParticipantStatus
+  checkParticipantStatus,
+  subscribeToSessionParticipants
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -107,6 +108,47 @@ export function StudentTeachingView() {
     };
     
     checkStatus();
+  }, [participantId, sessionCode]);
+
+  // Subscribe to participant status changes
+  useEffect(() => {
+    if (!participantId || !sessionCode) return;
+    
+    console.log(`Setting up participant status subscription for ${participantId}`);
+    
+    const subscription = subscribeToSessionParticipants(
+      sessionCode,
+      (updatedParticipant) => {
+        console.log("Participant update received:", updatedParticipant);
+        
+        // Check if this update is for our participant
+        if (updatedParticipant.id === participantId) {
+          console.log(`Status update for our participant: ${updatedParticipant.status}`);
+          setStatus(updatedParticipant.status as ParticipantStatus);
+          
+          // Handle approval
+          if (updatedParticipant.status === 'approved') {
+            setJoined(true);
+            
+            // Get presentation data if it exists
+            getLessonPresentationByCode(sessionCode).then(presentationData => {
+              if (presentationData) {
+                console.log("Approved for teaching session:", presentationData);
+                setPresentation(presentationData);
+              } else {
+                console.log("Presentation not found for teaching session");
+                setError('Presentation not found');
+              }
+            });
+          }
+        }
+      }
+    );
+    
+    return () => {
+      console.log("Cleaning up participant status subscription");
+      subscription.unsubscribe();
+    };
   }, [participantId, sessionCode]);
 
   const currentCard = presentation?.cards?.[presentation.current_card_index];
@@ -272,20 +314,25 @@ export function StudentTeachingView() {
       }
 
       console.log("Session found:", session);
+      
+      // Use entered name or generate a random name if empty
+      const name = studentName.trim();
+      
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
-        studentName.trim()
+        name
       );
-
+      
       if (!participant) {
         throw new Error('Failed to join session');
       }
-
+      
       console.log("Added as participant:", participant);
       
       // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
+      setStudentName(name);
 
       // Update URL with session code for easy rejoining
       const url = new URL(window.location.href);
@@ -294,7 +341,6 @@ export function StudentTeachingView() {
     } catch (err) {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
-    } finally {
       setLoading(false);
     }
   };
@@ -331,7 +377,7 @@ export function StudentTeachingView() {
     e.preventDefault();
 
     if (!presentation || !question.trim()) return;
-
+    
     try {
       console.log("Submitting question:", question);
       const success = await submitTeachingQuestion(

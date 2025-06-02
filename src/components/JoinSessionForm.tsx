@@ -20,30 +20,81 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   
   // For polling status
   useEffect(() => {
-    if (!participantId) return;
+    if (!participantId || !sessionCode) return;
     
     const checkStatus = async () => {
       setChecking(true);
-      const currentStatus = await checkParticipantStatus(participantId);
-      setChecking(false);
-      
-      if (currentStatus === 'approved') {
-        setStatus('approved');
-        // Call onJoinSession after a short delay to show the success message
-        setTimeout(() => {
-          onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
-        }, 1500);
-      } else if (currentStatus === 'rejected') {
-        setStatus('rejected');
-        setParticipantId(null);
-        setError('Your name was not approved by the teacher. Please try again with a different name.');
-      } else {
-        // Schedule another check if still pending
-        setTimeout(() => checkStatus(), 3000);
+      try {
+        const currentStatus = await checkParticipantStatus(participantId);
+        console.log(`Status check for participant ${participantId}:`, currentStatus);
+        
+        if (currentStatus === 'approved') {
+          setStatus('approved');
+          // Call onJoinSession after a short delay to show the success message
+          setTimeout(() => {
+            onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
+          }, 1500);
+        } else if (currentStatus === 'rejected') {
+          setStatus('rejected');
+          setParticipantId(null);
+          setError('Your name was not approved by the teacher. Please try again with a different name.');
+          setIsJoining(false);
+        } else if (currentStatus === 'pending') {
+          // Still pending, check again in a few seconds
+          setTimeout(() => checkStatus(), 3000);
+        }
+      } catch (err) {
+        console.error('Error checking participant status:', err);
+        setIsJoining(false);
+      } finally {
+        setChecking(false);
       }
     };
     
     checkStatus();
+  }, [participantId, sessionCode, studentName, onJoinSession]);
+
+  // Subscribe to participant status changes
+  useEffect(() => {
+    if (!participantId || !sessionCode) return;
+    
+    console.log(`Setting up subscription for participant status: ${participantId}`);
+    
+    const subscription = supabase
+      .channel(`participant_status_${participantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'session_participants',
+          filter: `id=eq.${participantId}`,
+        },
+        (payload) => {
+          console.log('Participant status change detected:', payload);
+          if (payload.new && payload.new.status) {
+            setStatus(payload.new.status as 'pending' | 'approved' | 'rejected');
+            
+            if (payload.new.status === 'approved') {
+              // Call onJoinSession after a short delay to show the success message
+              setTimeout(() => {
+                onJoinSession(sessionCode.trim().toUpperCase(), studentName.trim() || generateRandomName());
+              }, 1500);
+            } else if (payload.new.status === 'rejected') {
+              setError('Your name was not approved by the teacher. Please try again with a different name.');
+              setIsJoining(false);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Participant status subscription status: ${status}`);
+      });
+    
+    return () => {
+      console.log("Cleaning up participant status subscription");
+      subscription.unsubscribe();
+    };
   }, [participantId, sessionCode, studentName, onJoinSession]);
 
   const handleJoinSession = async (e: React.FormEvent) => {
@@ -64,6 +115,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
     setStatus(null);
     
     try {
+      console.log("Checking session:", sessionCode.trim().toUpperCase());
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
       
       if (!session) {
@@ -75,6 +127,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       // Use entered name or generate a random one if empty
       const name = studentName.trim() || generateRandomName();
       
+      console.log("Adding participant:", { sessionCode: sessionCode.trim().toUpperCase(), name });
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
         name
@@ -86,11 +139,12 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         return;
       }
       
+      console.log("Added participant:", participant);
+      
       // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
       setStudentName(name);
-      setIsJoining(false);
       
     } catch (err) {
       console.error('Error joining session:', err);

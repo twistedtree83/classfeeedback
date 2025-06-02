@@ -11,7 +11,8 @@ import {
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
   TeacherMessage,
-  checkParticipantStatus
+  checkParticipantStatus,
+  subscribeToSessionParticipants
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -70,13 +71,13 @@ export function StudentView() {
     const params = new URLSearchParams(location.search);
     const codeParam = params.get('code');
     if (codeParam) {
-      setSessionCode(codeParam.toUpperCase());
+      setSessionCode(codeParam);
     }
   }, [location]);
 
   // Check participant approval status
   useEffect(() => {
-    if (!participantId) return;
+    if (!participantId || !sessionCode) return;
     
     const checkStatus = async () => {
       setChecking(true);
@@ -91,10 +92,12 @@ export function StudentView() {
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
             // This is a teaching session
+            console.log("Approved for teaching session:", presentationData);
             setPresentation(presentationData);
             setStep('teaching');
           } else {
             // This is a regular feedback session
+            console.log("Approved for regular feedback session");
             setStep('feedback');
           }
         } else if (currentStatus === 'rejected') {
@@ -112,6 +115,46 @@ export function StudentView() {
     };
     
     checkStatus();
+  }, [participantId, sessionCode]);
+
+  // Subscribe to participant status changes
+  useEffect(() => {
+    if (!participantId || !sessionCode) return;
+    
+    console.log(`Setting up participant status subscription for ${participantId}`);
+    
+    const subscription = subscribeToSessionParticipants(
+      sessionCode,
+      (updatedParticipant) => {
+        console.log("Participant update received:", updatedParticipant);
+        
+        // Check if this update is for our participant
+        if (updatedParticipant.id === participantId) {
+          console.log(`Status update for our participant: ${updatedParticipant.status}`);
+          setStatus(updatedParticipant.status as ParticipantStatus);
+          
+          // Handle approval
+          if (updatedParticipant.status === 'approved') {
+            // Get presentation data if it exists
+            getLessonPresentationByCode(sessionCode).then(presentationData => {
+              if (presentationData) {
+                console.log("Approved for teaching session:", presentationData);
+                setPresentation(presentationData);
+                setStep('teaching');
+              } else {
+                console.log("Approved for regular feedback session");
+                setStep('feedback');
+              }
+            });
+          }
+        }
+      }
+    );
+    
+    return () => {
+      console.log("Cleaning up participant status subscription");
+      subscription.unsubscribe();
+    };
   }, [participantId, sessionCode]);
 
   // Load past teacher messages when joining a session
@@ -194,6 +237,7 @@ export function StudentView() {
 
   // Reset message count when panel is opened
   useEffect(() => {
+    console.log("Message panel visibility changed:", showMessagePanel);
     if (showMessagePanel) {
       setNewMessageCount(0);
       // Dismiss the toast notification when opening the panel
@@ -554,11 +598,11 @@ export function StudentView() {
 
               <Button
                 type="submit"
-                disabled={isJoining || !sessionCode.trim() || !studentName.trim()}
+                disabled={isJoining || !sessionCode.trim()}
                 className="w-full"
                 size="lg"
               >
-                {isJoining ? 'Joining...' : 'Join Lesson'}
+                {isJoining ? 'Joining...' : 'Join Session'}
               </Button>
             </form>
           </div>
