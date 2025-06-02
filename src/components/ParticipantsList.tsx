@@ -23,6 +23,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("approved");
 
   // Load initial participants
   useEffect(() => {
@@ -33,8 +34,16 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
           getPendingParticipantsForSession(sessionCode)
         ]);
         
+        // Set approved participants
         setParticipants(allData.filter(p => p.status === 'approved' || p.status === undefined));
+        
+        // Set pending participants
         setPendingParticipants(pendingData);
+        
+        // If there are pending participants, switch to the pending tab
+        if (pendingData.length > 0) {
+          setActiveTab("pending");
+        }
       } catch (err) {
         console.error('Error loading participants:', err);
         setError('Failed to load participants');
@@ -51,10 +60,28 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
     const subscription = subscribeToSessionParticipants(
       sessionCode,
       (newParticipant) => {
+        console.log("New participant subscription event:", newParticipant);
         if (newParticipant.status === 'pending') {
-          setPendingParticipants(current => [...current, newParticipant]);
-        } else {
-          setParticipants(current => [...current, newParticipant]);
+          setPendingParticipants(current => {
+            // Check if already exists
+            if (current.some(p => p.id === newParticipant.id)) {
+              return current;
+            }
+            return [...current, newParticipant];
+          });
+          
+          // Switch to pending tab if it's not active
+          if (activeTab !== "pending") {
+            setActiveTab("pending");
+          }
+        } else if (newParticipant.status === 'approved') {
+          setParticipants(current => {
+            // Check if already exists
+            if (current.some(p => p.id === newParticipant.id)) {
+              return current;
+            }
+            return [...current, newParticipant];
+          });
         }
       }
     );
@@ -62,30 +89,51 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [sessionCode]);
+  }, [sessionCode, activeTab]);
 
   // Subscribe to status updates
   useEffect(() => {
-    const subscription = subscribeToParticipantStatusUpdates(
-      sessionCode,
-      (updatedParticipant) => {
-        // Remove from processing state
-        setProcessingIds(current => current.filter(id => id !== updatedParticipant.id));
-        
-        if (updatedParticipant.status === 'approved') {
-          // Remove from pending and add to approved
-          setPendingParticipants(current => 
-            current.filter(p => p.id !== updatedParticipant.id)
-          );
-          setParticipants(current => [...current, updatedParticipant]);
-        } else if (updatedParticipant.status === 'rejected') {
-          // Remove from pending
-          setPendingParticipants(current => 
-            current.filter(p => p.id !== updatedParticipant.id)
-          );
+    const channelId = `participant_status_${sessionCode}_${Math.random().toString(36).substring(2, 9)}`;
+    
+    const subscription = supabase
+      .channel(channelId)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'session_participants',
+          filter: `session_code=eq.${sessionCode}`,
+        },
+        (payload) => {
+          console.log("Participant status update received:", payload);
+          const updatedParticipant = payload.new as SessionParticipant;
+          
+          // Remove from processing state
+          setProcessingIds(current => current.filter(id => id !== updatedParticipant.id));
+          
+          if (updatedParticipant.status === 'approved') {
+            // Remove from pending and add to approved
+            setPendingParticipants(current => 
+              current.filter(p => p.id !== updatedParticipant.id)
+            );
+            
+            setParticipants(current => {
+              // Check if already exists
+              if (current.some(p => p.id === updatedParticipant.id)) {
+                return current;
+              }
+              return [...current, updatedParticipant];
+            });
+          } else if (updatedParticipant.status === 'rejected') {
+            // Remove from pending
+            setPendingParticipants(current => 
+              current.filter(p => p.id !== updatedParticipant.id)
+            );
+          }
         }
-      }
-    );
+      )
+      .subscribe();
     
     return () => {
       subscription.unsubscribe();
@@ -93,10 +141,23 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   }, [sessionCode]);
 
   const handleApprove = async (participant: SessionParticipant) => {
+    console.log("Approving participant:", participant.id);
     setProcessingIds(current => [...current, participant.id]);
+    
     try {
-      await approveParticipant(participant.id);
-      // Status update will be handled by subscription
+      const success = await approveParticipant(participant.id);
+      console.log("Approve result:", success);
+      
+      if (!success) {
+        throw new Error("Failed to approve participant");
+      }
+      
+      // Manually update UI state immediately for better UX
+      setPendingParticipants(current => current.filter(p => p.id !== participant.id));
+      setParticipants(current => [...current, {...participant, status: 'approved'}]);
+      
+      // Remove from processing even though we'll also do this in the subscription
+      setProcessingIds(current => current.filter(id => id !== participant.id));
     } catch (err) {
       console.error('Error approving participant:', err);
       setProcessingIds(current => current.filter(id => id !== participant.id));
@@ -104,14 +165,30 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   };
 
   const handleReject = async (participant: SessionParticipant) => {
+    console.log("Rejecting participant:", participant.id);
     setProcessingIds(current => [...current, participant.id]);
+    
     try {
-      await rejectParticipant(participant.id);
-      // Status update will be handled by subscription
+      const success = await rejectParticipant(participant.id);
+      console.log("Reject result:", success);
+      
+      if (!success) {
+        throw new Error("Failed to reject participant");
+      }
+      
+      // Manually update UI state immediately for better UX
+      setPendingParticipants(current => current.filter(p => p.id !== participant.id));
+      
+      // Remove from processing even though we'll also do this in the subscription
+      setProcessingIds(current => current.filter(id => id !== participant.id));
     } catch (err) {
       console.error('Error rejecting participant:', err);
       setProcessingIds(current => current.filter(id => id !== participant.id));
     }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   if (loading) {
@@ -134,7 +211,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   return (
     <div className="w-full p-6 bg-white rounded-xl shadow-lg">
-      <Tabs defaultValue="approved">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-6 w-6 text-indigo-600" />

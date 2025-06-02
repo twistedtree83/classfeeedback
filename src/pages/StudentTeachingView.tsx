@@ -349,7 +349,7 @@ export function StudentTeachingView() {
           setShowSuccessMessage(false);
         }, 2000);
       } else {
-        setMessage({ text: 'Failed to submit question. Please try again.', type: 'error' });
+        setError('Failed to submit question. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting question:', err);
@@ -418,14 +418,6 @@ export function StudentTeachingView() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
   // Render rejected view
   if (status === 'rejected') {
     return (
@@ -478,6 +470,14 @@ export function StudentTeachingView() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }

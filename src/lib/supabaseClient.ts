@@ -538,16 +538,19 @@ export const getPendingParticipantsForSession = async (sessionCode: string): Pro
 // Approve a participant
 export const approveParticipant = async (participantId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log("Approving participant ID:", participantId);
+    const { data, error } = await supabase
       .from('session_participants')
       .update({ status: 'approved' })
-      .eq('id', participantId);
+      .eq('id', participantId)
+      .select();
     
     if (error) {
       console.error('Error approving participant:', error);
       return false;
     }
     
+    console.log("Approval response:", data);
     return true;
   } catch (err) {
     console.error('Exception approving participant:', err);
@@ -558,16 +561,19 @@ export const approveParticipant = async (participantId: string): Promise<boolean
 // Reject a participant
 export const rejectParticipant = async (participantId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log("Rejecting participant ID:", participantId);
+    const { data, error } = await supabase
       .from('session_participants')
       .update({ status: 'rejected' })
-      .eq('id', participantId);
+      .eq('id', participantId)
+      .select();
     
     if (error) {
       console.error('Error rejecting participant:', error);
       return false;
     }
     
+    console.log("Rejection response:", data);
     return true;
   } catch (err) {
     console.error('Exception rejecting participant:', err);
@@ -619,8 +625,10 @@ export const subscribeToParticipantStatusUpdates = (
   sessionCode: string,
   callback: (payload: SessionParticipant) => void
 ) => {
+  const channelId = `participant_status_${sessionCode}_${Math.random().toString(36).substring(2, 9)}`;
+  
   return supabase
-    .channel('participant_status_updates')
+    .channel(channelId)
     .on(
       'postgres_changes',
       {

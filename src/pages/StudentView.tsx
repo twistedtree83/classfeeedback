@@ -13,8 +13,8 @@ import {
   TeacherMessage,
   checkParticipantStatus
 } from '../lib/supabaseClient';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 import { MessagePanel } from '../components/MessagePanel';
 import { generateRandomName } from '../lib/utils';
 import { 
@@ -32,7 +32,8 @@ import {
   User,
   Split,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -48,7 +49,6 @@ export function StudentView() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
-  const [question, setQuestion] = useState('');
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
@@ -61,7 +61,7 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
-  const messageToastRef = useRef<HTMLDivElement>(null);
+  const [question, setQuestion] = useState('');
 
   // Extract code from URL if present
   useEffect(() => {
@@ -418,62 +418,6 @@ export function StudentView() {
     }
   };
 
-  // Render join form
-  if (step === 'join') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="flex justify-center mb-6">
-              <BookOpen className="h-12 w-12 text-indigo-600" />
-            </div>
-
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-              Join Classroom Session
-            </h2>
-
-            <form onSubmit={handleJoinSession} className="space-y-5">
-              <Input
-                label="Session Code"
-                value={sessionCode}
-                onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                placeholder="Enter 6-character code"
-                maxLength={6}
-                disabled={isJoining}
-                className="uppercase text-lg tracking-wide"
-                autoFocus
-              />
-
-              <Input
-                label="Your Name"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Enter your name"
-                disabled={isJoining}
-              />
-
-              {error && (
-                <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
-                  <HelpCircle className="h-5 w-5 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isJoining || !sessionCode.trim() || !studentName.trim()}
-                className="w-full"
-                size="lg"
-              >
-                {isJoining ? 'Joining...' : 'Join Lesson'}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
   // Render pending approval screen
   if (step === 'pending') {
     return (
@@ -524,6 +468,62 @@ export function StudentView() {
             >
               Try Again with a Different Name
             </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render join form
+  if (step === 'join') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="flex justify-center mb-6">
+              <BookOpen className="h-12 w-12 text-indigo-600" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+              Join Classroom Session
+            </h2>
+
+            <form onSubmit={handleJoinSession} className="space-y-5">
+              <Input
+                label="Session Code"
+                value={sessionCode}
+                onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                placeholder="Enter 6-character code"
+                maxLength={6}
+                disabled={isJoining}
+                className="uppercase text-lg tracking-wide"
+                autoFocus
+              />
+
+              <Input
+                label="Your Name"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="Enter your name"
+                disabled={isJoining}
+              />
+
+              {error && (
+                <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
+                  <HelpCircle className="h-5 w-5 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isJoining || !sessionCode.trim() || !studentName.trim()}
+                className="w-full"
+                size="lg"
+              >
+                {isJoining ? 'Joining...' : 'Join Lesson'}
+              </Button>
+            </form>
           </div>
         </div>
       </div>

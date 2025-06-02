@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { getSessionByCode, addSessionParticipant, checkParticipantStatus } from '../lib/supabaseClient';
@@ -19,7 +19,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   const [checking, setChecking] = useState(false);
   
   // For polling status
-  React.useEffect(() => {
+  useEffect(() => {
     if (!participantId) return;
     
     const checkStatus = async () => {
