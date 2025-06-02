@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Users, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { 
   SessionParticipant, 
   getParticipantsForSession,
