@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from './ui/Button';
+import { cn } from '../lib/utils';
 import { submitFeedback } from '../lib/supabaseClient';
-import { useToast } from '@/components/ui/use-toast';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle } from '@/components/ui-shadcn/card';
 
 interface FeedbackButtonsProps {
   sessionCode: string;
@@ -20,7 +18,6 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
   const [selectedFeedback, setSelectedFeedback] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const { toast } = useToast();
 
   const feedbackOptions: FeedbackOption[] = [
     { value: '👍', label: 'I understand', color: 'bg-green-100 hover:bg-green-200 border-green-300' },
@@ -38,19 +35,10 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
       const result = await submitFeedback(sessionCode, studentName, selectedFeedback);
       if (result) {
         setMessage({ text: 'Feedback submitted successfully!', type: 'success' });
-        toast({
-          title: "Success",
-          description: "Your feedback has been sent to the teacher",
-        });
         // Reset selection after successful submission
         setSelectedFeedback(null);
       } else {
         setMessage({ text: 'Failed to submit feedback. Please try again.', type: 'error' });
-        toast({
-          title: "Error",
-          description: "Failed to submit feedback. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (err) {
       console.error('Error submitting feedback:', err);
@@ -68,54 +56,47 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-center">How are you feeling?</CardTitle>
-      </CardHeader>
+    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+      <h2 className="text-2xl font-bold text-center mb-6">How are you feeling?</h2>
       
-      <CardContent>
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {feedbackOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setSelectedFeedback(option.value)}
-              className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
-                option.color,
-                selectedFeedback === option.value 
-                  ? "ring-2 ring-primary border-primary transform scale-105" 
-                  : "hover:scale-105"
-              )}
-            >
-              <span className="text-4xl mb-2">{option.value}</span>
-              <span className="text-sm text-center font-medium">{option.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {message && (
-          <div 
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {feedbackOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setSelectedFeedback(option.value)}
             className={cn(
-              "p-3 mb-4 rounded-lg text-center",
-              message.type === 'success' ? "bg-green-100 text-green-800" : "bg-destructive/10 text-destructive"
+              "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
+              option.color,
+              selectedFeedback === option.value 
+                ? "ring-2 ring-indigo-500 border-indigo-500 transform scale-105" 
+                : "hover:scale-105"
             )}
           >
-            {message.text}
-          </div>
-        )}
-      </CardContent>
-      
-      <CardFooter>
-        <Button
-          onClick={handleSubmit}
-          disabled={!selectedFeedback || isSubmitting}
-          className="w-full"
-          size="lg"
-          isLoading={isSubmitting}
+            <span className="text-4xl mb-2">{option.value}</span>
+            <span className="text-sm text-center font-medium">{option.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {message && (
+        <div 
+          className={cn(
+            "p-3 mb-4 rounded-lg text-center",
+            message.type === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+          )}
         >
-          Submit Feedback
-        </Button>
-      </CardFooter>
-    </Card>
+          {message.text}
+        </div>
+      )}
+      
+      <Button
+        onClick={handleSubmit}
+        disabled={!selectedFeedback || isSubmitting}
+        className="w-full"
+        size="lg"
+      >
+        {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+      </Button>
+    </div>
   );
 }

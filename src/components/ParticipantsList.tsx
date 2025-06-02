@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Users } from 'lucide-react';
 import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui-shadcn/card';
-import { Skeleton } from '@/components/ui-shadcn/skeleton';
 
 interface ParticipantsListProps {
   sessionCode: string;
@@ -45,79 +43,66 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Participants</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="text-destructive text-center py-8">
-          {error}
-        </CardContent>
-      </Card>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+        <div className="text-red-500 text-center">{error}</div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <CardTitle>Participants</CardTitle>
-          </div>
-          <span className="text-sm text-muted-foreground">
-            Total: {participants.length}
-          </span>
+    <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6 text-indigo-600" />
+          <h2 className="text-2xl font-bold text-gray-800">Participants</h2>
         </div>
-      </CardHeader>
+        <span className="text-sm text-gray-500">
+          Total: {participants.length}
+        </span>
+      </div>
 
-      <CardContent className="pt-4">
-        {participants.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No participants have joined yet
-          </div>
-        ) : (
-          <div className="overflow-auto max-h-[calc(100vh-24rem)]">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Student Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Joined At
-                  </th>
+      {participants.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No participants have joined yet
+        </div>
+      ) : (
+        <div className="overflow-auto max-h-[calc(100vh-24rem)]">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Student Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Joined At
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {participants.map((participant) => (
+                <tr key={participant.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {participant.student_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatTime(participant.joined_at)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {participants.map((participant) => (
-                  <tr key={participant.id} className="hover:bg-muted/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {participant.student_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                      {formatTime(participant.joined_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }

@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/supabaseClient';
 import { formatTime, groupFeedbackByType } from '../lib/utils';
 import { BarChart3, Users } from 'lucide-react';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui-shadcn/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui-shadcn/skeleton';
 
 interface LiveFeedbackPanelProps {
   sessionCode: string;
@@ -20,7 +17,7 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState("chart");
+  const [view, setView] = useState<'list' | 'chart' | 'students'>('chart');
 
   // Load initial feedback
   useEffect(() => {
@@ -72,28 +69,19 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Live Feedback</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="text-destructive text-center py-8">
-          {error}
-        </CardContent>
-      </Card>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+        <div className="text-red-500 text-center">{error}</div>
+      </div>
     );
   }
 
@@ -101,139 +89,131 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
   const totalFeedback = feedback.length;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle>Live Feedback</CardTitle>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-            <TabsList className="grid grid-cols-3 h-8">
-              <TabsTrigger value="chart" className="px-2">
-                <BarChart3 size={16} />
-              </TabsTrigger>
-              <TabsTrigger value="list" className="px-2">
-                List
-              </TabsTrigger>
-              <TabsTrigger value="students" className="px-2">
-                <Users size={16} />
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Live Feedback</h2>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setView('list')}
+            className={`p-2 rounded-md ${view === 'list' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            List
+          </button>
+          <button
+            onClick={() => setView('students')}
+            className={`p-2 rounded-md ${view === 'students' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            <Users size={20} />
+          </button>
+          <button
+            onClick={() => setView('chart')}
+            className={`p-2 rounded-md ${view === 'chart' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            <BarChart3 size={20} />
+          </button>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="pt-4">
-        {totalFeedback === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No feedback received yet
+      {totalFeedback === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No feedback received yet
+        </div>
+      ) : view === 'chart' ? (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg">👍 Understanding</span>
+            <span className="font-medium">{feedbackCounts['👍']}</span>
           </div>
-        ) : (
-          <Tabs defaultValue="chart" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsContent value="chart" className="mt-0">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg">👍 Understanding</span>
-                    <span className="font-medium">{feedbackCounts['👍']}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-4">
-                    <div 
-                      className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${(feedbackCounts['👍'] / totalFeedback) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg">😕 Confusion</span>
-                    <span className="font-medium">{feedbackCounts['😕']}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-4">
-                    <div 
-                      className="bg-yellow-500 h-4 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${(feedbackCounts['😕'] / totalFeedback) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg">❓ Questions</span>
-                    <span className="font-medium">{feedbackCounts['❓']}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-4">
-                    <div 
-                      className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${(feedbackCounts['❓'] / totalFeedback) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-                
-                <div className="mt-6 text-center text-sm text-muted-foreground">
-                  Total feedback: {totalFeedback}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="list" className="mt-0">
-              <div className="overflow-auto max-h-96">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Student</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Feedback</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-card divide-y divide-border">
-                    {feedback.map((item) => (
-                      <tr key={item.id} className="hover:bg-muted/50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          {formatTime(item.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {item.student_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-2xl">
-                          {item.value}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="students" className="mt-0">
-              <div className="overflow-auto max-h-96">
-                <table className="min-w-full divide-y divide-border">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Student Name</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Joined At</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-card divide-y divide-border">
-                    {students.map((student) => (
-                      <tr key={student.name} className="hover:bg-muted/50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {student.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                          {formatTime(student.joinedAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-4 text-center text-sm text-muted-foreground">
-                  Total Students: {students.length}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div 
+              className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(feedbackCounts['👍'] / totalFeedback) * 100}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg">😕 Confusion</span>
+            <span className="font-medium">{feedbackCounts['😕']}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div 
+              className="bg-yellow-500 h-4 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(feedbackCounts['😕'] / totalFeedback) * 100}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg">❓ Questions</span>
+            <span className="font-medium">{feedbackCounts['❓']}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div 
+              className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(feedbackCounts['❓'] / totalFeedback) * 100}%` }}
+            ></div>
+          </div>
+          
+          <div className="mt-6 text-center text-sm text-gray-500">
+            Total feedback: {totalFeedback}
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-auto max-h-96">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {feedback.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatTime(item.created_at)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {item.student_name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-2xl">
+                    {item.value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {view === 'students' && (
+        <div className="overflow-auto max-h-96">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined At</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {students.map((student) => (
+                <tr key={student.name} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {student.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatTime(student.joinedAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 text-center text-sm text-gray-500">
+            Total Students: {students.length}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

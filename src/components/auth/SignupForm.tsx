@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from "@/components/ui/use-toast";
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 
 export const SignupForm: React.FC = () => {
   const [fullName, setFullName] = useState('');
@@ -17,7 +16,6 @@ export const SignupForm: React.FC = () => {
   
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +56,6 @@ export const SignupForm: React.FC = () => {
         setError(error);
       } else {
         setSuccessMessage('Registration successful! Please check your email for verification instructions.');
-        toast({
-          title: "Account created",
-          description: "Registration successful! Please check your email for verification instructions.",
-        });
         setTimeout(() => {
           navigate('/login');
         }, 5000);
@@ -75,13 +69,13 @@ export const SignupForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-xl shadow-lg">
+    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
       <div className="text-center">
-        <UserPlus className="mx-auto h-12 w-12 text-primary" />
-        <h2 className="mt-6 text-3xl font-bold text-foreground">Create an account</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <UserPlus className="mx-auto h-12 w-12 text-indigo-600" />
+        <h2 className="mt-6 text-3xl font-bold text-gray-900">Create an account</h2>
+        <p className="mt-2 text-sm text-gray-600">
           Or{' '}
-          <Link to="/login" className="font-medium text-primary hover:text-primary/90">
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
             sign in to your existing account
           </Link>
         </p>
@@ -94,13 +88,13 @@ export const SignupForm: React.FC = () => {
         </div>
       ) : (
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md space-y-4">
+          <div className="rounded-md shadow-sm space-y-4">
             <Input
               label="Full Name"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              icon={<User className="h-5 w-5 text-muted-foreground" />}
+              icon={<User className="h-5 w-5 text-gray-400" />}
               placeholder="John Doe"
               required
             />
@@ -110,7 +104,7 @@ export const SignupForm: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              icon={<Mail className="h-5 w-5 text-muted-foreground" />}
+              icon={<Mail className="h-5 w-5 text-gray-400" />}
               placeholder="you@example.com"
               required
             />
@@ -120,7 +114,7 @@ export const SignupForm: React.FC = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              icon={<Lock className="h-5 w-5 text-muted-foreground" />}
+              icon={<Lock className="h-5 w-5 text-gray-400" />}
               placeholder="••••••••"
               required
             />
@@ -130,14 +124,14 @@ export const SignupForm: React.FC = () => {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              icon={<Lock className="h-5 w-5 text-muted-foreground" />}
+              icon={<Lock className="h-5 w-5 text-gray-400" />}
               placeholder="••••••••"
               required
             />
           </div>
           
           {error && (
-            <div className="p-3 rounded-md bg-destructive/10 text-destructive flex items-start">
+            <div className="p-3 rounded-md bg-red-50 text-red-700 flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -148,9 +142,8 @@ export const SignupForm: React.FC = () => {
             className="w-full"
             size="lg"
             disabled={isSubmitting}
-            isLoading={isSubmitting}
           >
-            Create account
+            {isSubmitting ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
       )}
