@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, MessageSquare, BarChart3, FileText, Users, Shield } from 'lucide-react';
+import { MessageSquare, BarChart3, FileText, Users, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { Logo } from '@/components/Logo';
 
 export function HomePage() {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export function HomePage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 {user ? (
                   <Link to="/dashboard">
-                    <Button size="lg\" className="w-full sm:w-auto">
+                    <Button size="lg" className="w-full sm:w-auto">
                       Go to Dashboard
                     </Button>
                   </Link>
@@ -183,8 +184,7 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center mb-8">
             <div className="flex items-center mb-4 md:mb-0">
-              <BookOpen className="h-8 w-8 text-primary mr-3" />
-              <h2 className="text-2xl font-bold text-white">Classroom Feedback</h2>
+              <Logo size="md" variant="full" className="text-white" />
             </div>
             <div className="flex gap-6">
               <a href="#" className="hover:text-white transition-colors">About</a>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Menu, X, LogIn, LogOut, User, ChevronDown, Settings } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User, ChevronDown, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Logo } from './Logo';
 
 export function Header() {
   const location = useLocation();
@@ -46,8 +47,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <BookOpen className="h-8 w-8 text-primary mr-3" />
-              <h1 className="text-2xl font-bold text-foreground">Classroom Feedback</h1>
+              <Logo size="md" />
             </Link>
           </div>
           

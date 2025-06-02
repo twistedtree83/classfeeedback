@@ -1,7 +1,8 @@
 import React from 'react';
 import { LoginForm } from '../components/auth/LoginForm';
 import { Link } from 'react-router-dom';
-import { BookOpen, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export function Login() {
   return (
@@ -15,8 +16,7 @@ export function Login() {
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8 flex items-center justify-center">
-          <BookOpen className="h-12 w-12 text-indigo-600 mr-4" />
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">Classroom Feedback</h2>
+          <Logo size="lg" />
         </div>
         
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
