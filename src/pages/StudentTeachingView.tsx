@@ -306,6 +306,7 @@ export function StudentTeachingView() {
     try {
       console.log("Joining session with code:", sessionCode.trim().toUpperCase());
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
+      
       if (!session) {
         throw new Error('Session not found or has ended');
       }
@@ -556,7 +557,7 @@ export function StudentTeachingView() {
                 label="Your Name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Enter your name or leave blank for random name"
                 disabled={loading}
               />
 

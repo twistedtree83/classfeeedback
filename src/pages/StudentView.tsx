@@ -76,7 +76,7 @@ export function StudentView() {
     }
   }, [location]);
 
-  // Check participant approval status directly with specific subscription
+  // Check participant approval status with direct subscription
   useEffect(() => {
     if (!participantId || !sessionCode) return;
     
@@ -275,7 +275,7 @@ export function StudentView() {
   }, [presentation?.session_code, step]);
 
   const toggleMessagePanel = () => {
-    console.log("Toggling message panel - Current state:", showMessagePanel, "Messages:", allMessages.length);
+    console.log("TOGGLING MESSAGE PANEL - Current state:", showMessagePanel, "Messages:", allMessages.length);
     setShowMessagePanel(prev => !prev);
     if (!showMessagePanel) {
       setNewMessageCount(0);
@@ -472,90 +472,90 @@ export function StudentView() {
     }
   };
 
+  // Render rejected view
+  if (status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <XCircle className="h-12 w-12 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Name Not Approved
+            </h2>
+            <p className="text-gray-600 mb-6">
+              The teacher did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
+            </p>
+            <Button
+              onClick={() => {
+                setStatus(null);
+                setStudentName('');
+                setSessionCode('');
+              }}
+              className="w-full"
+              size="lg"
+            >
+              Try Again with a Different Name
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render pending view
+  if (status === 'pending') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              {checking ? (
+                <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+              ) : (
+                <AlertCircle className="h-12 w-12 text-yellow-500" />
+              )}
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Waiting for Approval
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your request to join this session is being reviewed by the teacher.
+            </p>
+            <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
+              Please wait while the teacher approves your name...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render approved transition view
+  if (status === 'approved') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Approved!
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your name has been approved by the teacher. Joining the session...
+            </p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Render join form
   if (step === 'join') {
-    // Render rejected view
-    if (status === 'rejected') {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full">
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="flex justify-center mb-6">
-                <XCircle className="h-12 w-12 text-red-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Name Not Approved
-              </h2>
-              <p className="text-gray-600 mb-6">
-                The teacher did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
-              </p>
-              <Button
-                onClick={() => {
-                  setStatus(null);
-                  setStudentName('');
-                  setSessionCode('');
-                }}
-                className="w-full"
-                size="lg"
-              >
-                Try Again with a Different Name
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Render pending view
-    if (status === 'pending') {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full">
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="flex justify-center mb-6">
-                {checking ? (
-                  <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
-                ) : (
-                  <AlertCircle className="h-12 w-12 text-yellow-500" />
-                )}
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Waiting for Approval
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Your request to join this session is being reviewed by the teacher.
-              </p>
-              <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
-                Please wait while the teacher approves your name...
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
-    // Render approved transition view
-    if (status === 'approved') {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full">
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="flex justify-center mb-6">
-                <CheckCircle2 className="h-12 w-12 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Approved!
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Your name has been approved by the teacher. Joining the session...
-              </p>
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
@@ -584,7 +584,7 @@ export function StudentView() {
                 label="Your Name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder="Enter your name or leave blank for random name"
                 disabled={isJoining}
               />
 
