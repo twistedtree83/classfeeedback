@@ -16,6 +16,8 @@ import { UpdatePassword } from './pages/UpdatePassword';
 import { Profile } from './pages/Profile';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
+import { Toaster } from '@/components/ui/toaster';
+import { HomePage } from './pages/HomePage';
 
 function App() {
   return (
@@ -24,6 +26,7 @@ function App() {
         <Header />
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -31,7 +34,7 @@ function App() {
           <Route path="/student" element={<StudentView />} />
           
           {/* Protected routes */}
-          <Route path="/" element={
+          <Route path="/dashboard" element={
             <ProtectedRoute>
               <TeacherDashboard />
             </ProtectedRoute>
@@ -64,8 +67,9 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/update-password" element={<UpdatePassword />} />
           
-          <Route path="*" element={<Navigate to="/\" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Toaster />
       </BrowserRouter>
     </AuthProvider>
   );
