@@ -18,27 +18,14 @@ export function Logo({
     md: 'h-10',
     lg: 'h-12'
   };
-  
-  // Text size mappings
-  const textSizes = {
-    sm: 'text-lg',
-    md: 'text-2xl',
-    lg: 'text-3xl'
-  };
 
   return (
     <div className={cn('flex items-center', className)}>
       <img 
         src="/images/logo.png" 
-        alt="Classroom Feedback Logo"
+        alt="Logo"
         className={cn("object-contain", sizeClasses[size])}
       />
-      
-      {variant === 'full' && (
-        <div className={cn("font-bold ml-3 text-foreground", textSizes[size])}>
-          Classroom <span className="text-primary">Feedback</span>
-        </div>
-      )}
     </div>
   );
 }

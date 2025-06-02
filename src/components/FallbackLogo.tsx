@@ -19,13 +19,6 @@ export function FallbackLogo({
     md: 'h-8 w-8',
     lg: 'h-10 w-10'
   };
-  
-  // Text size mappings
-  const textSizes = {
-    sm: 'text-lg',
-    md: 'text-2xl',
-    lg: 'text-3xl'
-  };
 
   return (
     <div className={cn('flex items-center', className)}>
@@ -38,12 +31,6 @@ export function FallbackLogo({
           <MessageSquare className={`text-primary ${size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'}`} />
         </div>
       </div>
-      
-      {variant === 'full' && (
-        <div className={cn("font-bold ml-3 text-foreground", textSizes[size])}>
-          Classroom <span className="text-primary">Feedback</span>
-        </div>
-      )}
     </div>
   );
 }
