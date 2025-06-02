@@ -247,7 +247,7 @@ export function StudentView() {
 
   // Subscribe to presentation updates
   useEffect(() => {
-    if (!presentation?.session_code || !joined) return;
+    if (!presentation?.session_code || step !== 'teaching') return;
     
     console.log("Setting up presentation subscription for:", presentation.session_code);
     
@@ -272,7 +272,7 @@ export function StudentView() {
       console.log("Cleaning up presentation subscription");
       presentationSubscription.unsubscribe();
     };
-  }, [presentation?.session_code, joined]);
+  }, [presentation?.session_code, step]);
 
   const toggleMessagePanel = () => {
     console.log("Toggling message panel - Current state:", showMessagePanel, "Messages:", allMessages.length);
