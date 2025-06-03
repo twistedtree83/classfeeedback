@@ -32,7 +32,8 @@ import {
   CheckCircle2,
   User,
   Split,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -107,7 +108,7 @@ export function StudentView() {
     const intervalId = setInterval(async () => {
       const status = await checkParticipantStatus(participantId);
       if (status) {
-        console.log('Current participant status:', status);
+        console.log('Current participant status (from polling):', status);
         setParticipantStatus(status);
         
         if (status === 'approved') {
@@ -493,7 +494,7 @@ export function StudentView() {
 
               {error && (
                 <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
-                  <HelpCircle className="h-5 w-5 flex-shrink-0" />
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
@@ -585,7 +586,7 @@ export function StudentView() {
               <p className="mt-2 text-gray-600">Let your teacher know your current understanding</p>
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                 onClick={() => handleFeedback('👍')}
                 disabled={isSendingFeedback}
