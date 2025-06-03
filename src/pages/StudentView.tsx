@@ -12,7 +12,9 @@ import {
   subscribeToTeacherMessages,
   TeacherMessage,
   checkParticipantStatus,
-  subscribeToParticipantStatus
+  subscribeToParticipantStatus,
+  getParticipantsForSession,
+  SessionParticipant
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -33,7 +35,9 @@ import {
   User,
   Split,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  PlayCircle,
+  Users
 } from 'lucide-react';
 import type { LessonPresentation } from '../lib/types';
 import { generateDifferentiatedContent } from '../lib/aiService';
@@ -42,7 +46,7 @@ import { sanitizeHtml } from '../lib/utils';
 export function StudentView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState<'join' | 'waiting' | 'feedback' | 'teaching'>('join');
+  const [step, setStep] = useState<'join' | 'waiting' | 'welcome' | 'feedback' | 'teaching'>('join');
   const [sessionCode, setSessionCode] = useState('');
   const [studentName, setStudentName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -54,6 +58,8 @@ export function StudentView() {
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [participantStatus, setParticipantStatus] = useState<string>('pending');
+  const [participants, setParticipants] = useState<SessionParticipant[]>([]);
+  const [teacherName, setTeacherName] = useState('');
   
   // New state variables for teacher messages
   const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
@@ -62,6 +68,7 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
   const messageToastRef = useRef<HTMLDivElement>(null);
 
   // Extract code from URL if present
@@ -124,25 +131,74 @@ export function StudentView() {
     };
   }, [participantId, step]);
 
+  // Load participants when entering welcome step
+  useEffect(() => {
+    if (step !== 'welcome' || !sessionCode) return;
+
+    const loadParticipantsAndSession = async () => {
+      setLoadingParticipants(true);
+      try {
+        // Load all participants
+        const participantsData = await getParticipantsForSession(sessionCode);
+        setParticipants(participantsData.filter(p => p.status === 'approved'));
+        
+        // Get session data for teacher name
+        const sessionData = await getSessionByCode(sessionCode);
+        if (sessionData) {
+          setTeacherName(sessionData.teacher_name);
+        }
+      } catch (err) {
+        console.error('Error loading participants:', err);
+      } finally {
+        setLoadingParticipants(false);
+      }
+    };
+    
+    loadParticipantsAndSession();
+    
+    // Set up polling to refresh participants list
+    const intervalId = setInterval(async () => {
+      try {
+        const participantsData = await getParticipantsForSession(sessionCode);
+        setParticipants(participantsData.filter(p => p.status === 'approved'));
+      } catch (err) {
+        console.error('Error refreshing participants:', err);
+      }
+    }, 5000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [step, sessionCode]);
+
   // Function to handle when a participant is approved
   const handleParticipantApproved = async () => {
     if (!sessionCode) return;
     
+    // First move to welcome screen
+    setStep('welcome');
+    
+    // Pre-load data for the next step
     try {
       // Check if there's a presentation for this session
       const presentationData = await getLessonPresentationByCode(sessionCode);
       if (presentationData) {
         console.log("Presentation data retrieved:", presentationData);
         setPresentation(presentationData);
-        setStep('teaching');
-      } else {
-        // If there's no presentation, this is just a regular feedback session
-        console.log("No presentation found, joining standard feedback session");
-        setStep('feedback');
       }
     } catch (err) {
       console.error('Error checking for presentation:', err);
-      setStep('feedback'); // Default to feedback mode on error
+    }
+  };
+
+  // Handle proceeding to the lesson
+  const handleProceedToLesson = () => {
+    if (presentation) {
+      // If there's a presentation, go to teaching mode
+      setStep('teaching');
+    } else {
+      // Otherwise, go to feedback mode
+      setStep('feedback');
     }
   };
 
@@ -554,6 +610,74 @@ export function StudentView() {
                 <span className="ml-2 font-mono">{sessionCode}</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render welcome screen
+  if (step === 'welcome') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="mb-6 text-center">
+              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+              <h2 className="text-2xl font-bold text-gray-800 mt-4 mb-2">
+                Welcome to the Class!
+              </h2>
+              <p className="text-gray-600">
+                You've been approved by the teacher and joined successfully.
+              </p>
+            </div>
+            
+            <div className="mb-8">
+              <div className="bg-indigo-50 rounded-lg p-4 mb-4">
+                <div className="flex items-center mb-2">
+                  <User className="h-5 w-5 text-indigo-600 mr-2" />
+                  <h3 className="font-semibold">Your Teacher</h3>
+                </div>
+                <p className="ml-7 text-gray-700">{teacherName || 'Teacher'}</p>
+              </div>
+              
+              <div className="bg-indigo-50 rounded-lg p-4">
+                <div className="flex items-center mb-2">
+                  <Users className="h-5 w-5 text-indigo-600 mr-2" />
+                  <h3 className="font-semibold">Classmates</h3>
+                </div>
+                
+                {loadingParticipants ? (
+                  <div className="flex justify-center items-center py-4">
+                    <Loader2 className="h-6 w-6 text-indigo-600 animate-spin" />
+                  </div>
+                ) : participants.length === 0 ? (
+                  <p className="text-gray-500 text-center py-2">No other students have joined yet.</p>
+                ) : (
+                  <ul className="ml-7 space-y-1">
+                    {participants
+                      .filter(p => p.student_name !== studentName) // Filter out current student
+                      .map((participant, index) => (
+                        <li key={participant.id} className="text-gray-700">
+                          {participant.student_name}
+                        </li>
+                      ))}
+                    <li className="text-indigo-600 font-medium">
+                      {studentName} (You)
+                    </li>
+                  </ul>
+                )}
+              </div>
+            </div>
+            
+            <Button
+              onClick={handleProceedToLesson}
+              className="w-full"
+              size="lg"
+            >
+              <PlayCircle className="h-5 w-5 mr-2" />
+              Start Lesson
+            </Button>
           </div>
         </div>
       </div>

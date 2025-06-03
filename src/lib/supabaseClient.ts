@@ -549,6 +549,16 @@ export const subscribeToSessionParticipants = (
       },
       (payload) => callback(payload.new as SessionParticipant)
     )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `session_code=eq.${sessionCode}`,
+      },
+      (payload) => callback(payload.new as SessionParticipant)
+    )
     .subscribe();
 };
 
