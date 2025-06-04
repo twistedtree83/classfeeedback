@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { JoinSessionForm } from '../components/JoinSessionForm';
 
 export function JoinPage() {
   const navigate = useNavigate();
 
-  // Redirect to the new student view
-  React.useEffect(() => {
-    navigate('/student');
-  }, [navigate]);
+  // Instead of an automatic redirect, show the join form directly
+  const handleJoinSession = (code: string, name: string, avatarUrl?: string) => {
+    // Navigate to student view with code as URL parameter
+    navigate(`/student?code=${code}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -17,14 +19,10 @@ export function JoinPage() {
           <div className="w-full max-w-md mb-4 flex justify-start">
             <Link to="/" className="text-indigo-600 hover:text-indigo-800 flex items-center">
               <ArrowLeft size={16} className="mr-1" />
-              Back to Teacher View
+              Back to Home
             </Link>
           </div>
-          <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            </div>
-          </div>
+          <JoinSessionForm onJoinSession={handleJoinSession} />
         </div>
       </main>
     </div>

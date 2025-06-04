@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { getSessionByCode, addSessionParticipant, checkParticipantStatus, subscribeToParticipantStatus } from '../lib/supabaseClient';
+import { getSessionByCode, addSessionParticipant, checkParticipantStatus, subscribeToParticipantStatus } from '../lib/supabase';
 import { generateRandomName } from '../lib/utils';
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -39,7 +39,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         console.log(`Received status update for participant ${participantId}: ${newStatus}`);
         
         // Update the status state
-        setStatus(newStatus);
+        setStatus(newStatus as any);
         
         // Handle approval
         if (newStatus === 'approved') {
@@ -65,15 +65,17 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         const currentStatus = await checkParticipantStatus(participantId);
         console.log("Current participant status:", currentStatus);
         
-        setStatus(currentStatus);
+        if (currentStatus) {
+          setStatus(currentStatus as any);
         
-        if (currentStatus === 'approved') {
-          // Already approved, join immediately
-          onJoinSession(sessionCode.trim().toUpperCase(), studentName, selectedAvatar || undefined);
-        } else if (currentStatus === 'rejected') {
-          setError('Your name was not approved by the teacher. Please try again with a different name.');
-          setIsJoining(false);
-          setParticipantId(null);
+          if (currentStatus === 'approved') {
+            // Already approved, join immediately
+            onJoinSession(sessionCode.trim().toUpperCase(), studentName, selectedAvatar || undefined);
+          } else if (currentStatus === 'rejected') {
+            setError('Your name was not approved by the teacher. Please try again with a different name.');
+            setIsJoining(false);
+            setParticipantId(null);
+          }
         }
       } catch (err) {
         console.error('Error in initial status check:', err);
@@ -158,7 +160,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       
     } catch (err) {
       console.error('Error joining session:', err);
-      setError('An unexpected error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to join session');
       setIsJoining(false);
     }
   };
