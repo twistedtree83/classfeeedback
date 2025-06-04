@@ -228,7 +228,7 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
     return (
       <div className="w-full p-4 bg-white rounded-xl">
         <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-terracotta"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal"></div>
         </div>
       </div>
     );
@@ -236,10 +236,10 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
 
   return (
     <div className="w-full bg-white rounded-xl">
-      <h2 className="text-xl font-bold text-slate-blue mb-3">
+      <h2 className="text-xl font-bold text-teal mb-3">
         Live Feedback
         {newQuestionAlert && (
-          <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-terracotta/10 text-terracotta">
+          <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-coral/10 text-coral">
             <Bell className="h-3 w-3 mr-1" />
             New Question
           </span>
@@ -251,7 +251,7 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           variant={view === 'chart' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setView('chart')}
-          className={view === 'chart' ? 'bg-terracotta hover:bg-terracotta/90' : 'border-terracotta text-terracotta hover:bg-terracotta/10'}
+          className={view === 'chart' ? 'bg-teal hover:bg-teal/90 text-white' : 'border-teal text-teal hover:bg-teal/10'}
         >
           <BarChart3 className="h-4 w-4" />
         </Button>
@@ -259,7 +259,7 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           variant={view === 'students' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setView('students')}
-          className={view === 'students' ? 'bg-terracotta hover:bg-terracotta/90' : 'border-terracotta text-terracotta hover:bg-terracotta/10'}
+          className={view === 'students' ? 'bg-teal hover:bg-teal/90 text-white' : 'border-teal text-teal hover:bg-teal/10'}
         >
           <Users className="h-4 w-4" />
         </Button>
@@ -267,7 +267,7 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           variant={view === 'list' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setView('list')}
-          className={view === 'list' ? 'bg-terracotta hover:bg-terracotta/90' : 'border-terracotta text-terracotta hover:bg-terracotta/10'}
+          className={view === 'list' ? 'bg-teal hover:bg-teal/90 text-white' : 'border-teal text-teal hover:bg-teal/10'}
         >
           <List className="h-4 w-4" />
         </Button>
@@ -275,11 +275,11 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           variant={view === 'questions' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setView('questions')}
-          className={`relative ${view === 'questions' ? 'bg-terracotta hover:bg-terracotta/90' : 'border-terracotta text-terracotta hover:bg-terracotta/10'}`}
+          className={`relative ${view === 'questions' ? 'bg-teal hover:bg-teal/90 text-white' : 'border-teal text-teal hover:bg-teal/10'}`}
         >
           <MessageSquare className="h-4 w-4" />
           {newQuestionsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-terracotta text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 bg-red text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {newQuestionsCount}
             </span>
           )}
@@ -290,11 +290,11 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
         <label className="inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
-            className="form-checkbox h-4 w-4 text-sage"
+            className="form-checkbox h-4 w-4 text-teal"
             checked={filterCurrentCard}
             onChange={() => setFilterCurrentCard(!filterCurrentCard)}
           />
-          <span className="ml-2 text-sm text-slate-blue/80">Show only current card feedback</span>
+          <span className="ml-2 text-sm text-gray-600">Show only current card feedback</span>
         </label>
       </div>
       
@@ -303,14 +303,14 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
-                <ThumbsUp className="h-5 w-5 text-sage mr-2" />
-                <span className="text-slate-blue">Understanding</span>
+                <ThumbsUp className="h-5 w-5 text-teal mr-2" />
+                <span className="text-gray-800">Understanding</span>
               </div>
-              <span className="font-medium text-slate-blue">{feedbackCounts.understand}</span>
+              <span className="font-medium text-gray-800">{feedbackCounts.understand}</span>
             </div>
-            <div className="w-full bg-antique/50 rounded-full h-3">
+            <div className="w-full bg-gray-100 rounded-full h-3">
               <div 
-                className="bg-sage h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-teal h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.understand / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
@@ -319,14 +319,14 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
-                <ThumbsDown className="h-5 w-5 text-terracotta mr-2" />
-                <span className="text-slate-blue">Confusion</span>
+                <ThumbsDown className="h-5 w-5 text-coral mr-2" />
+                <span className="text-gray-800">Confusion</span>
               </div>
-              <span className="font-medium text-slate-blue">{feedbackCounts.confused}</span>
+              <span className="font-medium text-gray-800">{feedbackCounts.confused}</span>
             </div>
-            <div className="w-full bg-antique/50 rounded-full h-3">
+            <div className="w-full bg-gray-100 rounded-full h-3">
               <div 
-                className="bg-terracotta h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-coral h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.confused / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
@@ -335,48 +335,48 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-1">
               <div className="flex items-center">
-                <Clock className="h-5 w-5 text-slate-blue mr-2" />
-                <span className="text-slate-blue">Slow Down</span>
+                <Clock className="h-5 w-5 text-orange mr-2" />
+                <span className="text-gray-800">Slow Down</span>
               </div>
-              <span className="font-medium text-slate-blue">{feedbackCounts.slower}</span>
+              <span className="font-medium text-gray-800">{feedbackCounts.slower}</span>
             </div>
-            <div className="w-full bg-antique/50 rounded-full h-3">
+            <div className="w-full bg-gray-100 rounded-full h-3">
               <div 
-                className="bg-slate-blue h-3 rounded-full transition-all duration-500 ease-out"
+                className="bg-orange h-3 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${feedbackCounts.total ? (feedbackCounts.slower / feedbackCounts.total) * 100 : 0}%` }}
               ></div>
             </div>
           </div>
           
-          <div className="mt-4 text-center text-sm text-slate-blue/70">
+          <div className="mt-4 text-center text-sm text-gray-500">
             Total feedback: {feedbackCounts.total}
           </div>
 
           {/* Quick access to questions if there are any */}
           {questions.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-antique">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium flex items-center text-slate-blue">
-                  <MessageSquare className="h-4 w-4 mr-2 text-terracotta" />
+                <h3 className="font-medium flex items-center text-gray-800">
+                  <MessageSquare className="h-4 w-4 mr-2 text-coral" />
                   Questions ({questions.length})
                 </h3>
                 <Button 
                   variant="link" 
                   size="sm"
                   onClick={() => setView('questions')}
-                  className="text-terracotta"
+                  className="text-coral"
                 >
                   View All
                 </Button>
               </div>
               {questions.slice(0, 2).map(item => (
-                <div key={item.id} className="text-sm mb-2 p-2 bg-antique/30 rounded">
-                  <p className="font-medium text-slate-blue">{item.student_name}:</p>
-                  <p className="text-slate-blue/80 truncate">{item.question}</p>
+                <div key={item.id} className="text-sm mb-2 p-2 bg-teal/5 rounded">
+                  <p className="font-medium text-gray-800">{item.student_name}:</p>
+                  <p className="text-gray-700 truncate">{item.question}</p>
                 </div>
               ))}
               {questions.length > 2 && (
-                <div className="text-sm text-center text-terracotta">
+                <div className="text-sm text-center text-coral">
                   +{questions.length - 2} more questions
                 </div>
               )}
@@ -388,12 +388,12 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
       {view === 'students' && (
         <div className="space-y-4">
           {studentsWithFeedback.length === 0 ? (
-            <div className="text-center py-8 text-slate-blue/50">
+            <div className="text-center py-8 text-gray-400">
               No student feedback for this card yet
             </div>
           ) : (
             <div>
-              <h3 className="font-medium mb-3 text-slate-blue">Student Feedback ({studentsWithFeedback.length})</h3>
+              <h3 className="font-medium mb-3 text-gray-800">Student Feedback ({studentsWithFeedback.length})</h3>
               <div className="space-y-2">
                 {studentsWithFeedback.map(studentName => {
                   const studentFeedback = studentFeedbackMap[studentName];
@@ -402,17 +402,17 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
                   let bgColor;
                   
                   if (studentFeedback.feedback_type === 'understand') {
-                    feedbackIcon = <ThumbsUp className="h-4 w-4 text-sage" />;
+                    feedbackIcon = <ThumbsUp className="h-4 w-4 text-teal" />;
                     feedbackText = "Understands";
-                    bgColor = "bg-sage/10 border-sage/30";
+                    bgColor = "bg-teal/10 border-teal/30";
                   } else if (studentFeedback.feedback_type === 'confused') {
-                    feedbackIcon = <ThumbsDown className="h-4 w-4 text-terracotta" />;
+                    feedbackIcon = <ThumbsDown className="h-4 w-4 text-coral" />;
                     feedbackText = "Confused";
-                    bgColor = "bg-terracotta/10 border-terracotta/30";
+                    bgColor = "bg-coral/10 border-coral/30";
                   } else {
-                    feedbackIcon = <Clock className="h-4 w-4 text-slate-blue" />;
+                    feedbackIcon = <Clock className="h-4 w-4 text-orange" />;
                     feedbackText = "Slow Down";
-                    bgColor = "bg-slate-blue/10 border-slate-blue/30";
+                    bgColor = "bg-orange/10 border-orange/30";
                   }
                   
                   return (
@@ -420,13 +420,13 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
                       key={studentName} 
                       className={`p-3 rounded-lg border flex items-center justify-between ${bgColor}`}
                     >
-                      <div className="font-medium text-slate-blue">{studentName}</div>
+                      <div className="font-medium text-gray-800">{studentName}</div>
                       <div className="flex items-center">
                         <div className="flex items-center text-sm mr-2">
                           {feedbackIcon}
-                          <span className="ml-1 text-slate-blue">{feedbackText}</span>
+                          <span className="ml-1 text-gray-700">{feedbackText}</span>
                         </div>
-                        <span className="text-xs text-slate-blue/60">
+                        <span className="text-xs text-gray-500">
                           {formatTime(studentFeedback.timestamp)}
                         </span>
                       </div>
@@ -442,51 +442,51 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
       {view === 'list' && (
         <div className="overflow-auto max-h-96">
           {feedback.length === 0 ? (
-            <div className="text-center py-8 text-slate-blue/50">
+            <div className="text-center py-8 text-gray-400">
               No feedback received yet
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-antique">
-              <thead className="bg-antique/30">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-blue uppercase tracking-wider">Time</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-blue uppercase tracking-wider">Student</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-blue uppercase tracking-wider">Feedback</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
                   {!filterCurrentCard && (
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-blue uppercase tracking-wider">Card</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-antique/50">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {feedback.map((item) => (
-                  <tr key={item.id} className="hover:bg-antique/20">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-blue/70">
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatTime(item.created_at)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-blue">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                       {item.student_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.feedback_type === 'understand' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sage/20 text-sage">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal/20 text-teal">
                           <ThumbsUp className="h-3 w-3 mr-1" /> Understands
                         </span>
                       ) : item.feedback_type === 'confused' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-terracotta/20 text-terracotta">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-coral/20 text-coral">
                           <ThumbsDown className="h-3 w-3 mr-1" /> Confused
                         </span>
                       ) : item.feedback_type === 'slower' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-blue/20 text-slate-blue">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange/20 text-orange">
                           <Clock className="h-3 w-3 mr-1" /> Slow Down
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-slate-blue">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           Other
                         </span>
                       )}
                     </td>
                     {!filterCurrentCard && item.card_index !== undefined && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-blue/70">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         Card {item.card_index + 1}
                       </td>
                     )}
@@ -501,7 +501,7 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
       {view === 'questions' && (
         <div className="overflow-auto max-h-96">
           {questions.length === 0 ? (
-            <div className="text-center py-8 text-slate-blue/50">
+            <div className="text-center py-8 text-gray-400">
               No questions received yet
             </div>
           ) : (
@@ -509,19 +509,19 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
               {questions.map((item) => (
                 <div 
                   key={item.id} 
-                  className={`p-4 rounded-lg border ${item.answered ? 'bg-antique/30 border-antique' : 'bg-terracotta/10 border-terracotta/30'}`}
+                  className={`p-4 rounded-lg border ${item.answered ? 'bg-gray-50 border-gray-200' : 'bg-coral/10 border-coral/30'}`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div className="font-medium text-slate-blue">{item.student_name}</div>
-                    <div className="text-xs text-slate-blue/60">{formatTime(item.created_at)}</div>
+                    <div className="font-medium text-gray-800">{item.student_name}</div>
+                    <div className="text-xs text-gray-500">{formatTime(item.created_at)}</div>
                   </div>
-                  <p className="text-slate-blue">{item.question}</p>
+                  <p className="text-gray-800">{item.question}</p>
                   {!item.answered ? (
                     <div className="mt-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-sm flex items-center border-sage text-sage hover:bg-sage/10"
+                        className="text-sm flex items-center border-teal text-teal hover:bg-teal/10"
                         onClick={() => handleMarkAsAnswered(item.id)}
                       >
                         <Check className="h-3 w-3 mr-1" />
@@ -529,13 +529,13 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
                       </Button>
                     </div>
                   ) : (
-                    <div className="mt-2 text-xs text-slate-blue/70 flex items-center">
-                      <Check className="h-3 w-3 mr-1 text-sage" />
+                    <div className="mt-2 text-xs text-gray-500 flex items-center">
+                      <Check className="h-3 w-3 mr-1 text-teal" />
                       Answered
                     </div>
                   )}
                   {!filterCurrentCard && item.card_index !== undefined && (
-                    <div className="mt-1 text-xs text-slate-blue/60">
+                    <div className="mt-1 text-xs text-gray-500">
                       From card {item.card_index + 1}
                     </div>
                   )}

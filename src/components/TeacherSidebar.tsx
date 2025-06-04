@@ -102,27 +102,27 @@ export function TeacherSidebar({
     {
       label: "End Session",
       href: "#end",
-      icon: <LogOut className="h-5 w-5 text-terracotta" />,
+      icon: <LogOut className="h-5 w-5 text-red" />,
       onClick: onEndSession
     }
   ];
 
   return (
-    <SidebarBody className="flex flex-col h-full z-10 bg-white border-r border-antique/50">
+    <SidebarBody className="flex flex-col h-full z-10 bg-white border-r border-gray-200">
       {pendingCount > 0 && (
         <div className={cn(
           "mb-6",
-          !open ? "mx-auto" : "bg-terracotta/10 text-terracotta px-3 py-2 rounded-lg flex items-center justify-between"
+          !open ? "mx-auto" : "bg-orange/10 text-orange px-3 py-2 rounded-lg flex items-center justify-between"
         )}>
           {open ? (
             <>
               <div className="font-medium">Pending Approval</div>
-              <div className="bg-terracotta text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+              <div className="bg-orange text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                 {pendingCount}
               </div>
             </>
           ) : (
-            <div className="bg-terracotta text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+            <div className="bg-orange text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
               {pendingCount}
             </div>
           )}
@@ -136,9 +136,9 @@ export function TeacherSidebar({
             link={{
               ...link,
               active: link.active ? true : false,
-              icon: <span className="text-slate-blue">{link.icon}</span>
+              icon: <span className="text-teal">{link.icon}</span>
             }} 
-            className={link.active ? "bg-antique/50 text-slate-blue" : "hover:bg-antique/30"}
+            className={link.active ? "bg-teal/10 text-teal" : "hover:bg-teal/5"}
           />
         ))}
       </div>
@@ -167,30 +167,30 @@ export function TeacherSidebar({
         )}
       </div>
       
-      <div className="mt-auto pt-4 border-t border-antique">
+      <div className="mt-auto pt-4 border-t border-gray-200">
         <div className="space-y-1 mb-4">
           {secondaryLinks.map((link, idx) => (
             <SidebarLink 
               key={idx} 
               link={{
                 ...link,
-                icon: <span className={link.label === "End Session" ? "text-terracotta" : "text-slate-blue"}>{link.icon}</span>
+                icon: <span className={link.label === "End Session" ? "text-red" : "text-teal"}>{link.icon}</span>
               }}
-              className={link.label === "End Session" ? "hover:bg-terracotta/10" : "hover:bg-antique/30"}
+              className={link.label === "End Session" ? "hover:bg-red/10" : "hover:bg-teal/5"}
             />
           ))}
         </div>
         
         {open && (
-          <div className="mt-4 flex items-center p-3 bg-antique/50 rounded-lg">
+          <div className="mt-4 flex items-center p-3 bg-teal/5 rounded-lg">
             <Avatar className="h-8 w-8 mr-3">
-              <AvatarFallback className="bg-sage/30 text-slate-blue">
+              <AvatarFallback className="bg-teal/20 text-teal">
                 {teacherInitials}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium text-slate-blue">{teacherName}</p>
-              <p className="text-xs text-slate-blue/70">Teacher</p>
+              <p className="text-sm font-medium text-teal">{teacherName}</p>
+              <p className="text-xs text-teal/70">Teacher</p>
             </div>
           </div>
         )}

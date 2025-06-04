@@ -38,8 +38,8 @@ export function StudentInteractionPanel({
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-antique">
-      <h3 className="text-lg font-semibold mb-4 text-slate-blue">
+    <div className="bg-white rounded-xl shadow-lg p-6 border border-teal/20">
+      <h3 className="text-lg font-semibold mb-4 text-teal">
         How are you following along?
       </h3>
 
@@ -48,7 +48,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('understand')}
           disabled={isSending}
           variant={currentFeedback === 'understand' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'understand' ? 'bg-sage hover:bg-sage/90 border-sage' : 'text-sage border-sage/30 hover:bg-sage/10'}`}
+          className={`py-3 ${currentFeedback === 'understand' ? 'bg-teal hover:bg-teal/90 border-teal' : 'text-teal border-teal/30 hover:bg-teal/10'}`}
         >
           <ThumbsUp className="h-5 w-5 mr-2" />
           I understand
@@ -58,7 +58,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('confused')}
           disabled={isSending}
           variant={currentFeedback === 'confused' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'confused' ? 'bg-terracotta hover:bg-terracotta/90 border-terracotta' : 'text-terracotta border-terracotta/30 hover:bg-terracotta/10'}`}
+          className={`py-3 ${currentFeedback === 'confused' ? 'bg-coral hover:bg-coral/90 border-coral' : 'text-coral border-coral/30 hover:bg-coral/10'}`}
         >
           <ThumbsDown className="h-5 w-5 mr-2" />
           I'm confused
@@ -68,7 +68,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('slower')}
           disabled={isSending}
           variant={currentFeedback === 'slower' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'slower' ? 'bg-slate-blue hover:bg-slate-blue/90 border-slate-blue' : 'text-slate-blue border-slate-blue/30 hover:bg-slate-blue/10'}`}
+          className={`py-3 ${currentFeedback === 'slower' ? 'bg-orange hover:bg-orange/90 border-orange' : 'text-orange border-orange/30 hover:bg-orange/10'}`}
         >
           <Clock className="h-5 w-5 mr-2" />
           Slow down
@@ -77,7 +77,7 @@ export function StudentInteractionPanel({
 
       {showQuestionForm ? (
         <form onSubmit={handleSubmitQuestion} className="mt-6">
-          <h3 className="text-lg font-semibold mb-3 text-slate-blue">
+          <h3 className="text-lg font-semibold mb-3 text-teal">
             Ask a question
           </h3>
           <div className="space-y-3">
@@ -85,7 +85,7 @@ export function StudentInteractionPanel({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Type your question here..."
-              className="w-full p-3 border border-antique rounded-lg focus:ring-2 focus:ring-terracotta focus:border-terracotta"
+              className="w-full p-3 border border-teal/30 rounded-lg focus:ring-2 focus:ring-teal focus:border-teal"
               rows={3}
             />
             <div className="flex justify-end gap-2">
@@ -93,14 +93,14 @@ export function StudentInteractionPanel({
                 type="button"
                 variant="outline"
                 onClick={() => setShowQuestionForm(false)}
-                className="border-slate-blue text-slate-blue hover:bg-slate-blue/10"
+                className="border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={!question.trim() || isSending}
-                className="bg-terracotta hover:bg-terracotta/90 text-white"
+                className="bg-coral hover:bg-coral/90 text-white"
               >
                 <Send className="h-4 w-4 mr-2" />
                 Send Question
@@ -112,7 +112,7 @@ export function StudentInteractionPanel({
         <Button
           onClick={() => setShowQuestionForm(true)}
           variant="outline"
-          className="w-full mt-4 border-slate-blue text-slate-blue hover:bg-slate-blue/10"
+          className="w-full mt-4 border-teal text-teal hover:bg-teal/10"
         >
           <HelpCircle className="h-5 w-5 mr-2" />
           Ask a Question

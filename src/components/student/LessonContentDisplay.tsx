@@ -21,9 +21,9 @@ export function LessonContentDisplay({
   onGenerateDifferentiated
 }: LessonContentDisplayProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-antique">
+    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
       <div 
-        className="prose max-w-none text-slate-blue"
+        className="prose max-w-none text-gray-800"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
       />
       
@@ -35,19 +35,19 @@ export function LessonContentDisplay({
             variant={viewingDifferentiated ? "primary" : "outline"}
             size="sm"
             className={viewingDifferentiated ? 
-              "bg-sage hover:bg-sage/90 text-white" : 
-              "border-sage text-sage hover:bg-sage/10 flex items-center gap-1"}
+              "bg-teal hover:bg-teal/90 text-white" : 
+              "border-teal text-teal hover:bg-teal/10 flex items-center gap-1"}
           >
             <Split className="h-4 w-4 mr-1" />
             {viewingDifferentiated ? "Standard View" : "Simplified View"}
           </Button>
         </div>
       ) : (
-        <div className="mt-6 p-4 bg-sage/10 border border-sage/30 rounded-lg">
-          <p className="text-slate-blue mb-2">Need a simpler explanation?</p>
+        <div className="mt-6 p-4 bg-orange/10 border border-orange/30 rounded-lg">
+          <p className="text-gray-800 mb-2">Need a simpler explanation?</p>
           <Button
             variant="outline"
-            className="bg-sage/20 border-sage/30 text-slate-blue hover:bg-sage/30"
+            className="bg-orange/20 border-orange/30 text-orange hover:bg-orange/30"
             onClick={onGenerateDifferentiated}
             disabled={generatingDifferentiated}
           >

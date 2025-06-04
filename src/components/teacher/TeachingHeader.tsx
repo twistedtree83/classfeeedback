@@ -24,7 +24,7 @@ export function TeachingHeader({
   onEndSession
 }: TeachingHeaderProps) {
   return (
-    <div className="bg-antique shadow-sm sticky top-0 z-10">
+    <div className="bg-white shadow-sm sticky top-0 z-10">
       <div className="px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center w-10">
@@ -32,7 +32,7 @@ export function TeachingHeader({
               variant="ghost"
               size="sm"
               onClick={onToggleSidebar}
-              className="p-1.5 text-slate-blue hover:bg-sage/10"
+              className="p-1.5 text-teal hover:bg-teal/10"
               aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
             >
               {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -41,10 +41,10 @@ export function TeachingHeader({
           
           {/* Center the lesson title */}
           <div className="flex-1 flex justify-center items-center">
-            <h1 className="text-xl font-semibold text-slate-blue truncate px-2 max-w-2xl">
+            <h1 className="text-xl font-semibold text-teal truncate px-2 max-w-2xl">
               {lessonTitle || 'Lesson Presentation'}
             </h1>
-            <div className="ml-2 bg-terracotta/10 text-terracotta px-3 py-1 rounded-md font-mono">
+            <div className="ml-2 bg-orange/10 text-orange px-3 py-1 rounded-md font-mono">
               {sessionCode}
             </div>
           </div>
@@ -54,7 +54,7 @@ export function TeachingHeader({
               variant="outline"
               onClick={onOpenMessageModal}
               size="sm"
-              className="ml-auto border-terracotta text-terracotta hover:bg-terracotta/10"
+              className="ml-auto border-coral text-coral hover:bg-coral/10"
             >
               <MessageSquare className="h-5 w-5" />
             </Button>

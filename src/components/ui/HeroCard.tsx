@@ -64,22 +64,22 @@ export function HeroCard({
     <div 
       ref={cardRef}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-antique",
+        "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-teal/20",
         "max-w-6xl w-full mx-auto h-[80vh] min-h-[600px] max-h-[800px]",
-        "transition-all duration-500 hover:shadow-[0_20px_50px_rgba(61,_64,_91,_0.3)]",
+        "transition-all duration-500 hover:shadow-[0_20px_50px_rgba(48,152,152,0.3)]",
         className
       )}
     >
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-antique to-antique/50">
+      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-white to-white/50">
         {/* Background blobs */}
         <div 
-          className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-terracotta/30 filter blur-3xl"
+          className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-teal/30 filter blur-3xl"
           style={{
             transform: `translate(${(mousePosition.x - 0.5) * -20}px, ${(mousePosition.y - 0.5) * -20}px)`
           }}
         ></div>
         <div 
-          className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-sage/40 filter blur-3xl"
+          className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-orange/30 filter blur-3xl"
           style={{
             transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${(mousePosition.y - 0.5) * 20}px)`
           }}
@@ -93,7 +93,7 @@ export function HeroCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6 }}
-            className="text-sm font-medium text-terracotta mb-3 tracking-wider uppercase"
+            className="text-sm font-medium text-coral mb-3 tracking-wider uppercase"
           >
             {subtitle}
           </motion.div>
@@ -102,7 +102,7 @@ export function HeroCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-blue mb-6"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-teal mb-6"
           >
             {title}
           </motion.h1>
@@ -111,7 +111,7 @@ export function HeroCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-slate-blue/80 mb-8 max-w-lg"
+            className="text-lg text-gray-700 mb-8 max-w-lg"
           >
             {description}
           </motion.p>
@@ -124,7 +124,7 @@ export function HeroCard({
           >
             <Button 
               size="lg" 
-              className="group bg-terracotta hover:bg-terracotta/90 text-white border-none"
+              className="group bg-teal hover:bg-teal/90 text-white border-none"
               onClick={onPrimaryButtonClick}
               asChild={!!primaryButtonLink}
             >
@@ -144,7 +144,7 @@ export function HeroCard({
             <Button 
               variant="outline" 
               size="lg"
-              className="border-slate-blue text-slate-blue hover:bg-slate-blue/10"
+              className="border-coral text-coral hover:bg-coral/10"
               onClick={onSecondaryButtonClick}
               asChild={!!secondaryButtonLink}
             >
@@ -168,7 +168,7 @@ export function HeroCard({
             className="absolute inset-0 z-0"
             style={parallaxStyle}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-blue/20 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-teal/20 to-transparent z-10"></div>
             <img 
               src={image} 
               alt={imageAlt}
@@ -187,12 +187,12 @@ export function HeroCard({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="bg-sage p-2 rounded-full">
-                <BarChart3 className="h-6 w-6 text-slate-blue" />
+              <div className="bg-orange/20 p-2 rounded-full">
+                <BarChart3 className="h-6 w-6 text-teal" />
               </div>
               <div>
-                <p className="font-medium text-slate-blue">Live Feedback</p>
-                <p className="text-sm text-terracotta">10 students participating</p>
+                <p className="font-medium text-teal">Live Feedback</p>
+                <p className="text-sm text-coral">10 students participating</p>
               </div>
             </div>
           </motion.div>
