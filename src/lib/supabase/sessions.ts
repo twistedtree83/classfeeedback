@@ -215,6 +215,25 @@ export const approveParticipant = async (participantId: string): Promise<boolean
   }
 };
 
+export const rejectParticipant = async (participantId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('session_participants')
+      .update({ status: 'rejected' })
+      .eq('id', participantId);
+    
+    if (error) {
+      console.error('Error rejecting participant:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Exception rejecting participant:', err);
+    return false;
+  }
+};
+
 export const subscribeToParticipantStatus = (
   participantId: string,
   callback: (status: string) => void

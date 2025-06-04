@@ -1,8 +1,8 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Play, Paperclip } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play, Paperclip, UserCheck, UserX } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
-import type { LessonCard } from '../../lib/types';
+import type { LessonCard, SessionParticipant } from '../../lib/types';
 import { AttachmentDisplay } from '../AttachmentDisplay';
 
 interface TeachingContentAreaProps {
@@ -15,6 +15,9 @@ interface TeachingContentAreaProps {
   onPrevious: () => void;
   onNext: () => void;
   sessionCode: string;
+  pendingParticipants?: SessionParticipant[];
+  onApproveParticipant?: (participantId: string) => void;
+  onRejectParticipant?: (participantId: string) => void;
 }
 
 export function TeachingContentArea({
@@ -26,7 +29,10 @@ export function TeachingContentArea({
   isLastCard,
   onPrevious,
   onNext,
-  sessionCode
+  sessionCode,
+  pendingParticipants = [],
+  onApproveParticipant,
+  onRejectParticipant
 }: TeachingContentAreaProps) {
   if (!currentCard) {
     return (
@@ -131,6 +137,52 @@ export function TeachingContentArea({
           )}
         </div>
       </div>
+
+      {/* Pending students approval section */}
+      {pendingParticipants.length > 0 && (
+        <div className="bg-orange/10 border border-orange/30 rounded-lg mb-6">
+          <div className="px-4 py-3 border-b border-orange/20 flex justify-between items-center">
+            <h3 className="font-semibold text-orange flex items-center">
+              <UserCheck className="h-5 w-5 mr-2" />
+              Students Waiting for Approval ({pendingParticipants.length})
+            </h3>
+          </div>
+          <div className="p-4">
+            <div className="grid gap-2">
+              {pendingParticipants.slice(0, 5).map(participant => (
+                <div key={participant.id} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-orange/20">
+                  <div className="font-medium">{participant.student_name}</div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => onApproveParticipant?.(participant.id)}
+                      size="sm"
+                      className="bg-teal hover:bg-teal/90 text-white"
+                    >
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={() => onRejectParticipant?.(participant.id)}
+                      size="sm"
+                      variant="outline"
+                      className="border-red text-red hover:bg-red/10"
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              
+              {pendingParticipants.length > 5 && (
+                <div className="text-center p-2 text-orange">
+                  + {pendingParticipants.length - 5} more students waiting
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Student join instructions */}
       <div className="bg-orange/10 border border-orange/30 rounded-lg p-4 text-gray-800">

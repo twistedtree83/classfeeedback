@@ -4,11 +4,13 @@ import {
   getPendingParticipantsForSession, 
   subscribeToSessionParticipants,
   approveParticipant,
+  rejectParticipant,
   SessionParticipant
 } from '../lib/supabase';
 
 export function useTeacherParticipants(sessionCode: string | undefined) {
   const [participants, setParticipants] = useState<SessionParticipant[]>([]);
+  const [pendingParticipants, setPendingParticipants] = useState<SessionParticipant[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
@@ -23,8 +25,9 @@ export function useTeacherParticipants(sessionCode: string | undefined) {
         setParticipants(participantsData);
         
         // Check for pending participants
-        const pendingParticipants = await getPendingParticipantsForSession(sessionCode);
-        setPendingCount(pendingParticipants.length);
+        const pendingData = await getPendingParticipantsForSession(sessionCode);
+        setPendingParticipants(pendingData);
+        setPendingCount(pendingData.length);
       } catch (error) {
         console.error('Error loading participants:', error);
       }
@@ -38,8 +41,9 @@ export function useTeacherParticipants(sessionCode: string | undefined) {
       if (!sessionCode) return;
       
       try {
-        const pendingParticipants = await getPendingParticipantsForSession(sessionCode);
-        setPendingCount(pendingParticipants.length);
+        const pendingData = await getPendingParticipantsForSession(sessionCode);
+        setPendingParticipants(pendingData);
+        setPendingCount(pendingData.length);
       } catch (error) {
         console.error('Error checking pending participants:', error);
       }
@@ -59,14 +63,25 @@ export function useTeacherParticipants(sessionCode: string | undefined) {
       (newParticipant) => {
         console.log("Participant update received:", newParticipant);
         
+        // Update pending participants
         if (newParticipant.status === 'pending') {
-          // If a new pending participant joins, increment count
+          setPendingParticipants(prev => {
+            // Check if this participant is already in the list
+            if (prev.some(p => p.id === newParticipant.id)) {
+              // Update the existing participant
+              return prev.map(p => p.id === newParticipant.id ? newParticipant : p);
+            }
+            // Add the new participant
+            return [...prev, newParticipant];
+          });
           setPendingCount(prev => prev + 1);
-        } else if (newParticipant.status === 'approved') {
-          // If a participant gets approved, decrement pending count
+        } else if (newParticipant.status === 'approved' || newParticipant.status === 'rejected') {
+          // Remove from pending list if approved or rejected
+          setPendingParticipants(prev => prev.filter(p => p.id !== newParticipant.id));
           setPendingCount(prev => Math.max(0, prev - 1));
         }
         
+        // Update all participants list
         setParticipants(current => {
           // Check if this is an update to an existing participant
           const index = current.findIndex(p => p.id === newParticipant.id);
@@ -93,16 +108,49 @@ export function useTeacherParticipants(sessionCode: string | undefined) {
       const success = await approveParticipant(participantId);
       if (success) {
         // Update local state
+        const approvedParticipant = pendingParticipants.find(p => p.id === participantId);
+        if (approvedParticipant) {
+          // Remove from pending list
+          setPendingParticipants(prev => prev.filter(p => p.id !== participantId));
+          // Update status in all participants list
+          setParticipants(prev => 
+            prev.map(p => p.id === participantId ? { ...p, status: 'approved' } : p)
+          );
+          // Update pending count
+          setPendingCount(prev => Math.max(0, prev - 1));
+        }
+      }
+      return success;
+    } catch (err) {
+      console.error('Error approving participant:', err);
+      return false;
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(participantId);
+        return next;
+      });
+    }
+  };
+
+  const handleRejectParticipant = async (participantId: string) => {
+    setProcessingIds(prev => new Set(prev).add(participantId));
+    try {
+      const success = await rejectParticipant(participantId);
+      if (success) {
+        // Update local state
+        setPendingParticipants(prev => prev.filter(p => p.id !== participantId));
+        // Update status in all participants list
         setParticipants(prev => 
-          prev.map(p => p.id === participantId ? { ...p, status: 'approved' } : p).filter((p, i, arr) => 
-            arr.findIndex(x => x.student_name === p.student_name) === i
-          )
+          prev.map(p => p.id === participantId ? { ...p, status: 'rejected' } : p)
         );
         // Update pending count
         setPendingCount(prev => Math.max(0, prev - 1));
       }
+      return success;
     } catch (err) {
-      console.error('Error approving participant:', err);
+      console.error('Error rejecting participant:', err);
+      return false;
     } finally {
       setProcessingIds(prev => {
         const next = new Set(prev);
@@ -114,8 +162,10 @@ export function useTeacherParticipants(sessionCode: string | undefined) {
 
   return {
     participants,
+    pendingParticipants,
     pendingCount,
     processingIds,
-    handleApproveParticipant
+    handleApproveParticipant,
+    handleRejectParticipant
   };
 }

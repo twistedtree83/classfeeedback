@@ -44,6 +44,7 @@ export interface LessonPlan {
   processed_content: any | null; // Using any here, but should be a more specific type
   created_at: string;
   level?: string;
+  user_id?: string;
 }
 
 // Presentation types
@@ -66,4 +67,29 @@ export interface TeacherMessage {
   teacher_name: string;
   message_content: string;
   created_at: string;
+}
+
+export interface CardAttachment {
+  id: string;
+  type: 'image' | 'file' | 'link';
+  name: string;
+  url: string;
+  fileType?: string; // mime type for files
+  size?: number; // size in bytes for files
+  previewUrl?: string; // thumbnail for images
+}
+
+export interface LessonCard {
+  id: string;
+  type: 'objective' | 'material' | 'section' | 'activity' | 'custom' | 'topic_background';
+  title: string;
+  content: string;
+  duration: string | null;
+  sectionId: string | null;
+  activityIndex: number | null;
+  studentFriendly?: boolean;
+  originalContent?: string;
+  differentiatedContent?: string;
+  isDifferentiated?: boolean;
+  attachments?: CardAttachment[];
 }

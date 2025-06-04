@@ -35,7 +35,9 @@ export function TeachingModePage() {
   
   const {
     pendingCount,
-    handleApproveParticipant
+    pendingParticipants,
+    handleApproveParticipant,
+    handleRejectParticipant
   } = useTeacherParticipants(code);
   
   const {
@@ -75,7 +77,7 @@ export function TeachingModePage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal"></div>
       </div>
     );
   }
@@ -83,7 +85,7 @@ export function TeachingModePage() {
   if (error || !presentation) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+        <div className="bg-red/10 text-red p-4 rounded-lg border border-red/20">
           {error || 'Session not found or has ended'}
         </div>
       </div>
@@ -127,6 +129,9 @@ export function TeachingModePage() {
             onPrevious={handlePrevious}
             onNext={handleNext}
             sessionCode={presentation.session_code}
+            pendingParticipants={pendingParticipants}
+            onApproveParticipant={handleApproveParticipant}
+            onRejectParticipant={handleRejectParticipant}
           />
         </main>
       </div>
