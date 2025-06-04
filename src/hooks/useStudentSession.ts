@@ -6,12 +6,14 @@ import {
   subscribeToTeacherMessages,
   getSessionByCode,
   TeacherMessage,
-  LessonPresentation
+  LessonPresentation,
+  CardAttachment
 } from '../lib/supabase';
 
 export function useStudentSession(code: string, studentName: string) {
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
   const [currentCard, setCurrentCard] = useState<any | null>(null);
+  const [currentCardAttachments, setCurrentCardAttachments] = useState<CardAttachment[]>([]);
   const [messages, setMessages] = useState<TeacherMessage[]>([]);
   const [newMessage, setNewMessage] = useState<TeacherMessage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,9 @@ export function useStudentSession(code: string, studentName: string) {
         
         // Set current card
         if (presentationData.cards && presentationData.cards.length > 0) {
-          setCurrentCard(presentationData.cards[presentationData.current_card_index]);
+          const card = presentationData.cards[presentationData.current_card_index];
+          setCurrentCard(card);
+          setCurrentCardAttachments(card.attachments || []);
         }
         
         // Load existing messages
@@ -81,6 +85,9 @@ export function useStudentSession(code: string, studentName: string) {
         // Update current card when it changes
         if (updatedPresentation.current_card_index !== presentation.current_card_index) {
           setCurrentCard(updatedPresentation.cards[updatedPresentation.current_card_index]);
+          setCurrentCardAttachments(
+            updatedPresentation.cards[updatedPresentation.current_card_index]?.attachments || []
+          );
         }
       }
     );
@@ -108,6 +115,7 @@ export function useStudentSession(code: string, studentName: string) {
   return {
     presentation,
     currentCard,
+    currentCardAttachments,
     messages,
     newMessage,
     loading,

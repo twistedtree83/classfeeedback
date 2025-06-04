@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import type { LessonCard, ProcessedLesson } from '../lib/types';
+import type { LessonCard, ProcessedLesson, CardAttachment } from '../lib/types';
 import { 
   Plus, 
   X, 
@@ -22,10 +22,16 @@ import {
   BookMarked,
   Wand2,
   FileEdit,
-  ListChecks
+  ListChecks,
+  Paperclip,
+  Image as ImageIcon,
+  Link,
+  File
 } from 'lucide-react';
 import { sanitizeHtml } from '../lib/utils';
 import { useLessonCardAI } from '../hooks/useLessonCardAI';
+import { FileUploadModal } from './FileUploadModal';
+import { AttachmentDisplay } from './AttachmentDisplay';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -38,6 +44,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editDuration, setEditDuration] = useState('');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [currentCardForAttachment, setCurrentCardForAttachment] = useState<string | null>(null);
 
   // Use our custom AI hook with the direct onSave callback
   const {
@@ -78,7 +86,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       content: 'Enter content here...',
       duration: null,
       sectionId: null,
-      activityIndex: null
+      activityIndex: null,
+      attachments: []
     };
     
     onSave([...selectedCards, newCard]);
@@ -142,7 +151,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       content: content,
       duration: null,
       sectionId: null,
-      activityIndex: null
+      activityIndex: null,
+      attachments: []
     };
     
     onSave([...selectedCards, newCard]);
@@ -157,7 +167,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       content: lesson.materials.map(mat => `• ${mat}`).join('\n'),
       duration: null,
       sectionId: null,
-      activityIndex: null
+      activityIndex: null,
+      attachments: []
     };
     
     onSave([...selectedCards, newCard]);
@@ -174,7 +185,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       content: lesson.topic_background,
       duration: null,
       sectionId: null,
-      activityIndex: null
+      activityIndex: null,
+      attachments: []
     };
     
     onSave([...selectedCards, newCard]);
@@ -222,6 +234,46 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       content: card.isDifferentiated ? regularContent : card.differentiatedContent,
       isDifferentiated: !card.isDifferentiated
     };
+    
+    onSave(updatedCards);
+  };
+
+  // Show file upload modal for a specific card
+  const handleAddAttachment = (cardId: string) => {
+    setCurrentCardForAttachment(cardId);
+    setShowUploadModal(true);
+  };
+
+  // Handle attachment added from the upload modal
+  const handleAttachmentAdded = (attachment: CardAttachment) => {
+    if (!currentCardForAttachment) return;
+    
+    const updatedCards = selectedCards.map(card => {
+      if (card.id === currentCardForAttachment) {
+        return {
+          ...card,
+          attachments: [...(card.attachments || []), attachment]
+        };
+      }
+      return card;
+    });
+    
+    onSave(updatedCards);
+    setShowUploadModal(false);
+    setCurrentCardForAttachment(null);
+  };
+
+  // Handle attachment deletion
+  const handleDeleteAttachment = (cardId: string, attachmentId: string) => {
+    const updatedCards = selectedCards.map(card => {
+      if (card.id === cardId) {
+        return {
+          ...card,
+          attachments: (card.attachments || []).filter(a => a.id !== attachmentId)
+        };
+      }
+      return card;
+    });
     
     onSave(updatedCards);
   };
@@ -354,9 +406,14 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal focus:border-teal"
                     rows={6}
+                    placeholder="Enter card content... You can use markdown formatting."
                   />
+                  <div className="text-xs text-gray-500 mt-1">
+                    <p>Supports Markdown: **bold**, *italic*, # Heading, etc.</p>
+                    <p>URLs will be automatically converted to links</p>
+                  </div>
                 </div>
                 
                 <div className="mb-4">
@@ -366,6 +423,54 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     onChange={(e) => setEditDuration(e.target.value)}
                     placeholder="e.g., 10 minutes"
                   />
+                </div>
+                
+                {/* Attachments section */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attachments
+                  </label>
+                  
+                  <div className="space-y-2">
+                    {(card.attachments || []).map((attachment) => (
+                      <AttachmentDisplay 
+                        key={attachment.id} 
+                        attachment={attachment} 
+                        isEditing={true}
+                        onDelete={(attachmentId) => handleDeleteAttachment(card.id, attachmentId)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddAttachment(card.id)}
+                      className="border-teal text-teal hover:bg-teal/10"
+                    >
+                      <File className="h-4 w-4 mr-1.5" />
+                      Add File
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddAttachment(card.id)}
+                      className="border-teal text-teal hover:bg-teal/10"
+                    >
+                      <ImageIcon className="h-4 w-4 mr-1.5" />
+                      Add Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddAttachment(card.id)}
+                      className="border-teal text-teal hover:bg-teal/10"
+                    >
+                      <Link className="h-4 w-4 mr-1.5" />
+                      Add Link
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex justify-end gap-2">
@@ -379,6 +484,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                   <Button
                     size="sm"
                     onClick={() => handleSaveEdit(card.id)}
+                    className="bg-teal hover:bg-teal/90 text-white"
                   >
                     <Save className="h-4 w-4 mr-1" />
                     Save
@@ -386,10 +492,30 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </div>
               </div>
             ) : (
-              <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-64">
-                <div dangerouslySetInnerHTML={{ 
-                  __html: sanitizeHtml(card.content)
-                }}></div>
+              <div className="p-4">
+                <div className="text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-64">
+                  <div dangerouslySetInnerHTML={{ 
+                    __html: sanitizeHtml(card.content)
+                  }}></div>
+                </div>
+                
+                {/* Render attachments if any */}
+                {card.attachments && card.attachments.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700 flex items-center mb-2">
+                      <Paperclip className="h-4 w-4 mr-1.5 text-teal" />
+                      Attachments ({card.attachments.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {card.attachments.map(attachment => (
+                        <AttachmentDisplay 
+                          key={attachment.id} 
+                          attachment={attachment} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -399,16 +525,16 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6 border border-teal/20">
       <div className="flex justify-between items-center flex-wrap">
-        <h2 className="text-lg font-semibold text-gray-900">Teaching Cards</h2>
+        <h2 className="text-lg font-semibold text-teal">Teaching Cards</h2>
         <div className="flex gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={handleGenerateSuccessCriteria}
             disabled={generatingCriteria}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
           >
             {generatingCriteria ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -421,6 +547,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             variant="outline"
             size="sm"
             onClick={createObjectiveCard}
+            className="border-teal text-teal hover:bg-teal/10"
           >
             <Target className="h-4 w-4 mr-1" />
             Add Learning Intentions
@@ -429,6 +556,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             variant="outline"
             size="sm"
             onClick={createMaterialsCard}
+            className="border-teal text-teal hover:bg-teal/10"
           >
             <Lightbulb className="h-4 w-4 mr-1" />
             Add Materials
@@ -438,6 +566,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
               variant="outline"
               size="sm"
               onClick={createTopicBackgroundCard}
+              className="border-teal text-teal hover:bg-teal/10"
             >
               <BookOpen className="h-4 w-4 mr-1" />
               Add Background
@@ -447,6 +576,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             variant="outline"
             size="sm"
             onClick={handleAddCustomCard}
+            className="border-teal text-teal hover:bg-teal/10"
           >
             <FileEdit className="h-4 w-4 mr-1" />
             Add Custom Card
@@ -473,7 +603,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
               size="sm"
               onClick={makeAllCardsStudentFriendly}
               disabled={processingAllCards || selectedCards.length === 0}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
             >
               {processingAllCards ? (
                 <>
@@ -492,7 +622,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
               size="sm"
               onClick={createDifferentiatedCards}
               disabled={generatingDifferentiated || selectedCards.length === 0}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
             >
               {generatingDifferentiated ? (
                 <>
@@ -529,6 +659,13 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
           </Droppable>
         </DragDropContext>
       </div>
+
+      {/* File upload modal */}
+      <FileUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onAttachmentAdded={handleAttachmentAdded}
+      />
     </div>
   );
 }

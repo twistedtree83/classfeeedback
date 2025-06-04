@@ -1,10 +1,13 @@
 import React from 'react';
-import { Split, Loader2 } from 'lucide-react';
+import { Split, Loader2, Paperclip } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
+import { CardAttachment } from '@/lib/types';
+import { AttachmentDisplay } from '../AttachmentDisplay';
 
 interface LessonContentDisplayProps {
   content: string;
+  attachments?: CardAttachment[];
   hasDifferentiatedContent: boolean;
   viewingDifferentiated: boolean;
   generatingDifferentiated: boolean;
@@ -14,6 +17,7 @@ interface LessonContentDisplayProps {
 
 export function LessonContentDisplay({
   content,
+  attachments = [],
   hasDifferentiatedContent,
   viewingDifferentiated,
   generatingDifferentiated,
@@ -26,6 +30,24 @@ export function LessonContentDisplay({
         className="prose max-w-none text-gray-800"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
       />
+      
+      {/* Attachments section */}
+      {attachments.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <h3 className="text-base font-medium text-gray-700 flex items-center mb-3">
+            <Paperclip className="h-5 w-5 mr-2 text-teal" />
+            Resources & Downloads
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {attachments.map(attachment => (
+              <AttachmentDisplay 
+                key={attachment.id} 
+                attachment={attachment} 
+              />
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Differentiation Controls */}
       {hasDifferentiatedContent ? (

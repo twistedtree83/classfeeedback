@@ -135,9 +135,9 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
     isSending,
     generatingDifferentiated,
     successMessage,
-    error,
     currentFeedback,
     setCurrentCardIndex,
+    error,
     clearError: () => setError(null),
     clearSuccessMessage: () => setSuccessMessage(null)
   };

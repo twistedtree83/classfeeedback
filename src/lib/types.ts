@@ -31,6 +31,16 @@ export interface ProcessedLesson {
   success_criteria?: string[];
 }
 
+export interface CardAttachment {
+  id: string;
+  type: 'image' | 'file' | 'link';
+  name: string;
+  url: string;
+  fileType?: string; // mime type for files
+  size?: number; // size in bytes for files
+  previewUrl?: string; // thumbnail for images
+}
+
 export interface LessonCard {
   id: string;
   type: 'objective' | 'material' | 'section' | 'activity' | 'custom' | 'topic_background';
@@ -43,6 +53,7 @@ export interface LessonCard {
   originalContent?: string;
   differentiatedContent?: string;
   isDifferentiated?: boolean;
+  attachments?: CardAttachment[];
 }
 
 export interface LessonPresentation {
