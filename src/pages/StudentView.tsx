@@ -60,6 +60,7 @@ export function StudentView() {
   const [participantStatus, setParticipantStatus] = useState<string>('pending');
   const [participants, setParticipants] = useState<SessionParticipant[]>([]);
   const [teacherName, setTeacherName] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
   
   // New state variables for teacher messages
   const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
@@ -332,6 +333,11 @@ export function StudentView() {
       setError('Please enter a session code');
       return;
     }
+    
+    if (!selectedAvatar) {
+      setError('Please select an avatar');
+      return;
+    }
 
     if (!studentName.trim()) {
       setError('Please enter your name');
@@ -524,6 +530,28 @@ export function StudentView() {
               <BookOpen className="h-12 w-12 text-indigo-600" />
             </div>
 
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-gray-700 mb-3">Choose your avatar</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {['/images/avatars/co2.png', '/images/avatars/co5.png', '/images/avatars/co6.png', '/images/avatars/co7.png'].map((avatar) => (
+                  <button
+                    key={avatar}
+                    onClick={() => setSelectedAvatar(avatar)}
+                    className={`relative rounded-lg overflow-hidden transition-all ${
+                      selectedAvatar === avatar 
+                        ? 'ring-4 ring-indigo-500 transform scale-105' 
+                        : 'hover:ring-2 hover:ring-indigo-300'
+                    }`}
+                  >
+                    <img 
+                      src={avatar} 
+                      alt="Avatar option" 
+                      className="w-full h-auto"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Join Classroom Session
             </h2>
@@ -771,6 +799,13 @@ export function StudentView() {
             <div className="flex items-center gap-2">
               <User size={18} className="text-indigo-600" />
               <span className="font-medium">{studentName}</span>
+              {selectedAvatar && (
+                <img 
+                  src={selectedAvatar} 
+                  alt="Avatar" 
+                  className="w-8 h-8 rounded-full border-2 border-indigo-100"
+                />
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <button
