@@ -60,9 +60,6 @@ export function StudentView() {
   const [participantStatus, setParticipantStatus] = useState<string>('pending');
   const [participants, setParticipants] = useState<SessionParticipant[]>([]);
   const [teacherName, setTeacherName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('');
-  
-  // New state variables for teacher messages
   const [teacherMessage, setTeacherMessage] = useState<TeacherMessage | null>(null);
   const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
@@ -70,7 +67,19 @@ export function StudentView() {
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState('');
   const messageToastRef = useRef<HTMLDivElement>(null);
+
+  const avatars = [
+    '/images/avatars/co1.png',
+    '/images/avatars/co2.png',
+    '/images/avatars/co3.png',
+    '/images/avatars/co4.png',
+    '/images/avatars/co5.png',
+    '/images/avatars/co6.png',
+    '/images/avatars/co7.png',
+    '/images/avatars/co8.png'
+  ];
 
   // Extract code from URL if present
   useEffect(() => {
@@ -333,11 +342,6 @@ export function StudentView() {
       setError('Please enter a session code');
       return;
     }
-    
-    if (!selectedAvatar) {
-      setError('Please select an avatar');
-      return;
-    }
 
     if (!studentName.trim()) {
       setError('Please enter your name');
@@ -529,38 +533,9 @@ export function StudentView() {
             <div className="flex justify-center mb-6">
               <BookOpen className="h-12 w-12 text-indigo-600" />
             </div>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-700 mb-3">Choose your avatar</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  '/images/avatars/co2.png',
-                  '/images/avatars/co5.png', 
-                  '/images/avatars/co6.png',
-                  '/images/avatars/co7.png'
-                ].map((avatar) => (
-                  <button
-                    key={avatar}
-                    onClick={() => setSelectedAvatar(avatar)}
-                    className={`relative rounded-lg overflow-hidden transition-all ${
-                      selectedAvatar === avatar 
-                        ? 'ring-4 ring-indigo-500 transform scale-105' 
-                        : 'hover:ring-2 hover:ring-indigo-300'
-                    }`}
-                  >
-                    <img 
-                      src={avatar} 
-                      alt="Avatar option" 
-                      className="w-full h-auto"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
               Join Classroom Session
             </h2>
-
             <form onSubmit={handleJoinSession} className="space-y-5">
               <Input
                 label="Session Code"
@@ -581,6 +556,32 @@ export function StudentView() {
                 disabled={isJoining}
               />
 
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Choose Your Avatar
+                </label>
+                <div className="grid grid-cols-4 gap-4">
+                  {avatars.map((avatar, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setSelectedAvatar(avatar)}
+                      className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                        selectedAvatar === avatar 
+                          ? 'border-indigo-500 ring-2 ring-indigo-500 transform scale-105' 
+                          : 'border-gray-200 hover:border-indigo-200'
+                      }`}
+                    >
+                      <img 
+                        src={avatar} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {error && (
                 <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
                   <AlertCircle className="h-5 w-5 flex-shrink-0" />
@@ -590,7 +591,7 @@ export function StudentView() {
 
               <Button
                 type="submit"
-                disabled={isJoining || !sessionCode.trim() || !studentName.trim()}
+                disabled={isJoining || !sessionCode.trim() || !studentName.trim() || !selectedAvatar}
                 className="w-full"
                 size="lg"
               >
@@ -803,14 +804,10 @@ export function StudentView() {
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
               <User size={18} className="text-indigo-600" />
-              <span className="font-medium">{studentName}</span>
-              {selectedAvatar && (
-                <img 
-                  src={selectedAvatar} 
-                  alt="Avatar" 
-                  className="w-8 h-8 rounded-full border-2 border-indigo-100"
-                />
-              )}
+              <div className="flex items-center gap-2">
+                <img src={selectedAvatar} alt="Avatar" className="w-8 h-8 rounded-full" />
+                <span className="font-medium">{studentName}</span>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -838,194 +835,4 @@ export function StudentView() {
       {teacherMessage && (
         <div 
           ref={messageToastRef}
-          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-md border border-blue-200"
-        >
-          <MessageSquareText className="h-6 w-6 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-semibold">{teacherMessage.teacher_name}:</p>
-            <p className="text-sm">{teacherMessage.message_content}</p>
-            <button 
-              onClick={toggleMessagePanel}
-              className="text-xs text-blue-600 hover:underline mt-1"
-            >
-              View all messages
-            </button>
-          </div>
-          <button 
-            onClick={() => setTeacherMessage(null)}
-            className="p-1 text-blue-500 hover:bg-blue-100 rounded-full"
-            title="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-      
-      <main className="flex-1 flex flex-col p-6">
-        <div className="max-w-3xl mx-auto w-full flex-1 flex flex-col">
-          {/* Success message toast */}
-          {successMessage && (
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-          
-          {/* Card content */}
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6 flex-1">
-            {currentCard ? (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {currentCard.title}
-                  </h2>
-                  {hasDifferentiatedContent && (
-                    <Button
-                      onClick={toggleDifferentiatedView}
-                      variant={viewingDifferentiated ? "primary" : "outline"}
-                      size="sm"
-                      className="flex items-center gap-1"
-                    >
-                      <Split className="h-4 w-4" />
-                      {viewingDifferentiated ? "Standard View" : "Simplified View"}
-                    </Button>
-                  )}
-                </div>
-
-                <div className="prose max-w-none">
-                  {typeof cardContent === 'string' ? (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}></div>
-                  ) : (
-                    <div>
-                      {(cardContent as string[]).map((line, i) => (
-                        <p key={i} className="mb-4 leading-relaxed" 
-                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(line || '\u00A0') }}></p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Differentiate button when there's no differentiated content yet */}
-                {!hasDifferentiatedContent && (
-                  <div className="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg">
-                    <p className="text-purple-800 mb-2">Need a simpler explanation?</p>
-                    <Button
-                      variant="outline"
-                      className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
-                      onClick={handleGenerateDifferentiated}
-                      disabled={generatingDifferentiated}
-                    >
-                      {generatingDifferentiated ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Simplifying...
-                        </>
-                      ) : (
-                        <>
-                          <Split className="h-4 w-4 mr-2" />
-                          Simplify Content
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">Waiting for teacher to start the lesson...</p>
-              </div>
-            )}
-          </div>
-          
-          {/* Feedback controls */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            {error && (
-              <div className="p-3 mb-4 rounded-lg bg-red-100 text-red-800 text-center">
-                {error}
-              </div>
-            )}
-            
-            {showQuestionForm ? (
-              <form onSubmit={handleSendQuestion} className="space-y-4">
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Type your question here..."
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows={3}
-                  disabled={isSendingFeedback}
-                />
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowQuestionForm(false)}
-                    disabled={isSendingFeedback}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={!question.trim() || isSendingFeedback}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Question
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <div className="flex flex-wrap gap-3 justify-center">
-                <Button
-                  onClick={() => handleTeachingFeedback('understand')}
-                  disabled={isSendingFeedback}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <ThumbsUp className="h-5 w-5" />
-                  I understand
-                </Button>
-                
-                <Button
-                  onClick={() => handleTeachingFeedback('confused')}
-                  disabled={isSendingFeedback}
-                  className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700"
-                >
-                  <ThumbsDown className="h-5 w-5" />
-                  I'm confused
-                </Button>
-                
-                <Button
-                  onClick={() => setShowQuestionForm(true)}
-                  disabled={isSendingFeedback}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  Ask a question
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </main>
-
-      {/* Message indicator button that's always visible when there are new messages */}
-      {newMessageCount > 0 && !showMessagePanel && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={toggleMessagePanel}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
-          >
-            <Bell className="h-5 w-5" />
-            <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Message Panel */}
-      <MessagePanel
-        messages={allMessages}
-        isOpen={showMessagePanel}
-        onClose={() => setShowMessagePanel(false)}
-      />
-    </div>
-  );
-}
+          className="fixed top-20 left-1/
