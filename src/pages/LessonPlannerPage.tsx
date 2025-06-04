@@ -37,7 +37,7 @@ export function LessonPlannerPage() {
         },
         (payload) => {
           if (payload.eventType === 'INSERT' && payload.new.processed_content) {
-            setLessons(prev => [payload.new.processed_content, ...prev]);
+            setLessons(prev => [payload.new, ...prev]);
           }
         }
       )
@@ -49,16 +49,16 @@ export function LessonPlannerPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-teal/5">
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
-            <BookOpen className="h-8 w-8 text-indigo-600 mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">Lesson Planner</h1>
+            <BookOpen className="h-8 w-8 text-teal mr-3" />
+            <h1 className="text-2xl font-bold text-teal">Lesson Planner</h1>
             <div className="ml-auto">
               <Link
                 to="/planner/create"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal hover:bg-teal/90"
               >
                 Create New Lesson
               </Link>
@@ -71,7 +71,7 @@ export function LessonPlannerPage() {
         <div className="mb-6">
           <Link
             to=".."
-            className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
+            className="inline-flex items-center text-teal hover:text-coral"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Dashboard
@@ -80,45 +80,47 @@ export function LessonPlannerPage() {
         
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal"></div>
           </div>
         ) : lessons.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">No lesson plans yet.</p>
             <Link
               to="/planner/create"
-              className="inline-block mt-4 text-indigo-600 hover:text-indigo-800"
+              className="inline-block mt-4 text-coral hover:text-orange"
             >
               Create your first lesson plan
             </Link>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {lessons.map((lesson, index) => (
+            {lessons.map((lesson) => (
               <Link
                 key={lesson.id}
                 to={`/planner/${lesson.id}`}
-                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-200 border border-gray-100 hover:border-indigo-200"
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-200 border border-teal/10 hover:border-teal/30"
               >
-                <h3 className="text-lg font-semibold mb-2">{lesson.processed_content.title}</h3>
+                <h3 className="text-lg font-semibold mb-2 text-teal">
+                  {lesson.processed_content?.title || "Untitled Lesson"}
+                </h3>
                 <div className="flex flex-wrap gap-3 mb-4">
                   <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{lesson.processed_content.duration}</span>
+                    <Clock className="w-4 h-4 mr-1 text-coral" />
+                    <span>{lesson.processed_content?.duration || "No duration"}</span>
                   </div>
-                  {lesson.processed_content.level && (
+                  {lesson.processed_content?.level && (
                     <div className="flex items-center text-sm text-gray-600">
-                      <GraduationCap className="w-4 h-4 mr-1" />
+                      <GraduationCap className="w-4 h-4 mr-1 text-coral" />
                       <span>{lesson.processed_content.level}</span>
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  {lesson.processed_content.objectives.slice(0, 2).map((objective, i) => (
-                    <p key={i} className="text-sm text-gray-500">• {objective}</p>
+                  {lesson.processed_content?.objectives?.slice(0, 2).map((objective, i) => (
+                    <p key={i} className="text-sm text-gray-600">• {objective}</p>
                   ))}
-                  {lesson.processed_content.objectives.length > 2 && (
-                    <p className="text-sm text-gray-400">
+                  {lesson.processed_content?.objectives?.length > 2 && (
+                    <p className="text-sm text-orange">
                       +{lesson.processed_content.objectives.length - 2} more objectives
                     </p>
                   )}
