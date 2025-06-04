@@ -76,7 +76,8 @@ export function TeachingModePage() {
 
     const success = await endLessonPresentation(presentation.id);
     if (success) {
-      navigate('/planner');
+      // Navigate to the lesson summary page instead of planner
+      navigate(`/lesson-summary/${presentation.session_code}`);
     }
   };
 

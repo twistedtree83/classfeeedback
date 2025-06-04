@@ -18,6 +18,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { HomePage } from './pages/HomePage';
+import { LessonSummaryPage } from './pages/LessonSummaryPage';
 
 function App() {
   return (
@@ -62,6 +63,11 @@ function App() {
           <Route path="/teach/:code" element={
             <ProtectedRoute>
               <TeachingModePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/lesson-summary/:code" element={
+            <ProtectedRoute>
+              <LessonSummaryPage />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={<Profile />} />
