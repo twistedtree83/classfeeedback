@@ -1,0 +1,164 @@
+import { useState, useEffect } from 'react';
+import { 
+  getLessonPresentationByCode, 
+  updateLessonPresentationCardIndex,
+  getSessionByCode, 
+  getLessonPlanById, 
+  LessonPresentation, 
+  LessonCard 
+} from '../lib/supabase';
+
+export function useTeacherPresentation(code: string | undefined) {
+  const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
+  const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
+  const [displayedCardIndex, setDisplayedCardIndex] = useState(0);
+  const [actualCardIndex, setActualCardIndex] = useState(0);
+  const [teacherName, setTeacherName] = useState('');
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load the presentation on mount
+  useEffect(() => {
+    const loadPresentation = async () => {
+      if (!code) return;
+
+      try {
+        // Get presentation data
+        const presentationData = await getLessonPresentationByCode(code);
+        if (!presentationData) throw new Error('Presentation not found');
+
+        // Get session data
+        const sessionData = await getSessionByCode(code);
+        if (sessionData) {
+          setTeacherName(sessionData.teacher_name);
+        }
+
+        // Get lesson data to get the title
+        if (presentationData.lesson_id) {
+          const lessonData = await getLessonPlanById(presentationData.lesson_id);
+          if (lessonData && lessonData.processed_content) {
+            setLessonTitle(lessonData.processed_content.title);
+          }
+        }
+
+        // Set presentation data
+        setPresentation(presentationData);
+        
+        // Default to displaying the welcome card (index -1 in our UI logic)
+        setDisplayedCardIndex(0);
+        setActualCardIndex(presentationData.current_card_index);
+        
+        // Set current card
+        updateCurrentCardDisplay(presentationData, 0);
+      } catch (err) {
+        console.error('Error loading presentation or session:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load presentation');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPresentation();
+  }, [code]);
+
+  // Create a welcome card that shows the lesson title
+  const createWelcomeCard = (): LessonCard => {
+    return {
+      id: 'welcome-card',
+      type: 'custom',
+      title: `Welcome to: ${lessonTitle}`,
+      content: `
+## ${lessonTitle || 'Lesson Presentation'}
+
+This is the welcome screen for your lesson. Students can join using the code: **${code}**
+
+Click "Next" to begin your lesson presentation.
+      `,
+      duration: null,
+      sectionId: null,
+      activityIndex: null
+    };
+  };
+
+  // Update the current card based on displayedCardIndex
+  const updateCurrentCardDisplay = (presentationData: LessonPresentation, index: number) => {
+    if (index === 0) {
+      // Show welcome card
+      setCurrentCard(createWelcomeCard());
+    } else {
+      // Adjust index to account for welcome card
+      const adjustedIndex = index - 1;
+      if (presentationData.cards && adjustedIndex >= 0 && adjustedIndex < presentationData.cards.length) {
+        setCurrentCard(presentationData.cards[adjustedIndex]);
+      }
+    }
+  };
+
+  const handlePrevious = async () => {
+    if (!presentation || displayedCardIndex <= 0) return;
+
+    const newDisplayIndex = displayedCardIndex - 1;
+    setDisplayedCardIndex(newDisplayIndex);
+
+    // Only update database card index if we're moving between actual content cards
+    if (newDisplayIndex > 0) {
+      const newActualIndex = newDisplayIndex - 1;
+      setActualCardIndex(newActualIndex);
+      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+      
+      if (!success) {
+        console.error('Failed to update card index');
+      }
+    }
+
+    updateCurrentCardDisplay(presentation, newDisplayIndex);
+  };
+
+  const handleNext = async () => {
+    if (!presentation) return;
+    
+    // Calculate max index (adding 1 for welcome card)
+    const maxIndex = presentation.cards.length;
+    
+    if (displayedCardIndex >= maxIndex) return;
+
+    const newDisplayIndex = displayedCardIndex + 1;
+    setDisplayedCardIndex(newDisplayIndex);
+
+    // Only update database card index if we're moving between actual content cards
+    if (newDisplayIndex > 0) {
+      const newActualIndex = newDisplayIndex - 1;
+      setActualCardIndex(newActualIndex);
+      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+      
+      if (!success) {
+        console.error('Failed to update card index');
+      }
+    }
+
+    updateCurrentCardDisplay(presentation, newDisplayIndex);
+  };
+
+  // Update welcome card when necessary data changes
+  useEffect(() => {
+    if (displayedCardIndex === 0 && presentation) {
+      updateCurrentCardDisplay(presentation, 0);
+    }
+  }, [lessonTitle, code]);
+
+  return {
+    presentation,
+    currentCard,
+    displayedCardIndex,
+    actualCardIndex,
+    teacherName,
+    lessonTitle,
+    loading,
+    error,
+    setError,
+    handlePrevious,
+    handleNext,
+    totalCards: presentation ? presentation.cards.length + 1 : 0 // Add 1 for welcome card
+  };
+}
