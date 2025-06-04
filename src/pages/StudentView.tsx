@@ -12,7 +12,8 @@ import {
   Split,
   Loader2,
   ArrowLeft,
-  CheckCircle
+  CheckCircle,
+  User
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -29,6 +30,7 @@ import {
 import { sanitizeHtml } from '../lib/utils';
 import { generateDifferentiatedContent } from '../lib/aiService';
 import { MessagePanel } from '../components/MessagePanel';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface StudentViewProps {}
 
@@ -38,6 +40,7 @@ export function StudentView({}: StudentViewProps) {
   const [presentation, setPresentation] = useState<any>(null);
   const [currentCard, setCurrentCard] = useState<any>(null);
   const [studentName, setStudentName] = useState('');
+  const [studentAvatar, setStudentAvatar] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function StudentView({}: StudentViewProps) {
     }
   }, [location]);
 
-  const handleJoinSession = async (code: string, name?: string) => {
+  const handleJoinSession = async (code: string, name?: string, avatar?: string) => {
     if (loading) return;
     
     setLoading(true);
@@ -92,9 +95,12 @@ export function StudentView({}: StudentViewProps) {
         );
       }
       
-      // Set student name (if provided) and mark as joined
+      // Set student name and avatar (if provided) and mark as joined
       if (name) {
         setStudentName(name);
+      }
+      if (avatar) {
+        setStudentAvatar(avatar);
       }
       setJoined(true);
       
@@ -266,9 +272,10 @@ export function StudentView({}: StudentViewProps) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex justify-center items-center">
         <JoinSessionForm 
-          onJoinSession={(code, name) => {
+          onJoinSession={(code, name, avatar) => {
             setStudentName(name || generateRandomName());
-            handleJoinSession(code, name || generateRandomName());
+            setStudentAvatar(avatar || null);
+            handleJoinSession(code, name || generateRandomName(), avatar);
           }} 
         />
       </div>
@@ -284,9 +291,17 @@ export function StudentView({}: StudentViewProps) {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <span className="font-medium text-lg">{studentName}</span>
-            <span className="ml-2 bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
+          <div className="flex items-center gap-2">
+            {studentAvatar ? (
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={studentAvatar} alt={studentName} />
+                <AvatarFallback>{studentName.charAt(0)}</AvatarFallback>
+              </Avatar>
+            ) : (
+              <User size={20} className="text-indigo-600" />
+            )}
+            <span className="font-medium">{studentName}</span>
+            <span className="ml-1 bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">
               {presentation?.session_code}
             </span>
           </div>

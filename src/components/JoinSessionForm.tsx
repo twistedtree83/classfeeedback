@@ -4,9 +4,10 @@ import { Input } from './ui/Input';
 import { getSessionByCode, addSessionParticipant, checkParticipantStatus, subscribeToParticipantStatus } from '../lib/supabaseClient';
 import { generateRandomName } from '../lib/utils';
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface JoinSessionFormProps {
-  onJoinSession: (code: string, name: string) => void;
+  onJoinSession: (code: string, name: string, avatarUrl?: string) => void;
 }
 
 export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
@@ -17,6 +18,14 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [checking, setChecking] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  
+  const avatars = [
+    '/images/avatars/co2.png',
+    '/images/avatars/co5.png',
+    '/images/avatars/co6.png',
+    '/images/avatars/co7.png'
+  ];
 
   // Check participant approval status with direct subscription
   useEffect(() => {
@@ -38,7 +47,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
           
           // Call onJoinSession after a short delay to show the success message
           setTimeout(() => {
-            onJoinSession(sessionCode.trim().toUpperCase(), studentName);
+            onJoinSession(sessionCode.trim().toUpperCase(), studentName, selectedAvatar || undefined);
           }, 1500);
         } else if (newStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
@@ -60,7 +69,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         
         if (currentStatus === 'approved') {
           // Already approved, join immediately
-          onJoinSession(sessionCode.trim().toUpperCase(), studentName);
+          onJoinSession(sessionCode.trim().toUpperCase(), studentName, selectedAvatar || undefined);
         } else if (currentStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setIsJoining(false);
@@ -84,7 +93,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         const currentStatus = await checkParticipantStatus(participantId);
         if (currentStatus === 'approved') {
           setStatus('approved');
-          onJoinSession(sessionCode.trim().toUpperCase(), studentName);
+          onJoinSession(sessionCode.trim().toUpperCase(), studentName, selectedAvatar || undefined);
         } else if (currentStatus === 'rejected') {
           setStatus('rejected');
           setError('Your name was not approved by the teacher. Please try again with a different name.');
@@ -101,7 +110,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       subscription.unsubscribe();
       clearInterval(pollingInterval);
     };
-  }, [participantId, sessionCode, studentName, onJoinSession, status]);
+  }, [participantId, sessionCode, studentName, onJoinSession, status, selectedAvatar]);
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +161,10 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
       setError('An unexpected error occurred. Please try again.');
       setIsJoining(false);
     }
+  };
+
+  const handleSelectAvatar = (avatar: string) => {
+    setSelectedAvatar(avatar);
   };
 
   if (status === 'pending') {
@@ -219,6 +232,30 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
           placeholder="Enter your name or leave blank for random name"
           disabled={isJoining}
         />
+
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Choose an Avatar
+          </label>
+          <div className="grid grid-cols-4 gap-3 mt-2">
+            {avatars.map((avatar, index) => (
+              <div 
+                key={index}
+                onClick={() => handleSelectAvatar(avatar)}
+                className={`cursor-pointer p-2 rounded-lg transition-all ${
+                  selectedAvatar === avatar 
+                    ? 'ring-2 ring-indigo-500 bg-indigo-50 scale-110' 
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                <Avatar className="h-12 w-12 mx-auto">
+                  <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} />
+                  <AvatarFallback>{index + 1}</AvatarFallback>
+                </Avatar>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {error && (
           <div className="p-3 rounded-lg bg-red-100 text-red-800 text-center flex items-center justify-center gap-2">
