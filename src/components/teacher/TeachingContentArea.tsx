@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
 import type { LessonCard } from '../../lib/types';
@@ -92,14 +92,24 @@ export function TeachingContentArea({
           <span className="text-teal/70">
             {displayedCardIndex + 1} / {totalCards}
           </span>
-          <Button
-            onClick={onNext}
-            disabled={isLastCard}
-            className="bg-coral hover:bg-coral/90 text-white"
-          >
-            Next
-            <ArrowRight className="h-5 w-5 ml-2" />
-          </Button>
+          {isFirstCard ? (
+            <Button
+              onClick={onNext}
+              className="bg-coral hover:bg-coral/90 text-white font-medium transition-all duration-300 transform hover:scale-105"
+            >
+              <Play className="h-5 w-5 mr-2" />
+              Ready to Go
+            </Button>
+          ) : (
+            <Button
+              onClick={onNext}
+              disabled={isLastCard}
+              className="bg-coral hover:bg-coral/90 text-white"
+            >
+              Next
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
 
