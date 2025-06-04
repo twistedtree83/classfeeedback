@@ -5,7 +5,7 @@ interface AuthContextProps {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{error: string | null}>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{error: string | null}>;
+  signUp: (email: string, password: string, fullName: string, title: string) => Promise<{error: string | null}>;
   signOut: () => Promise<{error: string | null}>;
   resetPassword: (email: string) => Promise<{error: string | null}>;
   updatePassword: (password: string) => Promise<{error: string | null}>;
@@ -58,12 +58,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (user) setUser(user);
       return { error };
     },
-    signUp: async (email: string, password: string, fullName: string) => {
-      const { user, error } = await supabase.auth.signUp({ 
-        email, 
+    signUp: async (email: string, password: string, fullName: string, title: string) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
         password,
         options: {
-          data: { full_name: fullName }
+          data: {
+            full_name: fullName,
+            title: title
+          }
         }
       });
       if (user) setUser(user);

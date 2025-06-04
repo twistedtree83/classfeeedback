@@ -9,6 +9,7 @@ export const SignupForm: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [title, setTitle] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +51,12 @@ export const SignupForm: React.FC = () => {
     setError(null);
     
     try {
-      const { error } = await signUp(email, password, fullName);
+      const { error } = await signUp(
+        email,
+        password,
+        fullName,
+        title
+      );
       
       if (error) {
         setError(error);
@@ -89,6 +95,26 @@ export const SignupForm: React.FC = () => {
       ) : (
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                Title
+              </label>
+              <select
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              >
+                <option value="">Select a title</option>
+                <option value="Mr.">Mr.</option>
+                <option value="Mrs.">Mrs.</option>
+                <option value="Ms.">Ms.</option>
+                <option value="Miss">Miss</option>
+                <option value="Dr.">Dr.</option>
+              </select>
+            </div>
+            
             <Input
               label="Full Name"
               type="text"
