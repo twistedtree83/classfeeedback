@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 
 interface TeachingHeaderProps {
   sessionCode: string;
+  lessonTitle?: string;
   hasNewQuestions: boolean;
   pendingCount: number;
   showSidebar: boolean;
@@ -14,6 +15,7 @@ interface TeachingHeaderProps {
 
 export function TeachingHeader({
   sessionCode,
+  lessonTitle,
   hasNewQuestions,
   pendingCount,
   showSidebar,
@@ -25,37 +27,36 @@ export function TeachingHeader({
     <div className="bg-white shadow-sm sticky top-0 z-10">
       <div className="px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center w-10">
             <Button
               variant="ghost"
               size="sm"
               onClick={onToggleSidebar}
-              className="mr-2"
+              className="p-1.5"
               aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
             >
               {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Teaching Mode
+          </div>
+          
+          {/* Center the lesson title */}
+          <div className="flex-1 flex justify-center items-center">
+            <h1 className="text-xl font-semibold text-gray-900 truncate px-2 max-w-2xl">
+              {lessonTitle || 'Lesson Presentation'}
             </h1>
-            <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md font-mono ml-4">
+            <div className="ml-2 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md font-mono">
               {sessionCode}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          
+          <div className="flex items-center space-x-2 w-10">
             <Button
               variant="outline"
               onClick={onOpenMessageModal}
               size="sm"
+              className="ml-auto"
             >
               <MessageSquare className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700"
-              onClick={onEndSession}
-            >
-              End Session
             </Button>
           </div>
         </div>
