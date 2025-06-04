@@ -221,7 +221,7 @@ export const subscribeToLessonPresentation = (
   console.log(`Setting up real-time subscription for presentation with code: ${code}`);
   
   const channel = supabase
-    .channel(`lesson_presentation_${code}`)
+    .channel(`presentation_${code}`)
     .on(
       'postgres_changes',
       {

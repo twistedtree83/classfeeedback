@@ -98,7 +98,7 @@ export function useStudentSession(code: string, studentName: string) {
 
   // Set up subscriptions when joined
   useEffect(() => {
-    if (!joined || !presentation) return;
+    if (!joined || !presentation || !presentation.session_code) return;
     
     // Subscribe to presentation updates
     console.log(`Setting up presentation subscription for session code: ${presentation.session_code}`);
@@ -108,37 +108,29 @@ export function useStudentSession(code: string, studentName: string) {
       (updatedPresentation) => {
         console.log(`Received presentation update: current_card_index=${updatedPresentation.current_card_index}, previous=${presentation.current_card_index}`);
         
-        // When the card index changes, update the presentation and current card
+        // When the card index changes, update the presentation and current card immediately
         if (updatedPresentation.current_card_index !== presentation.current_card_index) {
           console.log(`Card changed from ${presentation.current_card_index} to ${updatedPresentation.current_card_index}`);
           
-          // Refresh the presentation data completely to ensure we have the most current state
-          getLessonPresentationByCode(presentation.session_code)
-            .then(freshPresentation => {
-              if (freshPresentation) {
-                console.log("Fetched fresh presentation data");
-                setPresentation(freshPresentation);
-                
-                // Update current card based on the new index
-                updateCurrentCard(freshPresentation, updatedPresentation.current_card_index);
-                
-                // Check if lesson has started
-                if (updatedPresentation.current_card_index > 0) {
-                  setLessonStarted(true);
-                }
-              }
-            })
-            .catch(err => {
-              console.error("Error refreshing presentation data:", err);
-            });
-        } else {
-          // If other data changed (but not the index), still update the presentation
+          // Update current presentation state
           setPresentation(prev => {
             if (!prev) return updatedPresentation;
-            return {
-              ...updatedPresentation,
-              cards: prev.cards // Preserve the cards to avoid potential parsing issues
+            
+            // Create a copy of the updated presentation with the new card index
+            const updated = {
+              ...prev,
+              current_card_index: updatedPresentation.current_card_index
             };
+            
+            // Update current card immediately 
+            updateCurrentCard(updated, updatedPresentation.current_card_index);
+            
+            // Check if lesson has started
+            if (updatedPresentation.current_card_index > 0) {
+              setLessonStarted(true);
+            }
+            
+            return updated;
           });
         }
       }
