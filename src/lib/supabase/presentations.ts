@@ -87,32 +87,42 @@ export const createLessonPresentation = async (
 };
 
 export const getLessonPresentationByCode = async (
-  code: string
+  code: string,
+  includeInactive: boolean = false
 ): Promise<LessonPresentation | null> => {
   try {
     console.log('Requesting presentation for code:', code);
     
-    // First check if session is active
+    // First check if session exists
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('*')
-      .eq('code', code)
-      .eq('active', true)
-      .single();
+      .eq('code', code);
 
-    if (sessionError || !session) {
-      console.error('Session not found or inactive');
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      const query = supabase.from('sessions').eq('active', true);
+    }
+
+    if (sessionError || !session || session.length === 0) {
+      console.error('Session not found');
       return null;
     }
 
-    console.log('Found active session:', JSON.stringify(session, null, 2));
+    console.log('Found session:', JSON.stringify(session, null, 2));
 
-    const { data, error } = await supabase
+    // Now get the presentation
+    let query = supabase
       .from('lesson_presentations')
       .select('*')
-      .eq('session_code', code)
-      .eq('active', true)
-      .single();
+      .eq('session_code', code);
+    
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      query = query.eq('active', true);
+    }
+    
+    const { data, error } = await query.single();
     
     if (error || !data) {
       console.error('Error fetching presentation:', error);

@@ -60,15 +60,15 @@ export function LessonSummaryPage() {
       }
       
       try {
-        // Get session data
-        const session = await getSessionByCode(code);
+        // Get session data - passing true to includeInactive to load both active and inactive sessions
+        const session = await getSessionByCode(code, true);
         if (!session) {
           throw new Error('Session not found');
         }
         setSessionData(session);
         
-        // Get presentation data
-        const presentation = await getLessonPresentationByCode(code);
+        // Get presentation data - passing true to includeInactive to load both active and inactive presentations
+        const presentation = await getLessonPresentationByCode(code, true);
         if (!presentation) {
           throw new Error('Presentation not found');
         }

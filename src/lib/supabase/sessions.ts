@@ -30,14 +30,19 @@ export const createSession = async (teacherName: string): Promise<Session | null
   }
 };
 
-export const getSessionByCode = async (code: string): Promise<Session | null> => {
+export const getSessionByCode = async (code: string, includeInactive: boolean = false): Promise<Session | null> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('sessions')
       .select()
-      .eq('code', code)
-      .eq('active', true)
-      .single();
+      .eq('code', code);
+    
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      query = query.eq('active', true);
+    }
+    
+    const { data, error } = await query.single();
     
     if (error) {
       if (error.code === 'PGRST116') {
