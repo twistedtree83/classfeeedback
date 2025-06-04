@@ -7,7 +7,6 @@ import {
   FileText, 
   LogOut, 
   Menu,
-  BookOpen,
   Bell,
   CheckCircle,
   HelpCircle
@@ -110,17 +109,6 @@ export function TeacherSidebar({
 
   return (
     <SidebarBody className="flex flex-col h-full z-10">
-      <div className={cn("mb-6", !open ? "flex justify-center" : "")}>
-        {open ? (
-          <div className="flex items-center gap-2">
-            <BookOpen className="text-indigo-600 h-6 w-6 flex-shrink-0" />
-            <span className="font-bold text-lg">Teaching Mode</span>
-          </div>
-        ) : (
-          <BookOpen className="text-indigo-600 h-6 w-6" />
-        )}
-      </div>
-      
       {pendingCount > 0 && (
         <div className={cn(
           "mb-6",
