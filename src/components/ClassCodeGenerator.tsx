@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
 import { createSession } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ClassCodeGeneratorProps {
   onCodeGenerated: (code: string) => void;
 }
 
 export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps) {
-  const [teacherName, setTeacherName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
+
+  const getTeacherName = () => {
+    if (!user?.user_metadata) return '';
+    const { title, full_name } = user.user_metadata;
+    return `${title} ${full_name.split(' ').pop()}`; // Use title + last name
+  };
 
   const handleGenerateCode = async () => {
-    if (!teacherName.trim()) {
-      setError('Please enter your name');
+    const teacherName = getTeacherName();
+    if (!teacherName) {
+      setError('Could not determine teacher name');
       return;
     }
 
@@ -41,14 +48,9 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Generate Class Code</h2>
       
       <div className="space-y-4">
-        <Input
-          label="Teacher Name"
-          value={teacherName}
-          onChange={(e) => setTeacherName(e.target.value)}
-          placeholder="Enter your name"
-          error={error}
-          disabled={isGenerating}
-        />
+        {error && (
+          <div className="text-red-600 text-sm">{error}</div>
+        )}
 
         <Button
           onClick={handleGenerateCode}

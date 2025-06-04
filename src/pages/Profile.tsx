@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabaseClient';
 export function Profile() {
   const { user, signOut } = useAuth();
   const [fullName, setFullName] = useState('');
+  const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export function Profile() {
     if (user) {
       setEmail(user.email || '');
       setFullName(user.user_metadata?.full_name || '');
+      setTitle(user.user_metadata?.title || '');
     }
   }, [user]);
 
@@ -37,7 +39,10 @@ export function Profile() {
     
     try {
       const { error } = await supabase.auth.updateUser({
-        data: { full_name: fullName }
+        data: {
+          full_name: fullName,
+          title: title
+        }
       });
       
       if (error) {
@@ -96,6 +101,26 @@ export function Profile() {
             )}
             
             <form onSubmit={handleUpdateProfile} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                  Title
+                </label>
+                <select
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  required
+                >
+                  <option value="">Select a title</option>
+                  <option value="Mr.">Mr.</option>
+                  <option value="Mrs.">Mrs.</option>
+                  <option value="Ms.">Ms.</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Dr.">Dr.</option>
+                </select>
+              </div>
+              
               <Input
                 label="Full Name"
                 value={fullName}
