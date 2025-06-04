@@ -36,7 +36,8 @@ export const createLessonPresentation = async (
         studentFriendly: card.studentFriendly || false,
         originalContent: card.originalContent || null,
         differentiatedContent: card.differentiatedContent || null,
-        isDifferentiated: card.isDifferentiated || false
+        isDifferentiated: card.isDifferentiated || false,
+        attachments: card.attachments || []
       };
     });
 
@@ -104,14 +105,19 @@ export const getLessonPresentationByCode = async (
       sessionQuery.eq('active', true);
     }
     
-    const { data: session, error: sessionError } = await sessionQuery.single();
+    const { data: session, error: sessionError } = await sessionQuery.maybeSingle();
 
     if (sessionError) {
-      console.error('Session not found or inactive:', sessionError);
+      console.error('Error finding session:', sessionError);
+      return null;
+    }
+    
+    if (!session) {
+      console.log('No session found with code:', code);
       return null;
     }
 
-    console.log('Found active session:', JSON.stringify(session, null, 2));
+    console.log('Found session:', JSON.stringify(session, null, 2));
 
     // Now get the presentation
     const presentationQuery = supabase
@@ -124,14 +130,24 @@ export const getLessonPresentationByCode = async (
       presentationQuery.eq('active', true);
     }
     
-    const { data, error } = await presentationQuery.single();
+    const { data, error } = await presentationQuery.maybeSingle();
     
-    if (error || !data) {
+    if (error) {
       console.error('Error fetching presentation:', error);
       return null;
     }
     
-    console.log('Retrieved presentation data:', JSON.stringify(data, null, 2));
+    if (!data) {
+      console.log('No presentation found with code:', code);
+      return null;
+    }
+    
+    console.log('Retrieved presentation data:', JSON.stringify({
+      id: data.id,
+      session_code: data.session_code,
+      current_card_index: data.current_card_index,
+      cards_count: Array.isArray(data.cards) ? data.cards.length : 'N/A'
+    }));
     
     // Supabase automatically handles JSONB
     return data;
@@ -146,12 +162,16 @@ export const updateLessonPresentationCardIndex = async (
   newIndex: number
 ): Promise<boolean> => {
   try {
+    console.log(`Updating presentation ${presentationId} card index to ${newIndex}`);
     const { error } = await supabase
       .from('lesson_presentations')
       .update({ current_card_index: newIndex })
       .eq('id', presentationId);
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating card index:', error);
+      return false;
+    }
     return true;
   } catch (err) {
     console.error('Error updating card index:', err);
@@ -198,17 +218,31 @@ export const subscribeToLessonPresentation = (
   code: string,
   callback: (payload: LessonPresentation) => void
 ) => {
-  return supabase
-    .channel('lesson_presentations')
+  console.log(`Setting up real-time subscription for presentation with code: ${code}`);
+  
+  const channel = supabase
+    .channel(`lesson_presentation_${code}`)
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'UPDATE',
         schema: 'public',
         table: 'lesson_presentations',
         filter: `session_code=eq.${code}`,
       },
-      (payload) => callback(payload.new as LessonPresentation)
+      (payload) => {
+        console.log(`Received update for presentation ${code}:`, payload.new);
+        callback(payload.new as LessonPresentation);
+      }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`Presentation subscription status for ${code}:`, status);
+    });
+    
+  return {
+    unsubscribe: () => {
+      console.log(`Unsubscribing from presentation ${code}`);
+      channel.unsubscribe();
+    }
+  };
 };

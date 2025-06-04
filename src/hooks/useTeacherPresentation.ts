@@ -3,7 +3,7 @@ import {
   getLessonPresentationByCode, 
   updateLessonPresentationCardIndex,
   getSessionByCode, 
-  getLessonPlanById, 
+  getLessonPlanById,
   LessonPresentation, 
   LessonCard 
 } from '../lib/supabase';
@@ -45,7 +45,7 @@ export function useTeacherPresentation(code: string | undefined) {
         // Set presentation data
         setPresentation(presentationData);
         
-        // Default to displaying the welcome card (index -1 in our UI logic)
+        // Default to displaying the welcome card (index 0 in our UI logic)
         setDisplayedCardIndex(0);
         setActualCardIndex(presentationData.current_card_index);
         
@@ -105,10 +105,14 @@ Click "Next" to begin your lesson presentation.
     if (newDisplayIndex > 0) {
       const newActualIndex = newDisplayIndex - 1;
       setActualCardIndex(newActualIndex);
-      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
-      
-      if (!success) {
-        console.error('Failed to update card index');
+      try {
+        const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+        
+        if (!success) {
+          console.error('Failed to update card index');
+        }
+      } catch (err) {
+        console.error('Error updating card index:', err);
       }
     }
 
@@ -130,10 +134,15 @@ Click "Next" to begin your lesson presentation.
     if (newDisplayIndex > 0) {
       const newActualIndex = newDisplayIndex - 1;
       setActualCardIndex(newActualIndex);
-      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
       
-      if (!success) {
-        console.error('Failed to update card index');
+      try {
+        const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+        
+        if (!success) {
+          console.error('Failed to update card index');
+        }
+      } catch (err) {
+        console.error('Error updating card index:', err);
       }
     }
 

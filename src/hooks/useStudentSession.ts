@@ -32,6 +32,8 @@ export function useStudentSession(code: string, studentName: string) {
     }
 
     const card = presentation.cards[index];
+    console.log(`Updating to card ${index}:`, card);
+    
     setCurrentCard(card);
     setCurrentCardAttachments(card.attachments || []);
     
@@ -65,6 +67,7 @@ export function useStudentSession(code: string, studentName: string) {
           throw new Error('Session not found or has ended');
         }
         
+        console.log("Setting presentation data:", presentationData);
         setPresentation(presentationData);
         
         // Set current card
@@ -103,35 +106,40 @@ export function useStudentSession(code: string, studentName: string) {
     const presentationSubscription = subscribeToLessonPresentation(
       presentation.session_code,
       (updatedPresentation) => {
-        console.log("Received presentation update with current card index:", updatedPresentation.current_card_index);
+        console.log(`Received presentation update: current_card_index=${updatedPresentation.current_card_index}, previous=${presentation.current_card_index}`);
         
         // When the card index changes, update the presentation and current card
         if (updatedPresentation.current_card_index !== presentation.current_card_index) {
           console.log(`Card changed from ${presentation.current_card_index} to ${updatedPresentation.current_card_index}`);
           
-          // Update the current card based on the new index
-          setPresentation(prevPresentation => {
-            if (!prevPresentation) return updatedPresentation;
-            
-            // Preserve the cards array from our current state since it has properly parsed objects
-            const updatedState = {
-              ...updatedPresentation,
-              cards: prevPresentation.cards,
-            };
-            
-            // Update current card based on the new index
-            updateCurrentCard(updatedState, updatedPresentation.current_card_index);
-            
-            // Check if lesson has started
-            if (updatedPresentation.current_card_index > 0) {
-              setLessonStarted(true);
-            }
-            
-            return updatedState;
-          });
+          // Refresh the presentation data completely to ensure we have the most current state
+          getLessonPresentationByCode(presentation.session_code)
+            .then(freshPresentation => {
+              if (freshPresentation) {
+                console.log("Fetched fresh presentation data");
+                setPresentation(freshPresentation);
+                
+                // Update current card based on the new index
+                updateCurrentCard(freshPresentation, updatedPresentation.current_card_index);
+                
+                // Check if lesson has started
+                if (updatedPresentation.current_card_index > 0) {
+                  setLessonStarted(true);
+                }
+              }
+            })
+            .catch(err => {
+              console.error("Error refreshing presentation data:", err);
+            });
         } else {
-          // If cards content changes but not the index, still update the presentation
-          setPresentation(updatedPresentation);
+          // If other data changed (but not the index), still update the presentation
+          setPresentation(prev => {
+            if (!prev) return updatedPresentation;
+            return {
+              ...updatedPresentation,
+              cards: prev.cards // Preserve the cards to avoid potential parsing issues
+            };
+          });
         }
       }
     );
@@ -140,17 +148,23 @@ export function useStudentSession(code: string, studentName: string) {
     const messageSubscription = subscribeToTeacherMessages(
       presentation.id,
       (message) => {
+        console.log("Received teacher message:", message);
         setMessages(prev => [...prev, message]);
         setNewMessage(message);
         
         // Play notification sound
-        const audio = new Audio('/notification.mp3');
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log("Audio play prevented by browser policy"));
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.volume = 0.5;
+          audio.play().catch(e => console.log("Audio play prevented by browser policy:", e));
+        } catch (err) {
+          console.error("Error playing notification sound:", err);
+        }
       }
     );
     
     return () => {
+      console.log("Cleaning up subscriptions");
       presentationSubscription.unsubscribe();
       messageSubscription.unsubscribe();
       console.log("Cleaned up subscriptions");
