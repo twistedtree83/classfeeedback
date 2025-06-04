@@ -38,8 +38,8 @@ export function StudentInteractionPanel({
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-gray-800">
+    <div className="bg-white rounded-xl shadow-lg p-6 border border-antique">
+      <h3 className="text-lg font-semibold mb-4 text-slate-blue">
         How are you following along?
       </h3>
 
@@ -48,7 +48,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('understand')}
           disabled={isSending}
           variant={currentFeedback === 'understand' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'understand' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-200 hover:bg-green-50'}`}
+          className={`py-3 ${currentFeedback === 'understand' ? 'bg-sage hover:bg-sage/90 border-sage' : 'text-sage border-sage/30 hover:bg-sage/10'}`}
         >
           <ThumbsUp className="h-5 w-5 mr-2" />
           I understand
@@ -58,7 +58,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('confused')}
           disabled={isSending}
           variant={currentFeedback === 'confused' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'confused' ? 'bg-yellow-600 hover:bg-yellow-700' : 'text-yellow-700 border-yellow-200 hover:bg-yellow-50'}`}
+          className={`py-3 ${currentFeedback === 'confused' ? 'bg-terracotta hover:bg-terracotta/90 border-terracotta' : 'text-terracotta border-terracotta/30 hover:bg-terracotta/10'}`}
         >
           <ThumbsDown className="h-5 w-5 mr-2" />
           I'm confused
@@ -68,7 +68,7 @@ export function StudentInteractionPanel({
           onClick={() => handleFeedback('slower')}
           disabled={isSending}
           variant={currentFeedback === 'slower' ? 'primary' : 'outline'}
-          className={`py-3 ${currentFeedback === 'slower' ? 'bg-blue-600 hover:bg-blue-700' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+          className={`py-3 ${currentFeedback === 'slower' ? 'bg-slate-blue hover:bg-slate-blue/90 border-slate-blue' : 'text-slate-blue border-slate-blue/30 hover:bg-slate-blue/10'}`}
         >
           <Clock className="h-5 w-5 mr-2" />
           Slow down
@@ -77,7 +77,7 @@ export function StudentInteractionPanel({
 
       {showQuestionForm ? (
         <form onSubmit={handleSubmitQuestion} className="mt-6">
-          <h3 className="text-lg font-semibold mb-3 text-gray-800">
+          <h3 className="text-lg font-semibold mb-3 text-slate-blue">
             Ask a question
           </h3>
           <div className="space-y-3">
@@ -85,7 +85,7 @@ export function StudentInteractionPanel({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Type your question here..."
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full p-3 border border-antique rounded-lg focus:ring-2 focus:ring-terracotta focus:border-terracotta"
               rows={3}
             />
             <div className="flex justify-end gap-2">
@@ -93,12 +93,14 @@ export function StudentInteractionPanel({
                 type="button"
                 variant="outline"
                 onClick={() => setShowQuestionForm(false)}
+                className="border-slate-blue text-slate-blue hover:bg-slate-blue/10"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={!question.trim() || isSending}
+                className="bg-terracotta hover:bg-terracotta/90 text-white"
               >
                 <Send className="h-4 w-4 mr-2" />
                 Send Question
@@ -110,7 +112,7 @@ export function StudentInteractionPanel({
         <Button
           onClick={() => setShowQuestionForm(true)}
           variant="outline"
-          className="w-full mt-4"
+          className="w-full mt-4 border-slate-blue text-slate-blue hover:bg-slate-blue/10"
         >
           <HelpCircle className="h-5 w-5 mr-2" />
           Ask a Question

@@ -18,16 +18,10 @@ export default {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
         // Custom color scheme
-        orange: {
-          DEFAULT: '#FF9F1C',
-          light: '#FFBF69'
-        },
-        pink: {
-          muted: '#CB997E'
-        },
-        peach: {
-          pale: '#FFE8D6'
-        },
+        antique: '#F4F1DE',
+        terracotta: '#E07A5F',
+        'slate-blue': '#3D405B',
+        sage: '#81B29A',
   			primary: {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'

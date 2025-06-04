@@ -21,9 +21,9 @@ export function LessonContentDisplay({
   onGenerateDifferentiated
 }: LessonContentDisplayProps) {
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-indigo-100">
+    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-antique">
       <div 
-        className="prose max-w-none"
+        className="prose max-w-none text-slate-blue"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
       />
       
@@ -34,18 +34,20 @@ export function LessonContentDisplay({
             onClick={onToggleDifferentiatedView}
             variant={viewingDifferentiated ? "primary" : "outline"}
             size="sm"
-            className="flex items-center gap-1"
+            className={viewingDifferentiated ? 
+              "bg-sage hover:bg-sage/90 text-white" : 
+              "border-sage text-sage hover:bg-sage/10 flex items-center gap-1"}
           >
             <Split className="h-4 w-4 mr-1" />
             {viewingDifferentiated ? "Standard View" : "Simplified View"}
           </Button>
         </div>
       ) : (
-        <div className="mt-6 p-4 bg-purple-50 border border-purple-100 rounded-lg">
-          <p className="text-purple-800 mb-2">Need a simpler explanation?</p>
+        <div className="mt-6 p-4 bg-sage/10 border border-sage/30 rounded-lg">
+          <p className="text-slate-blue mb-2">Need a simpler explanation?</p>
           <Button
             variant="outline"
-            className="bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200"
+            className="bg-sage/20 border-sage/30 text-slate-blue hover:bg-sage/30"
             onClick={onGenerateDifferentiated}
             disabled={generatingDifferentiated}
           >
