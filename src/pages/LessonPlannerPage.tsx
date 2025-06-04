@@ -98,7 +98,7 @@ export function LessonPlannerPage() {
               <Link
                 key={lesson.id}
                 to={`/planner/${lesson.id}`}
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-200 border border-gray-100 hover:border-indigo-200"
               >
                 <h3 className="text-lg font-semibold mb-2">{lesson.processed_content.title}</h3>
                 <div className="flex flex-wrap gap-3 mb-4">

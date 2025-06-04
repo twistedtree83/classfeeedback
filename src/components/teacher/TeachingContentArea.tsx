@@ -48,9 +48,9 @@ export function TeachingContentArea({
       </div>
       
       {/* Card container */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-6 border border-indigo-100">
         {/* Card header */}
-        <div className="border-b border-gray-100 p-6">
+        <div className="bg-indigo-50 p-6 border-b border-indigo-100">
           <h2 className="text-2xl font-bold text-gray-900">
             {currentCard.title}
           </h2>

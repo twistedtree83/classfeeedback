@@ -794,8 +794,8 @@ export function StudentView() {
       <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
           {currentCard && (
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
+            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-indigo-100">
+              <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
                 <h2 className="text-xl font-bold">{currentCard.title}</h2>
                 {currentCard.duration && (
                   <div className="text-sm text-gray-500 flex items-center">

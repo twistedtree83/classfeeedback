@@ -240,10 +240,10 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
-            className="mb-4 border rounded-lg bg-white shadow-sm"
+            className="mb-4 rounded-xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200"
           >
             {/* Always render the header with drag handle */}
-            <div className="flex items-center p-3 border-b">
+            <div className="flex items-center p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
               <div {...provided.dragHandleProps} className="mr-2 cursor-move">
                 <GripVertical className="h-5 w-5 text-gray-400" />
               </div>
