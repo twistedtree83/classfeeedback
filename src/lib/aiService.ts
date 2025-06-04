@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase } from './supabase/client';
 import { convertUrlsToHyperlinks, processContentWithUrls } from './utils';
 
 const SYSTEM_PROMPT = `You are an expert at analyzing lesson plans and structuring them into clear, organized formats. When given lesson content, break it down into:
