@@ -1,44 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getLessonPresentationByCode,
-  subscribeToLessonPresentation,
   getSessionByCode,
   addSessionParticipant,
-  submitTeachingFeedback,
-  submitTeachingQuestion,
-  subscribeToTeacherMessages,
-  getTeacherMessagesForPresentation,
-  TeacherMessage,
   checkParticipantStatus,
   subscribeToParticipantStatus
 } from '../lib/supabaseClient';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { MessagePanel } from '../components/MessagePanel';
+import { StudentHeader } from '../components/student/StudentHeader';
+import { LessonContentDisplay } from '../components/student/LessonContentDisplay';
+import { StudentInteractionPanel } from '../components/student/StudentInteractionPanel';
 import {
-  ThumbsUp,
-  ThumbsDown,
-  Clock,
-  Send,
-  User,
   AlertCircle,
   CheckCircle2,
-  ArrowLeftCircle,
-  ArrowRightCircle,
   BookOpen,
-  MessageSquareText,
-  MessageSquare,
-  Bell,
-  X,
-  Split,
   Loader2,
-  XCircle,
-  HelpCircle
+  XCircle
 } from 'lucide-react';
-import type { LessonPresentation, ParticipantStatus, LessonCard } from '../lib/types';
-import { generateDifferentiatedContent } from '../lib/aiService';
-import { sanitizeHtml } from '../lib/utils';
+import type { ParticipantStatus } from '../lib/types';
+import { useFeedbackSubmission } from '../hooks/useFeedbackSubmission';
+import { useStudentSession } from '../hooks/useStudentSession';
 
 interface AvatarOption {
   src: string;
@@ -48,30 +32,24 @@ interface AvatarOption {
 export function StudentView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  
+  // State for session joining and status
   const [sessionCode, setSessionCode] = useState<string>('');
   const [studentName, setStudentName] = useState<string>('');
   const [selectedAvatar, setSelectedAvatar] = useState<string>('/images/avatars/co2.png');
-  const [question, setQuestion] = useState<string>('');
-  const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [joined, setJoined] = useState(false);
-  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [teacherMessage, setTeacherMessage] = useState<any>(null);
-  const [allMessages, setAllMessages] = useState<TeacherMessage[]>([]);
-  const [showMessagePanel, setShowMessagePanel] = useState(false);
-  const [newMessageCount, setNewMessageCount] = useState(0);
-  const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
-  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [status, setStatus] = useState<ParticipantStatus | null>(null);
   const [checking, setChecking] = useState(false);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [teacherName, setTeacherName] = useState('');
-  const contentRef = useRef<HTMLDivElement>(null);
   
+  // UI control state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
+  const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
+  const [joined, setJoined] = useState(false);
+  
+  // Available avatars
   const availableAvatars: AvatarOption[] = [
     { src: '/images/avatars/co2.png', alt: 'Avatar 1' },
     { src: '/images/avatars/co5.png', alt: 'Avatar 2' },
@@ -104,36 +82,23 @@ export function StudentView() {
     }
   }, [location]);
 
-  // Auto-join using URL parameters
-  const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
-    if (joined) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const session = await getSessionByCode(code);
-      if (!session) {
-        throw new Error('Session not found or has ended');
-      }
-      
-      setTeacherName(session.teacher_name);
-      
-      const participant = await addSessionParticipant(code, name);
-      if (!participant) {
-        throw new Error('Failed to join session');
-      }
-      
-      setParticipantId(participant.id);
-      setStatus('pending');
-      setSelectedAvatar(avatar);
-      
-    } catch (err) {
-      console.error('Error auto-joining session:', err);
-      setError(err instanceof Error ? err.message : 'Failed to join session');
-      setLoading(false);
-    }
-  };
+  // Use custom hooks for session and feedback
+  const { 
+    presentation, 
+    currentCard, 
+    messages, 
+    newMessage, 
+    teacherName 
+  } = useStudentSession(sessionCode, studentName);
+  
+  const { 
+    sendFeedback, 
+    sendQuestion, 
+    generateDifferentiated, 
+    isSending, 
+    generatingDifferentiated, 
+    successMessage 
+  } = useFeedbackSubmission(presentation?.id, studentName);
 
   // Check participant approval status with direct subscription
   useEffect(() => {
@@ -157,7 +122,7 @@ export function StudentView() {
             .then(presentationData => {
               if (presentationData) {
                 console.log("Approved for teaching session:", presentationData);
-                setPresentation(presentationData);
+                setLoading(false);
               } else {
                 console.error('Presentation not found after approval');
                 setError('Presentation not found');
@@ -190,7 +155,6 @@ export function StudentView() {
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
             console.log("Initially approved for teaching session:", presentationData);
-            setPresentation(presentationData);
           } else {
             console.error('Presentation not found on initial check');
             setError('Presentation not found');
@@ -221,7 +185,6 @@ export function StudentView() {
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
             console.log("Approved via polling:", presentationData);
-            setPresentation(presentationData);
             setLoading(false);
           }
         } else if (currentStatus === 'rejected') {
@@ -240,133 +203,48 @@ export function StudentView() {
     };
   }, [participantId, sessionCode, status]);
 
-  // Load past teacher messages when joining a session
-  useEffect(() => {
-    if (!presentation?.id) return;
-
-    const loadTeacherMessages = async () => {
-      try {
-        console.log("Loading teacher messages for presentation:", presentation.id);
-        const messages = await getTeacherMessagesForPresentation(presentation.id);
-        
-        if (messages && Array.isArray(messages)) {
-          setAllMessages(messages);
-          
-          // If there are messages, show a notification
-          if (messages.length > 0) {
-            setNewMessageCount(messages.length);
-            // Set the most recent message as the toast notification
-            setTeacherMessage(messages[messages.length - 1]);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading teacher messages:', err);
-      }
-    };
-
-    loadTeacherMessages();
-  }, [presentation?.id]);
-
-  // Subscribe to presentation updates
-  useEffect(() => {
-    if (!presentation?.session_code || !joined) return;
-
-    console.log("Setting up presentation subscription for code:", presentation.session_code);
-    const presentationSubscription = subscribeToLessonPresentation(
-      presentation.session_code,
-      (updatedPresentation) => {
-        console.log("Received presentation update");
-        
-        // Get the full presentation data to ensure we have parsed cards
-        getLessonPresentationByCode(presentation.session_code)
-          .then(fullPresentation => {
-            if (fullPresentation) {
-              setPresentation(fullPresentation);
-              
-              // Update current card index
-              setCurrentCardIndex(fullPresentation.current_card_index);
-              
-              // Reset differentiated view when card changes
-              if (fullPresentation.current_card_index !== currentCardIndex) {
-                setViewingDifferentiated(false);
-              }
-            }
-          })
-          .catch(err => console.error('Error refreshing presentation:', err));
-      }
-    );
-
-    return () => {
-      console.log("Cleaning up presentation subscription");
-      presentationSubscription.unsubscribe();
-    };
-  }, [presentation?.session_code, joined, currentCardIndex]);
-
-  // Separate subscription for teacher messages
-  useEffect(() => {
-    if (!presentation?.id || !joined) return;
-    
-    console.log("Setting up message subscription for presentation:", presentation.id);
-    
-    // Create a new audio element each time to avoid playback issues
-    const notificationSound = new Audio('/notification.mp3');
-    notificationSound.volume = 0.5;
-    
-    const messageSubscription = subscribeToTeacherMessages(
-      presentation.id,
-      (newMessage) => {
-        console.log("Received new teacher message:", newMessage);
-        
-        // Play sound
-        try {
-          notificationSound.play().catch(e => {
-            console.warn("Audio play prevented:", e);
-          });
-        } catch (err) {
-          console.error("Error playing notification sound:", err);
-        }
-        
-        // Update messages list
-        setAllMessages(prevMessages => {
-          // Check for duplicates
-          const isDuplicate = prevMessages.some(msg => msg.id === newMessage.id);
-          if (isDuplicate) return prevMessages;
-          return [...prevMessages, newMessage]; 
-        });
-        
-        // Show toast notification
-        setTeacherMessage(newMessage);
-        
-        // Increment counter if panel is closed
-        if (!showMessagePanel) {
-          setNewMessageCount(prev => prev + 1);
-        }
-      }
-    );
-
-    return () => {
-      console.log("Cleaning up teacher messages subscription");
-      messageSubscription.unsubscribe();
-    };
-  }, [presentation?.id, joined, showMessagePanel]);
-
   // Reset message count when panel is opened
   useEffect(() => {
     if (showMessagePanel) {
       setNewMessageCount(0);
-      // Dismiss the toast notification when opening the panel
-      setTeacherMessage(null);
     }
   }, [showMessagePanel]);
 
-  // Get the current card based on the presentation's current_card_index
-  const currentCard: LessonCard | null = presentation?.cards?.[currentCardIndex] || null;
-  const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
-  
-  // Get the appropriate content to display based on differentiation settings
-  const cardContent = viewingDifferentiated && currentCard?.differentiatedContent 
-    ? currentCard.differentiatedContent 
-    : currentCard?.content || '';
+  // Effect to update new message count and handle message display
+  useEffect(() => {
+    if (newMessage && !showMessagePanel) {
+      setNewMessageCount(prev => prev + 1);
+    }
+  }, [newMessage, showMessagePanel]);
+
+  // Auto-join using URL parameters
+  const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
+    if (joined) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const session = await getSessionByCode(code);
+      if (!session) {
+        throw new Error('Session not found or has ended');
+      }
+      
+      const participant = await addSessionParticipant(code, name);
+      if (!participant) {
+        throw new Error('Failed to join session');
+      }
+      
+      setParticipantId(participant.id);
+      setStatus('pending');
+      setSelectedAvatar(avatar);
+      
+    } catch (err) {
+      console.error('Error auto-joining session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to join session');
+      setLoading(false);
+    }
+  };
 
   const handleJoinSession = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,7 +272,6 @@ export function StudentView() {
       }
 
       console.log("Session found:", session);
-      setTeacherName(session.teacher_name);
       
       const participant = await addSessionParticipant(
         sessionCode.trim().toUpperCase(),
@@ -425,64 +302,36 @@ export function StudentView() {
     }
   };
 
-  const handleTeachingFeedback = async (type: string) => {
-    if (!presentation || isSendingFeedback) return;
-    
-    setIsSendingFeedback(true);
-    setError(null);
-
-    try {
-      await submitTeachingFeedback(
-        presentation.id,
-        studentName,
-        type
-      );
-      
-      setSuccessMessage('Feedback submitted successfully!');
-      
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-    } catch (err) {
-      console.error('Error submitting feedback:', err);
-      setError('Failed to submit feedback. Please try again.');
-    } finally {
-      setIsSendingFeedback(false);
-    }
+  const handleToggleDifferentiatedView = () => {
+    setViewingDifferentiated(!viewingDifferentiated);
   };
-
-  const handleSendQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
+  
+  const handleGenerateDifferentiated = async () => {
+    if (!currentCard || generatingDifferentiated) return;
     
-    if (!presentation || !question.trim() || isSendingFeedback) return;
-    
-    setIsSendingFeedback(true);
-    setError(null);
-
     try {
-      console.log("Submitting question:", question);
-      const success = await submitTeachingQuestion(
-        presentation.id,
-        studentName,
-        question.trim()
+      // Create a differentiated version of the current card
+      const differentiatedContent = await generateDifferentiated(
+        currentCard.content,
+        currentCard.type
       );
       
-      if (success) {
-        setQuestion('');
-        setShowQuestionForm(false);
-        setSuccessMessage('Your question has been sent to the teacher!');
+      // Update the card with differentiated content
+      if (presentation && currentCard && differentiatedContent) {
+        const updatedCards = [...presentation.cards];
+        const cardIndex = presentation.current_card_index;
         
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
-      } else {
-        setError('Failed to send question. Please try again.');
+        updatedCards[cardIndex] = {
+          ...updatedCards[cardIndex],
+          differentiatedContent
+        };
+        
+        // Switch to differentiated view
+        setViewingDifferentiated(true);
       }
-    } catch (err) {
-      console.error('Error submitting question:', err);
-      setError('An error occurred. Please try again.');
-    } finally {
-      setIsSendingFeedback(false);
+    } catch (error) {
+      console.error('Error generating differentiated content:', error);
+      setError('Failed to create simpler explanation. Please try again.');
     }
   };
 
@@ -490,57 +339,6 @@ export function StudentView() {
     setShowMessagePanel(prev => !prev);
     if (!showMessagePanel) {
       setNewMessageCount(0);
-      // Dismiss the toast notification when opening the panel
-      setTeacherMessage(null);
-    }
-  };
-
-  const toggleDifferentiatedView = () => {
-    setViewingDifferentiated(!viewingDifferentiated);
-  };
-  
-  const handleGenerateDifferentiated = async () => {
-    if (!currentCard || generatingDifferentiated) return;
-    
-    setGeneratingDifferentiated(true);
-    setError(null);
-    
-    try {
-      // Create a differentiated version of the current card
-      const differentiatedContent = await generateDifferentiatedContent(
-        currentCard.content,
-        currentCard.type,
-        "student-friendly" // Level can be determined from the lesson level if available
-      );
-      
-      // Update the card with differentiated content
-      if (presentation && currentCard) {
-        const updatedCards = [...presentation.cards];
-        updatedCards[currentCardIndex] = {
-          ...updatedCards[currentCardIndex],
-          differentiatedContent
-        };
-        
-        // Update the presentation in state
-        setPresentation({
-          ...presentation,
-          cards: updatedCards
-        });
-        
-        // Switch to differentiated view
-        setViewingDifferentiated(true);
-        
-        // Show success message
-        setSuccessMessage('Created a simpler explanation!');
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Error generating differentiated content:', error);
-      setError('Failed to create simpler explanation. Please try again.');
-    } finally {
-      setGeneratingDifferentiated(false);
     }
   };
 
@@ -718,7 +516,6 @@ export function StudentView() {
                     setStatus(null);
                     setParticipantId(null);
                     setJoined(false);
-                    setPresentation(null);
                     setError(null);
                   }}
                   size="lg"
@@ -733,196 +530,74 @@ export function StudentView() {
     );
   }
 
+  // Get the current card based on the presentation's current_card_index
+  const currentCardIndex = presentation.current_card_index;
+  const card = presentation.cards[currentCardIndex];
+  const hasDifferentiatedContent = card?.differentiatedContent ? true : false;
+  
+  // Get the appropriate content to display based on differentiation settings
+  const cardContent = viewingDifferentiated && card?.differentiatedContent 
+    ? card.differentiatedContent 
+    : card?.content || '';
+
   // Main student view
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10 py-3 px-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img 
-              src={selectedAvatar} 
-              alt="Student avatar" 
-              className="h-8 w-8 rounded-full bg-indigo-100"
-            />
-            <span className="font-medium">{studentName}</span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMessagePanel}
-              className="relative p-2 rounded-full hover:bg-gray-100 border border-gray-200"
-              title="View messages"
-            >
-              <MessageSquare className="h-5 w-5 text-indigo-600" />
-              {newMessageCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {newMessageCount}
-                </span>
-              )}
-            </button>
-            <span className="text-sm font-mono bg-indigo-100 text-indigo-800 px-3 py-1 rounded-md">
-              {presentation.session_code}
-            </span>
-          </div>
-        </div>
+        <StudentHeader 
+          studentName={studentName}
+          sessionCode={sessionCode}
+          avatarUrl={selectedAvatar}
+          newMessageCount={newMessageCount}
+          onToggleMessagePanel={toggleMessagePanel}
+        />
       </header>
 
-      {/* Teacher Message Toast */}
-      {teacherMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-sm border border-blue-200">
-          <MessageSquareText className="h-6 w-6 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="font-semibold">{teacherMessage.teacher_name}:</p>
-            <p className="text-sm">{teacherMessage.message_content}</p>
-            <button 
-              onClick={toggleMessagePanel}
-              className="text-xs text-blue-600 hover:underline mt-1"
-            >
-              View all messages
-            </button>
-          </div>
-          <button 
-            onClick={() => setTeacherMessage(null)}
-            className="p-1 text-blue-500 hover:bg-blue-100 rounded-full"
-            title="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      {/* Success Message Toast */}
+      {successMessage && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5" />
+          <span>{successMessage}</span>
         </div>
       )}
 
       <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
           {currentCard && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-indigo-100">
-              <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-                <h2 className="text-xl font-bold">{currentCard.title}</h2>
-                {currentCard.duration && (
-                  <div className="text-sm text-gray-500 flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {currentCard.duration}
-                  </div>
-                )}
-              </div>
-              
-              <div 
-                ref={contentRef}
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(cardContent) }}
-              />
-            </div>
+            <LessonContentDisplay 
+              content={cardContent}
+              hasDifferentiatedContent={hasDifferentiatedContent}
+              viewingDifferentiated={viewingDifferentiated}
+              generatingDifferentiated={generatingDifferentiated}
+              onToggleDifferentiatedView={handleToggleDifferentiatedView}
+              onGenerateDifferentiated={handleGenerateDifferentiated}
+            />
           )}
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Button
-              onClick={() => handleTeachingFeedback('understand')}
-              disabled={isSendingFeedback}
-              variant="outline"
-              className="flex-1 max-w-[200px] text-green-700 border-green-200 hover:bg-green-50"
-            >
-              <ThumbsUp className="h-5 w-5 mr-2" />
-              I Understand
-            </Button>
-
-            <Button
-              onClick={() => handleTeachingFeedback('confused')}
-              disabled={isSendingFeedback}
-              variant="outline"
-              className="flex-1 max-w-[200px] text-yellow-700 border-yellow-200 hover:bg-yellow-50"
-            >
-              <ThumbsDown className="h-5 w-5 mr-2" />
-              I'm Confused
-            </Button>
-
-            <Button
-              onClick={() => setShowQuestionForm(true)}
-              disabled={isSendingFeedback}
-              variant="outline"
-              className="flex-1 max-w-[200px] text-blue-700 border-blue-200 hover:bg-blue-50"
-            >
-              <HelpCircle className="h-5 w-5 mr-2" />
-              Ask Question
-            </Button>
-
-            {hasDifferentiatedContent ? (
-              <Button
-                onClick={toggleDifferentiatedView}
-                disabled={isSendingFeedback}
-                variant="outline"
-                className={`flex-1 max-w-[200px] ${
-                  viewingDifferentiated 
-                    ? 'text-purple-700 border-purple-200 bg-purple-50' 
-                    : 'text-purple-700 border-purple-200 hover:bg-purple-50'
-                }`}
-              >
-                <Split className="h-5 w-5 mr-2" />
-                {viewingDifferentiated ? 'View Original' : 'View Simplified'}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleGenerateDifferentiated}
-                disabled={isSendingFeedback || generatingDifferentiated}
-                variant="outline"
-                className="flex-1 max-w-[200px] text-purple-700 border-purple-200 hover:bg-purple-50"
-              >
-                {generatingDifferentiated ? (
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                ) : (
-                  <Split className="h-5 w-5 mr-2" />
-                )}
-                Simplify Content
-              </Button>
-            )}
-          </div>
+          
+          <StudentInteractionPanel 
+            onSendFeedback={sendFeedback}
+            onSendQuestion={sendQuestion}
+            isSending={isSending}
+          />
         </div>
 
         {/* Message Panel */}
         <MessagePanel
-          messages={allMessages}
+          messages={messages}
           isOpen={showMessagePanel}
           onClose={toggleMessagePanel}
         />
       </main>
 
-      {/* Question Form Modal */}
-      {showQuestionForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full">
-            <h3 className="text-lg font-medium mb-4">Ask a Question</h3>
-            <form onSubmit={handleSendQuestion}>
-              <textarea
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Type your question here..."
-                className="w-full h-32 p-3 border rounded-lg mb-4"
-              />
-              <div className="flex justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowQuestionForm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!question.trim() || isSendingFeedback}
-                >
-                  <Send className="h-5 w-5 mr-2" />
-                  Send Question
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Success/Error Messages */}
-      {(successMessage || error) && (
-        <div className={`fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg ${
-          successMessage ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {successMessage || error}
+      {/* New Message Indicator */}
+      {newMessageCount > 0 && !showMessagePanel && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={toggleMessagePanel}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+          >
+            <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
+          </button>
         </div>
       )}
     </div>

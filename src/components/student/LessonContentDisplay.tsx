@@ -21,7 +21,7 @@ export function LessonContentDisplay({
   onGenerateDifferentiated
 }: LessonContentDisplayProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+    <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-indigo-100">
       <div 
         className="prose max-w-none"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
