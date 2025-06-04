@@ -37,8 +37,9 @@ export function useStudentSession(code: string, studentName: string) {
     setCurrentCard(card);
     setCurrentCardAttachments(card.attachments || []);
     
-    // Check if this is beyond the first card (welcome card), which indicates the lesson has started
-    if (index > 0) {
+    // Check if this is a valid card index (not the welcome card), which indicates the lesson has started
+    // Changed from `> 0` to `>= 0` to start the lesson when current_card_index is 0
+    if (index >= 0) {
       setLessonStarted(true);
     }
   }, []);
@@ -81,8 +82,8 @@ export function useStudentSession(code: string, studentName: string) {
         
         setJoined(true);
         
-        // Check if the lesson has already started (beyond welcome card)
-        if (presentationData.current_card_index > 0) {
+        // Check if the lesson has already started (using >= 0 instead of > 0)
+        if (presentationData.current_card_index >= 0) {
           setLessonStarted(true);
         }
       } catch (err) {
@@ -125,8 +126,8 @@ export function useStudentSession(code: string, studentName: string) {
             // Update current card immediately 
             updateCurrentCard(updated, updatedPresentation.current_card_index);
             
-            // Check if lesson has started
-            if (updatedPresentation.current_card_index > 0) {
+            // Check if lesson has started - changed to check for >= 0 instead of > 0
+            if (updatedPresentation.current_card_index >= 0) {
               setLessonStarted(true);
             }
             

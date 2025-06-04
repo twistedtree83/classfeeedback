@@ -62,7 +62,7 @@ export const createLessonPresentation = async (
       session_code: code,
       session_id: session.id,
       cards: validCards, // Use validated cards
-      current_card_index: 0,
+      current_card_index: -1, // Start at -1 so the first "Next" goes to index 0
       active: true
     };
 

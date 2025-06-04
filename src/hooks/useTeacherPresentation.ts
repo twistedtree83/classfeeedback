@@ -12,7 +12,7 @@ export function useTeacherPresentation(code: string | undefined) {
   const [presentation, setPresentation] = useState<LessonPresentation | null>(null);
   const [currentCard, setCurrentCard] = useState<LessonCard | null>(null);
   const [displayedCardIndex, setDisplayedCardIndex] = useState(0);
-  const [actualCardIndex, setActualCardIndex] = useState(0);
+  const [actualCardIndex, setActualCardIndex] = useState(-1); // Initialize as -1 to match database
   const [teacherName, setTeacherName] = useState('');
   const [lessonTitle, setLessonTitle] = useState('');
   const [loading, setLoading] = useState(true);
@@ -51,6 +51,8 @@ export function useTeacherPresentation(code: string | undefined) {
         
         // Default to displaying the welcome card (index 0 in our UI logic)
         setDisplayedCardIndex(0);
+        
+        // Store the actual database index (-1 at first, will be 0 after first "Next")
         setActualCardIndex(presentationData.current_card_index);
         
         // Set current card
@@ -77,11 +79,12 @@ export function useTeacherPresentation(code: string | undefined) {
 
 This is the welcome screen for your lesson. Students can join using the code: **${code}**
 
-Click "Next" to begin your lesson presentation.
+Click "Ready to Go" to begin your lesson presentation.
       `,
       duration: null,
       sectionId: null,
-      activityIndex: null
+      activityIndex: null,
+      attachments: []
     };
   };
 
@@ -123,15 +126,15 @@ Click "Next" to begin your lesson presentation.
       }
     } else if (newDisplayIndex === 0) {
       // We're going back to the welcome card (which is purely local to the teacher)
-      // Update database to first card (index 0) so students see the first actual card
+      // Update database to -1 to indicate we're at the welcome card
       try {
-        console.log(`Teacher going to welcome card, setting database to card 0`);
-        const success = await updateLessonPresentationCardIndex(presentation.id, 0);
+        console.log(`Teacher going to welcome card, setting database to card -1`);
+        const success = await updateLessonPresentationCardIndex(presentation.id, -1);
         
         if (!success) {
           console.error('Failed to update card index');
         }
-        setActualCardIndex(0);
+        setActualCardIndex(-1);
       } catch (err) {
         console.error('Error updating card index:', err);
       }
