@@ -43,7 +43,7 @@ export const SidebarProvider = ({
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   animate?: boolean;
 }) => {
-  const [openState, setOpenState] = useState(false);
+  const [openState, setOpenState] = useState(true);
 
   const open = openProp !== undefined ? openProp : openState;
   const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
@@ -88,18 +88,21 @@ export const DesktopSidebar = ({
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
+  
   return (
     <motion.div
       className={cn(
         "h-full px-2 py-4 hidden md:flex md:flex-col bg-white flex-shrink-0 border-r border-gray-200 shadow-lg",
         className
       )}
+      initial={false}
       animate={{
         width: animate ? (open ? "300px" : "70px") : "300px",
       }}
       transition={{
-        duration: 0.2,
-        ease: "easeInOut",
+        type: "spring",
+        stiffness: 300,
+        damping: 30
       }}
       {...props}
     >
@@ -135,8 +138,9 @@ export const MobileSidebar = ({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "-100%", opacity: 0 }}
               transition={{
-                duration: 0.3,
-                ease: "easeInOut",
+                type: "spring",
+                stiffness: 300,
+                damping: 30
               }}
               className={cn(
                 "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
@@ -174,22 +178,23 @@ export const SidebarLink = ({
       <div className="flex-shrink-0">
         {link.icon}
       </div>
-      {(open || !animate) && (
-        <motion.span
-          initial={animate ? { opacity: 0, width: 0 } : { opacity: 1 }}
-          animate={animate ? 
-            { opacity: open ? 1 : 0, width: open ? "auto" : 0 } : 
-            { opacity: 1, width: "auto" }
-          }
-          transition={{ duration: 0.2 }}
-          className={cn(
-            "ml-3 text-sm font-medium whitespace-nowrap overflow-hidden",
-            !open && "hidden"
-          )}
-        >
-          {link.label}
-        </motion.span>
-      )}
+      <AnimatePresence initial={false}>
+        {(open || !animate) && (
+          <motion.span
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: "auto" }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 30 
+            }}
+            className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden"
+          >
+            {link.label}
+          </motion.span>
+        )}
+      </AnimatePresence>
       {link.notification && (
         <div className={cn("ml-auto flex-shrink-0", !open && "ml-0")}>
           {typeof link.count === 'number' ? (

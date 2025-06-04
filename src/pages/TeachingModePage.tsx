@@ -4,6 +4,7 @@ import { SendMessageModal } from '../components/SendMessageModal';
 import { TeachingHeader } from '../components/teacher/TeachingHeader';
 import { TeachingContentArea } from '../components/teacher/TeachingContentArea';
 import { TeacherSidebar } from '../components/TeacherSidebar';
+import { Sidebar } from '@/components/ui/sidebar';
 import { useTeacherPresentation } from '../hooks/useTeacherPresentation';
 import { useTeacherParticipants } from '../hooks/useTeacherParticipants';
 import { useTeacherFeedbackAndQuestions } from '../hooks/useTeacherFeedbackAndQuestions';
@@ -101,15 +102,17 @@ export function TeachingModePage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <TeacherSidebar 
-          sessionCode={presentation.session_code}
-          presentationId={presentation.id}
-          teacherName={teacherName}
-          pendingCount={pendingCount}
-          hasNewQuestions={hasNewQuestions}
-          currentCardIndex={actualCardIndex}
-          onEndSession={handleEndSession}
-        />
+        <Sidebar open={showSidebar} setOpen={setShowSidebar}>
+          <TeacherSidebar 
+            sessionCode={presentation.session_code}
+            presentationId={presentation.id}
+            teacherName={teacherName}
+            pendingCount={pendingCount}
+            hasNewQuestions={hasNewQuestions}
+            currentCardIndex={actualCardIndex}
+            onEndSession={handleEndSession}
+          />
+        </Sidebar>
 
         <main className="flex-1 overflow-auto p-6">
           <TeachingContentArea
