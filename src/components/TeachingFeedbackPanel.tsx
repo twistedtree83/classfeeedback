@@ -6,7 +6,7 @@ import {
   getTeachingQuestionsForPresentation,
   getCardFeedbackByStudent,
   markQuestionAsAnswered
-} from '../lib/supabaseClient';
+} from '../lib/supabase';
 import { formatTime } from '../lib/utils';
 import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock, Check, Bell, Users } from 'lucide-react';
 import { Button } from './ui/Button';
