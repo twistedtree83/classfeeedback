@@ -76,15 +76,24 @@ export function Header() {
   const userInitials = user?.user_metadata?.full_name 
     ? getInitials(user.user_metadata.full_name) 
     : user?.email ? user.email[0].toUpperCase() : 'U';
+    
+  const userAuth = user ? {
+    login: { 
+      text: userInitials, 
+      url: "/profile" 
+    },
+    signup: { 
+      text: "Sign out", 
+      url: "#",
+      onClick: handleSignOut
+    }
+  } : authOptions;
 
   return (
     <Navbar1
       logo={logo}
       menu={menuItems}
-      auth={user ? {
-        login: { text: userInitials, url: "/profile" },
-        signup: { text: "Sign out", url: "#" }
-      } : authOptions}
+      auth={userAuth}
       mobileExtraLinks={[
         { name: "Profile", url: "/profile" },
         { name: "Settings", url: "/profile" },
