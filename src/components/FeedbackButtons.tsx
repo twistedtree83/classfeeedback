@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
-import { submitFeedback } from '../lib/supabaseClient';
+import { submitFeedback } from '../lib/supabase';
 
 interface FeedbackButtonsProps {
   sessionCode: string;

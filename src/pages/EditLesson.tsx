@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase/client';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { SectionEditor } from '../components/SectionEditor';

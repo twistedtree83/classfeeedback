@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import type { ProcessedLesson } from '../lib/types';
 import { LessonPreview } from '../components/LessonPreview';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase/client';
 
 export function CreateLesson() {
   const navigate = useNavigate();

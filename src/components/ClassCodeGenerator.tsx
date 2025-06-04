@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './ui/Button';
-import { createSession } from '../lib/supabaseClient';
+import { createSession } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ClassCodeGeneratorProps {

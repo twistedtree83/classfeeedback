@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase/client';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import { TeachingCardsManager } from '../components/TeachingCardsManager';
 import { Button } from '../components/ui/Button';
 import type { LessonCard } from '../lib/types';
-import { createLessonPresentation } from '../lib/supabaseClient';
+import { createLessonPresentation } from '../lib/supabase';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();

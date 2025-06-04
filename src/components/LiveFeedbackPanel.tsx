@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/supabaseClient';
+import { Feedback, getFeedbackForSession, subscribeToSessionFeedback } from '../lib/supabase';
 import { formatTime, groupFeedbackByType } from '../lib/utils';
 import { BarChart3, Users } from 'lucide-react';
 
@@ -21,7 +21,8 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
 
   // Load initial feedback
   useEffect(() => {
-    async function loadFeedback() {
+    // Load existing lesson plans
+    const fetchLessons = async () => {
       try {
         const feedbackData = await getFeedbackForSession(sessionCode);
         setFeedback(feedbackData);
@@ -31,9 +32,9 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
       } finally {
         setLoading(false);
       }
-    }
+    };
     
-    loadFeedback();
+    fetchLessons();
   }, [sessionCode]);
   
   // Track unique students

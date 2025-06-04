@@ -23,7 +23,7 @@ import { LessonSummaryPage } from './pages/LessonSummaryPage';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Header />
         <Routes>
           {/* Public routes */}

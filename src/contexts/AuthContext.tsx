@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { supabase, User, getCurrentUser } from '../lib/supabaseClient';
+import { supabase, User, getCurrentUser } from '../lib/supabase';
 
 interface AuthContextProps {
   user: User | null;
@@ -54,12 +54,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     user,
     loading,
     signIn: async (email: string, password: string) => {
-      const { user, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
       if (user) setUser(user);
-      return { error };
+      return { error: error?.message || null };
     },
     signUp: async (email: string, password: string, fullName: string, title: string) => {
-      const { data, error } = await supabase.auth.signUp({
+      const { data: { user }, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -70,22 +70,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
       if (user) setUser(user);
-      return { error };
+      return { error: error?.message || null };
     },
     signOut: async () => {
       const { error } = await supabase.auth.signOut();
       if (!error) setUser(null);
-      return { error };
+      return { error: error?.message || null };
     },
     resetPassword: async (email: string) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
-      return { error };
+      return { error: error?.message || null };
     },
     updatePassword: async (password: string) => {
       const { error } = await supabase.auth.updateUser({ password });
-      return { error };
+      return { error: error?.message || null };
     }
   };
 

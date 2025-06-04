@@ -1,9 +1,25 @@
-// Combine and re-export all functions from supabase modules
-export * from './supabase/client';
-export * from './supabase/auth';
+// Re-export all Supabase client functionality from a single entry point
+
+// Export the Supabase client itself
+export { supabase } from './supabase/client';
+
+// Re-export types
 export * from './supabase/types';
+
+// Re-export auth functions
+export * from './supabase/auth';
+
+// Re-export sessions functions
 export * from './supabase/sessions';
-export * from './supabase/feedback';
+
+// Re-export lesson plans functions
 export * from './supabase/lessonPlans';
+
+// Re-export presentations functions
 export * from './supabase/presentations';
+
+// Re-export feedback functions
+export * from './supabase/feedback';
+
+// Re-export messages functions
 export * from './supabase/messages';
