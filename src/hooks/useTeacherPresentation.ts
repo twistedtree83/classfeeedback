@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   getLessonPresentationByCode, 
   updateLessonPresentationCardIndex,
@@ -25,15 +25,18 @@ export function useTeacherPresentation(code: string | undefined) {
       if (!code) return;
 
       try {
-        // Get presentation data
-        const presentationData = await getLessonPresentationByCode(code);
-        if (!presentationData) throw new Error('Presentation not found');
-
         // Get session data
         const sessionData = await getSessionByCode(code);
+        if (!sessionData) throw new Error('Session not found');
+
+        // Set teacher name
         if (sessionData) {
           setTeacherName(sessionData.teacher_name);
         }
+
+        // Get presentation data
+        const presentationData = await getLessonPresentationByCode(code);
+        if (!presentationData) throw new Error('Presentation not found');
 
         // Get lesson data to get the title
         if (presentationData.lesson_id) {
@@ -118,6 +121,20 @@ Click "Next" to begin your lesson presentation.
       } catch (err) {
         console.error('Error updating card index:', err);
       }
+    } else if (newDisplayIndex === 0) {
+      // We're going back to the welcome card (which is purely local to the teacher)
+      // Update database to first card (index 0) so students see the first actual card
+      try {
+        console.log(`Teacher going to welcome card, setting database to card 0`);
+        const success = await updateLessonPresentationCardIndex(presentation.id, 0);
+        
+        if (!success) {
+          console.error('Failed to update card index');
+        }
+        setActualCardIndex(0);
+      } catch (err) {
+        console.error('Error updating card index:', err);
+      }
     }
 
     updateCurrentCardDisplay(presentation, newDisplayIndex);
@@ -136,21 +153,20 @@ Click "Next" to begin your lesson presentation.
     const newDisplayIndex = displayedCardIndex + 1;
     setDisplayedCardIndex(newDisplayIndex);
 
-    // Only update database card index if we're moving between actual content cards
-    if (newDisplayIndex > 0) {
-      const newActualIndex = newDisplayIndex - 1;
-      setActualCardIndex(newActualIndex);
+    // Get the new database index (adjusted for the welcome card)
+    const newActualIndex = newDisplayIndex - 1;
+    setActualCardIndex(newActualIndex);
+    
+    // Always update the database when moving forward, even from welcome card
+    try {
+      console.log(`Navigating from card ${actualCardIndex} to ${newActualIndex}`);
+      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
       
-      try {
-        console.log(`Navigating from card ${actualCardIndex} to ${newActualIndex}`);
-        const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
-        
-        if (!success) {
-          console.error('Failed to update card index in database');
-        }
-      } catch (err) {
-        console.error('Error updating card index:', err);
+      if (!success) {
+        console.error('Failed to update card index in database');
       }
+    } catch (err) {
+      console.error('Error updating card index:', err);
     }
 
     updateCurrentCardDisplay(presentation, newDisplayIndex);
