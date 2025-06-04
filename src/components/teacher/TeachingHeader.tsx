@@ -1,15 +1,13 @@
 import React from 'react';
-import { Users, BarChart3, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Users, BarChart3, MessageSquare, ArrowLeft, Menu, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface TeachingHeaderProps {
   sessionCode: string;
   hasNewQuestions: boolean;
   pendingCount: number;
-  showFeedback: boolean;
-  showParticipants: boolean;
-  onToggleFeedback: () => void;
-  onToggleParticipants: () => void;
+  showSidebar: boolean;
+  onToggleSidebar: () => void;
   onOpenMessageModal: () => void;
   onEndSession: () => void;
 }
@@ -18,18 +16,24 @@ export function TeachingHeader({
   sessionCode,
   hasNewQuestions,
   pendingCount,
-  showFeedback,
-  showParticipants,
-  onToggleFeedback,
-  onToggleParticipants,
+  showSidebar,
+  onToggleSidebar,
   onOpenMessageModal,
   onEndSession
 }: TeachingHeaderProps) {
   return (
     <div className="bg-white shadow-sm sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+      <div className="px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleSidebar}
+              className="mr-2"
+            >
+              {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             <h1 className="text-xl font-semibold text-gray-900">
               Teaching Mode
             </h1>
@@ -38,32 +42,31 @@ export function TeachingHeader({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant={showFeedback ? "primary" : "outline"}
-              onClick={onToggleFeedback}
-              size="sm"
-              className="relative"
-            >
-              <BarChart3 className="h-5 w-5" />
-              {hasNewQuestions && !showFeedback && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  !
-                </span>
-              )}
-            </Button>
-            <Button
-              variant={showParticipants ? "primary" : "outline"}
-              onClick={onToggleParticipants}
-              size="sm"
-              className="relative"
-            >
-              <Users className="h-5 w-5" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
-                  {pendingCount}
-                </span>
-              )}
-            </Button>
+            {!showSidebar && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={onToggleSidebar}
+                  size="sm"
+                  className="relative"
+                >
+                  <BarChart3 className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onToggleSidebar}
+                  size="sm"
+                  className="relative"
+                >
+                  <Users className="h-5 w-5" />
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
+                      {pendingCount}
+                    </span>
+                  )}
+                </Button>
+              </>
+            )}
             <Button
               variant="outline"
               onClick={onOpenMessageModal}

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { SendMessageModal } from '../components/SendMessageModal';
 import { TeachingHeader } from '../components/teacher/TeachingHeader';
 import { TeachingContentArea } from '../components/teacher/TeachingContentArea';
-import { TeachingSidebar } from '../components/teacher/TeachingSidebar';
+import { TeacherSidebar } from '../components/TeacherSidebar';
 import { useTeacherPresentation } from '../hooks/useTeacherPresentation';
 import { useTeacherParticipants } from '../hooks/useTeacherParticipants';
 import { useTeacherFeedbackAndQuestions } from '../hooks/useTeacherFeedbackAndQuestions';
@@ -15,8 +15,7 @@ export function TeachingModePage() {
   const navigate = useNavigate();
   
   // State for sidebar visibility
-  const [showParticipants, setShowParticipants] = useState(true);
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
   
   // Custom hooks for managing different aspects of the teaching mode
   const { 
@@ -50,24 +49,8 @@ export function TeachingModePage() {
     closeMessageModal
   } = useTeacherMessaging(presentation?.id, teacherName);
 
-  // Toggle view handlers
-  const handleToggleFeedback = () => {
-    setShowFeedback(!showFeedback);
-    if (!showFeedback) {
-      setShowParticipants(false);
-      clearHasNewQuestions();
-    } else {
-      setShowParticipants(true);
-    }
-  };
-
-  const handleToggleParticipants = () => {
-    setShowParticipants(!showParticipants);
-    if (!showParticipants) {
-      setShowFeedback(false);
-    } else {
-      setShowFeedback(true);
-    }
+  const handleToggleSidebar = () => {
+    setShowSidebar(!showSidebar);
   };
 
   const handleEndSession = async () => {
@@ -106,43 +89,48 @@ export function TeachingModePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TeachingHeader
-        sessionCode={presentation.session_code}
-        hasNewQuestions={hasNewQuestions}
-        pendingCount={pendingCount}
-        showFeedback={showFeedback}
-        showParticipants={showParticipants}
-        onToggleFeedback={handleToggleFeedback}
-        onToggleParticipants={handleToggleParticipants}
-        onOpenMessageModal={openMessageModal}
-        onEndSession={handleEndSession}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        <main className={`flex-1 overflow-auto p-6 ${(showParticipants || showFeedback) ? 'lg:pr-0' : ''}`}>
-          <TeachingContentArea
-            currentCard={currentCard}
-            displayedCardIndex={displayedCardIndex}
-            totalCards={totalCards}
-            progressPercentage={progressPercentage}
-            isFirstCard={isFirstCard}
-            isLastCard={isLastCard}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            sessionCode={presentation.session_code}
-          />
-        </main>
-
-        {(showParticipants || showFeedback) && (
-          <TeachingSidebar
-            showParticipants={showParticipants}
-            showFeedback={showFeedback}
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Main teacher view with sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        {showSidebar && (
+          <TeacherSidebar 
             sessionCode={presentation.session_code}
             presentationId={presentation.id}
+            teacherName={teacherName}
+            pendingCount={pendingCount}
+            hasNewQuestions={hasNewQuestions}
             currentCardIndex={actualCardIndex}
+            onEndSession={handleEndSession}
           />
         )}
+
+        {/* Main content area */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <TeachingHeader
+            sessionCode={presentation.session_code}
+            hasNewQuestions={hasNewQuestions}
+            pendingCount={pendingCount}
+            showSidebar={showSidebar}
+            onToggleSidebar={handleToggleSidebar}
+            onOpenMessageModal={openMessageModal}
+            onEndSession={handleEndSession}
+          />
+
+          <main className="flex-1 overflow-auto p-6">
+            <TeachingContentArea
+              currentCard={currentCard}
+              displayedCardIndex={displayedCardIndex}
+              totalCards={totalCards}
+              progressPercentage={progressPercentage}
+              isFirstCard={isFirstCard}
+              isLastCard={isLastCard}
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              sessionCode={presentation.session_code}
+            />
+          </main>
+        </div>
       </div>
 
       <SendMessageModal
