@@ -4,6 +4,7 @@ import { MessageSquare, BarChart3, FileText, Users, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogoWrapper } from '@/components/LogoWrapper';
+import { HeroCard } from '@/components/ui/HeroCard';
 
 export function HomePage() {
   const { user } = useAuth();
@@ -13,63 +14,17 @@ export function HomePage() {
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="md:w-1/2 space-y-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                Real-time classroom feedback and engagement
-              </h1>
-              <p className="text-xl text-gray-600">
-                Help students learn better with instant feedback, interactive lessons, and AI-powered teaching tools.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                {user ? (
-                  <Link to="/dashboard">
-                    <Button
-                      variant="originui"
-                      size="originui"
-                      className="w-full sm:w-auto"
-                    >
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link to="/signup">
-                      <Button size="lg" className="w-full sm:w-auto">
-                        Get Started
-                      </Button>
-                    </Link>
-                    <Link to="/login">
-                      <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                        Sign In
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="md:w-1/2 relative">
-              <div className="relative rounded-xl overflow-hidden shadow-2xl">
-                <img 
-                  src="https://images.pexels.com/photos/8471799/pexels-photo-8471799.jpeg" 
-                  alt="Classroom engagement" 
-                  className="w-full h-auto object-cover rounded-xl"
-                />
-                <div className="absolute inset-0 bg-primary/10 rounded-xl"></div>
-              </div>
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <BarChart3 className="h-6 w-6 text-green-700" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Live Feedback</p>
-                    <p className="text-sm text-gray-500">10 students participating</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <HeroCard 
+            title="Real-time classroom feedback and engagement"
+            subtitle="Interactive learning made simple"
+            description="Help students learn better with instant feedback, interactive lessons, and AI-powered teaching tools. Create meaningful classroom interactions that improve learning outcomes."
+            image="https://images.pexels.com/photos/8471799/pexels-photo-8471799.jpeg?auto=compress&cs=tinysrgb&w=1600"
+            imageAlt="Classroom engagement"
+            primaryButtonText={user ? "Go to Dashboard" : "Get Started"}
+            secondaryButtonText={user ? "View Lessons" : "Join as Student"}
+            primaryButtonLink={user ? "/dashboard" : "/signup"}
+            secondaryButtonLink={user ? "/planner" : "/join"}
+          />
         </div>
       </section>
 
@@ -161,7 +116,7 @@ export function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Link to="/dashboard">
-                <Button variant="originui\" size="originui">
+                <Button variant="default" size="lg">
                   Go to Dashboard
                 </Button>
               </Link>
