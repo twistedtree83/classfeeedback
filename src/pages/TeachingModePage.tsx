@@ -23,6 +23,7 @@ export function TeachingModePage() {
     presentation, 
     currentCard, 
     displayedCardIndex,
+    actualCardIndex,
     teacherName,
     loading, 
     error, 
@@ -39,7 +40,7 @@ export function TeachingModePage() {
   const {
     hasNewQuestions,
     clearHasNewQuestions
-  } = useTeacherFeedbackAndQuestions(presentation?.id);
+  } = useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
   
   const {
     showMessageModal,
@@ -139,6 +140,7 @@ export function TeachingModePage() {
             showFeedback={showFeedback}
             sessionCode={presentation.session_code}
             presentationId={presentation.id}
+            currentCardIndex={actualCardIndex}
           />
         )}
       </div>

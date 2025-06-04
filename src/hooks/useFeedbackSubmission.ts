@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   submitTeachingFeedback, 
-  submitTeachingQuestion
+  submitTeachingQuestion,
+  getStudentFeedbackForCard
 } from '../lib/supabase';
 import { generateDifferentiatedContent } from '../lib/aiService';
 
@@ -10,6 +11,8 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState<string | null>(null);
+  const [currentCardIndex, setCurrentCardIndex] = useState<number | undefined>(undefined);
 
   // Helper to clear success message after a timeout
   const showSuccessAndClear = (message: string, duration = 3000) => {
@@ -19,9 +22,31 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
     }, duration);
   };
 
+  // Update current card index when it changes in the presentation
+  useEffect(() => {
+    if (presentationId && currentCardIndex !== undefined) {
+      // Check if student has already submitted feedback for this card
+      const checkExistingFeedback = async () => {
+        const existingFeedback = await getStudentFeedbackForCard(
+          presentationId,
+          studentName,
+          currentCardIndex
+        );
+        
+        if (existingFeedback) {
+          setCurrentFeedback(existingFeedback.feedback_type);
+        } else {
+          setCurrentFeedback(null);
+        }
+      };
+      
+      checkExistingFeedback();
+    }
+  }, [presentationId, studentName, currentCardIndex]);
+
   // Send feedback (understand, confused, slower)
   const sendFeedback = async (type: string) => {
-    if (!presentationId || isSending) return;
+    if (!presentationId || isSending || currentCardIndex === undefined) return;
     
     setIsSending(true);
     setError(null);
@@ -30,10 +55,12 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
       const success = await submitTeachingFeedback(
         presentationId,
         studentName,
-        type
+        type,
+        currentCardIndex
       );
       
       if (success) {
+        setCurrentFeedback(type); // Update local state to reflect submission
         showSuccessAndClear('Feedback sent successfully');
       } else {
         setError('Failed to send feedback');
@@ -47,8 +74,8 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
   };
 
   // Send a question
-  const sendQuestion = async (question: string) => {
-    if (!presentationId || !question.trim() || isSending) return;
+  const sendQuestion = async (question: string): Promise<boolean> => {
+    if (!presentationId || !question.trim() || isSending || currentCardIndex === undefined) return false;
     
     setIsSending(true);
     setError(null);
@@ -57,7 +84,8 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
       const success = await submitTeachingQuestion(
         presentationId,
         studentName,
-        question.trim()
+        question.trim(),
+        currentCardIndex
       );
       
       if (success) {
@@ -108,6 +136,8 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
     generatingDifferentiated,
     successMessage,
     error,
+    currentFeedback,
+    setCurrentCardIndex,
     clearError: () => setError(null),
     clearSuccessMessage: () => setSuccessMessage(null)
   };

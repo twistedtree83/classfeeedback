@@ -7,19 +7,24 @@ interface TeachingSidebarProps {
   showFeedback: boolean;
   sessionCode: string;
   presentationId: string;
+  currentCardIndex?: number;
 }
 
 export function TeachingSidebar({
   showParticipants,
   showFeedback,
   sessionCode,
-  presentationId
+  presentationId,
+  currentCardIndex
 }: TeachingSidebarProps) {
   return (
     <aside className="hidden lg:block w-96 border-l border-gray-200 bg-white overflow-y-auto">
       <div className="p-4 space-y-6">
         {showFeedback && (
-          <TeachingFeedbackPanel presentationId={presentationId} />
+          <TeachingFeedbackPanel 
+            presentationId={presentationId} 
+            currentCardIndex={currentCardIndex}
+          />
         )}
 
         {showParticipants && (

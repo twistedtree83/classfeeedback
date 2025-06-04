@@ -97,8 +97,17 @@ export function StudentView() {
     generateDifferentiated, 
     isSending, 
     generatingDifferentiated, 
-    successMessage 
+    successMessage,
+    currentFeedback,
+    setCurrentCardIndex
   } = useFeedbackSubmission(presentation?.id, studentName);
+  
+  // Update current card index when it changes in the presentation
+  useEffect(() => {
+    if (presentation) {
+      setCurrentCardIndex(presentation.current_card_index);
+    }
+  }, [presentation?.current_card_index, setCurrentCardIndex]);
 
   // Check participant approval status with direct subscription
   useEffect(() => {
@@ -578,6 +587,7 @@ export function StudentView() {
             onSendFeedback={sendFeedback}
             onSendQuestion={sendQuestion}
             isSending={isSending}
+            currentFeedback={currentFeedback}
           />
         </div>
 

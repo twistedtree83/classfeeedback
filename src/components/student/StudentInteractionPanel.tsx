@@ -7,27 +7,21 @@ interface StudentInteractionPanelProps {
   onSendFeedback: (type: string) => Promise<void>;
   onSendQuestion: (question: string) => Promise<boolean>;
   isSending: boolean;
+  currentFeedback: string | null;
 }
 
 export function StudentInteractionPanel({
   onSendFeedback,
   onSendQuestion,
-  isSending
+  isSending,
+  currentFeedback
 }: StudentInteractionPanelProps) {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [question, setQuestion] = useState('');
-  const [feedbackSent, setFeedbackSent] = useState<string | null>(null);
   
   const handleFeedback = async (type: string) => {
     if (isSending) return;
-    
-    setFeedbackSent(type);
     await onSendFeedback(type);
-    
-    // Reset feedback indicator after a delay
-    setTimeout(() => {
-      setFeedbackSent(null);
-    }, 5000);
   };
   
   const handleSubmitQuestion = async (e: React.FormEvent) => {
@@ -53,8 +47,8 @@ export function StudentInteractionPanel({
         <Button
           onClick={() => handleFeedback('understand')}
           disabled={isSending}
-          variant={feedbackSent === 'understand' ? 'primary' : 'outline'}
-          className={`py-3 ${feedbackSent === 'understand' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-200 hover:bg-green-50'}`}
+          variant={currentFeedback === 'understand' ? 'primary' : 'outline'}
+          className={`py-3 ${currentFeedback === 'understand' ? 'bg-green-600 hover:bg-green-700' : 'text-green-700 border-green-200 hover:bg-green-50'}`}
         >
           <ThumbsUp className="h-5 w-5 mr-2" />
           I understand
@@ -63,8 +57,8 @@ export function StudentInteractionPanel({
         <Button
           onClick={() => handleFeedback('confused')}
           disabled={isSending}
-          variant={feedbackSent === 'confused' ? 'primary' : 'outline'}
-          className={`py-3 ${feedbackSent === 'confused' ? 'bg-yellow-600 hover:bg-yellow-700' : 'text-yellow-700 border-yellow-200 hover:bg-yellow-50'}`}
+          variant={currentFeedback === 'confused' ? 'primary' : 'outline'}
+          className={`py-3 ${currentFeedback === 'confused' ? 'bg-yellow-600 hover:bg-yellow-700' : 'text-yellow-700 border-yellow-200 hover:bg-yellow-50'}`}
         >
           <ThumbsDown className="h-5 w-5 mr-2" />
           I'm confused
@@ -73,8 +67,8 @@ export function StudentInteractionPanel({
         <Button
           onClick={() => handleFeedback('slower')}
           disabled={isSending}
-          variant={feedbackSent === 'slower' ? 'primary' : 'outline'}
-          className={`py-3 ${feedbackSent === 'slower' ? 'bg-blue-600 hover:bg-blue-700' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+          variant={currentFeedback === 'slower' ? 'primary' : 'outline'}
+          className={`py-3 ${currentFeedback === 'slower' ? 'bg-blue-600 hover:bg-blue-700' : 'text-blue-700 border-blue-200 hover:bg-blue-50'}`}
         >
           <Clock className="h-5 w-5 mr-2" />
           Slow down

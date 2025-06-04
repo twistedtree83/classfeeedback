@@ -4,14 +4,16 @@ import {
   subscribeToTeachingQuestions, 
   getTeachingFeedbackForPresentation,
   getTeachingQuestionsForPresentation,
+  getCardFeedbackByStudent,
   markQuestionAsAnswered
 } from '../lib/supabaseClient';
 import { formatTime } from '../lib/utils';
-import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock, Check, Bell } from 'lucide-react';
+import { MessageSquare, ThumbsUp, ThumbsDown, BarChart3, List, Clock, Check, Bell, Users } from 'lucide-react';
 import { Button } from './ui/Button';
 
 interface TeachingFeedbackPanelProps {
   presentationId: string;
+  currentCardIndex?: number;
 }
 
 interface Feedback {
@@ -20,6 +22,7 @@ interface Feedback {
   feedback_type: string;
   content: string | null;
   created_at: string;
+  card_index?: number;
 }
 
 interface Question {
@@ -28,14 +31,24 @@ interface Question {
   question: string;
   answered: boolean;
   created_at: string;
+  card_index?: number;
 }
 
-export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelProps) {
+interface StudentFeedbackMap {
+  [studentName: string]: {
+    feedback_type: string;
+    timestamp: string;
+  }
+}
+
+export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: TeachingFeedbackPanelProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [view, setView] = useState<'chart' | 'list' | 'questions'>('chart');
+  const [view, setView] = useState<'chart' | 'list' | 'questions' | 'students'>('chart');
   const [loading, setLoading] = useState(true);
   const [newQuestionAlert, setNewQuestionAlert] = useState(false);
+  const [filterCurrentCard, setFilterCurrentCard] = useState(true);
+  const [studentFeedbackMap, setStudentFeedbackMap] = useState<StudentFeedbackMap>({});
 
   // Load initial data
   useEffect(() => {
@@ -43,12 +56,27 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       setLoading(true);
       try {
         const [feedbackData, questionsData] = await Promise.all([
-          getTeachingFeedbackForPresentation(presentationId),
+          getTeachingFeedbackForPresentation(presentationId, filterCurrentCard ? currentCardIndex : undefined),
           getTeachingQuestionsForPresentation(presentationId)
         ]);
         
         setFeedback(feedbackData);
         setQuestions(questionsData);
+        
+        // Build the student feedback map for the current card
+        if (currentCardIndex !== undefined) {
+          const cardFeedback = await getCardFeedbackByStudent(presentationId, currentCardIndex);
+          const feedbackMap: StudentFeedbackMap = {};
+          
+          cardFeedback.forEach(item => {
+            feedbackMap[item.student_name] = {
+              feedback_type: item.feedback_type,
+              timestamp: item.created_at
+            };
+          });
+          
+          setStudentFeedbackMap(feedbackMap);
+        }
       } catch (err) {
         console.error('Error loading feedback and questions:', err);
       } finally {
@@ -57,17 +85,55 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
     };
     
     loadData();
-  }, [presentationId]);
+  }, [presentationId, currentCardIndex, filterCurrentCard]);
 
   // Subscribe to real-time feedback
   useEffect(() => {
     const feedbackSubscription = subscribeToTeachingFeedback(
       presentationId,
       (newFeedback) => {
-        setFeedback(prev => [newFeedback, ...prev]);
-      }
+        // Only update state if the feedback is for the current card (when filtering)
+        if (!filterCurrentCard || newFeedback.card_index === currentCardIndex) {
+          setFeedback(prev => {
+            // Check if this is an update to existing feedback
+            const existingIndex = prev.findIndex(f => 
+              f.student_name === newFeedback.student_name && 
+              f.card_index === newFeedback.card_index
+            );
+            
+            if (existingIndex >= 0) {
+              // Replace the existing feedback
+              const updated = [...prev];
+              updated[existingIndex] = newFeedback;
+              return updated;
+            }
+            
+            // Add new feedback
+            return [newFeedback, ...prev];
+          });
+          
+          // Update student feedback map
+          if (newFeedback.card_index === currentCardIndex) {
+            setStudentFeedbackMap(prev => ({
+              ...prev,
+              [newFeedback.student_name]: {
+                feedback_type: newFeedback.feedback_type,
+                timestamp: newFeedback.created_at
+              }
+            }));
+          }
+        }
+      },
+      filterCurrentCard ? currentCardIndex : undefined
     );
     
+    return () => {
+      feedbackSubscription.unsubscribe();
+    };
+  }, [presentationId, currentCardIndex, filterCurrentCard]);
+
+  // Subscribe to real-time questions
+  useEffect(() => {
     const questionSubscription = subscribeToTeachingQuestions(
       presentationId,
       (newQuestion) => {
@@ -77,17 +143,17 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
         if (view !== 'questions') {
           setNewQuestionAlert(true);
           // Play a subtle notification sound
-          const audio = new Audio('data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTguNDUuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
+          const audio = new Audio('/notification.mp3');
           audio.play().catch(e => console.log("Audio play prevented by browser policy"));
         }
-      }
+      },
+      filterCurrentCard ? currentCardIndex : undefined
     );
     
     return () => {
-      feedbackSubscription.unsubscribe();
       questionSubscription.unsubscribe();
     };
-  }, [presentationId, view]);
+  }, [presentationId, view, currentCardIndex, filterCurrentCard]);
 
   // Reset alert when switching to questions view
   useEffect(() => {
@@ -95,6 +161,34 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       setNewQuestionAlert(false);
     }
   }, [view]);
+
+  // Handle card index changes
+  useEffect(() => {
+    if (currentCardIndex !== undefined && filterCurrentCard) {
+      // Reload feedback for the new card
+      const loadCardFeedback = async () => {
+        try {
+          const cardFeedback = await getTeachingFeedbackForPresentation(presentationId, currentCardIndex);
+          setFeedback(cardFeedback);
+          
+          // Build the student feedback map for the current card
+          const feedbackMap: StudentFeedbackMap = {};
+          cardFeedback.forEach(item => {
+            feedbackMap[item.student_name] = {
+              feedback_type: item.feedback_type,
+              timestamp: item.created_at
+            };
+          });
+          
+          setStudentFeedbackMap(feedbackMap);
+        } catch (err) {
+          console.error('Error loading card feedback:', err);
+        }
+      };
+      
+      loadCardFeedback();
+    }
+  }, [presentationId, currentCardIndex, filterCurrentCard]);
 
   // Count feedback by type
   const feedbackCounts = {
@@ -119,6 +213,9 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
       );
     }
   };
+
+  // Get unique student names who have provided feedback
+  const studentsWithFeedback = Object.keys(studentFeedbackMap);
 
   if (loading) {
     return (
@@ -152,6 +249,13 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
             <BarChart3 className="h-4 w-4" />
           </Button>
           <Button
+            variant={view === 'students' ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setView('students')}
+          >
+            <Users className="h-4 w-4" />
+          </Button>
+          <Button
             variant={view === 'list' ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setView('list')}
@@ -172,6 +276,18 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
             )}
           </Button>
         </div>
+      </div>
+      
+      <div className="mb-3 flex items-center">
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="form-checkbox h-4 w-4 text-indigo-600"
+            checked={filterCurrentCard}
+            onChange={() => setFilterCurrentCard(!filterCurrentCard)}
+          />
+          <span className="ml-2 text-sm text-gray-700">Show only current card feedback</span>
+        </label>
       </div>
       
       {view === 'chart' && (
@@ -260,6 +376,60 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
         </div>
       )}
       
+      {view === 'students' && (
+        <div className="space-y-4">
+          {studentsWithFeedback.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No student feedback for this card yet
+            </div>
+          ) : (
+            <div>
+              <h3 className="font-medium mb-3">Student Feedback ({studentsWithFeedback.length})</h3>
+              <div className="space-y-2">
+                {studentsWithFeedback.map(studentName => {
+                  const studentFeedback = studentFeedbackMap[studentName];
+                  let feedbackIcon;
+                  let feedbackText;
+                  let bgColor;
+                  
+                  if (studentFeedback.feedback_type === 'understand') {
+                    feedbackIcon = <ThumbsUp className="h-4 w-4 text-green-600" />;
+                    feedbackText = "Understands";
+                    bgColor = "bg-green-50 border-green-200";
+                  } else if (studentFeedback.feedback_type === 'confused') {
+                    feedbackIcon = <ThumbsDown className="h-4 w-4 text-yellow-600" />;
+                    feedbackText = "Confused";
+                    bgColor = "bg-yellow-50 border-yellow-200";
+                  } else {
+                    feedbackIcon = <Clock className="h-4 w-4 text-blue-600" />;
+                    feedbackText = "Slow Down";
+                    bgColor = "bg-blue-50 border-blue-200";
+                  }
+                  
+                  return (
+                    <div 
+                      key={studentName} 
+                      className={`p-3 rounded-lg border flex items-center justify-between ${bgColor}`}
+                    >
+                      <div className="font-medium">{studentName}</div>
+                      <div className="flex items-center">
+                        <div className="flex items-center text-sm mr-2">
+                          {feedbackIcon}
+                          <span className="ml-1">{feedbackText}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {formatTime(studentFeedback.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
       {view === 'list' && (
         <div className="overflow-auto max-h-96">
           {feedback.length === 0 ? (
@@ -273,6 +443,9 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                  {!filterCurrentCard && (
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -303,6 +476,11 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                         </span>
                       )}
                     </td>
+                    {!filterCurrentCard && item.card_index !== undefined && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        Card {item.card_index + 1}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -345,6 +523,11 @@ export function TeachingFeedbackPanel({ presentationId }: TeachingFeedbackPanelP
                     <div className="mt-2 text-xs text-gray-500 flex items-center">
                       <Check className="h-3 w-3 mr-1 text-green-500" />
                       Answered
+                    </div>
+                  )}
+                  {!filterCurrentCard && item.card_index !== undefined && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      From card {item.card_index + 1}
                     </div>
                   )}
                 </div>

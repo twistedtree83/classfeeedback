@@ -75,15 +75,52 @@ export const submitTeachingFeedback = async (
   presentationId: string,
   studentName: string,
   feedbackType: string,
+  cardIndex?: number,
   content?: string
 ): Promise<boolean> => {
   try {
+    // Check if the student has already submitted feedback for this card
+    if (cardIndex !== undefined) {
+      const { data: existingFeedback, error: checkError } = await supabase
+        .from('teaching_feedback')
+        .select('id')
+        .eq('presentation_id', presentationId)
+        .eq('student_name', studentName)
+        .eq('card_index', cardIndex)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking existing feedback:', checkError);
+      }
+      
+      // If student already provided feedback for this card, update instead of insert
+      if (existingFeedback) {
+        const { error: updateError } = await supabase
+          .from('teaching_feedback')
+          .update({ 
+            feedback_type: feedbackType,
+            content,
+            created_at: new Date().toISOString() 
+          })
+          .eq('id', existingFeedback.id);
+          
+        if (updateError) {
+          console.error('Error updating existing feedback:', updateError);
+          return false;
+        }
+        
+        return true;
+      }
+    }
+    
+    // No existing feedback found or card index not provided, insert new feedback
     const { error } = await supabase
       .from('teaching_feedback')
       .insert([{
         presentation_id: presentationId,
         student_name: studentName,
         feedback_type: feedbackType,
+        card_index: cardIndex,
         content
       }]);
     
@@ -98,13 +135,15 @@ export const submitTeachingFeedback = async (
 export const submitTeachingQuestion = async (
   presentationId: string,
   studentName: string,
-  question: string
+  question: string,
+  cardIndex?: number
 ): Promise<boolean> => {
   try {
     console.log('Submitting question:', {
       presentation_id: presentationId,
       student_name: studentName,
-      question: question
+      question: question,
+      card_index: cardIndex
     });
     
     const { data, error } = await supabase
@@ -112,7 +151,8 @@ export const submitTeachingQuestion = async (
       .insert([{
         presentation_id: presentationId,
         student_name: studentName,
-        question
+        question,
+        card_index: cardIndex
       }])
       .select();
     
@@ -126,6 +166,32 @@ export const submitTeachingQuestion = async (
   } catch (err) {
     console.error('Error submitting question:', err);
     return false;
+  }
+};
+
+export const getStudentFeedbackForCard = async (
+  presentationId: string,
+  studentName: string,
+  cardIndex: number
+): Promise<any | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_feedback')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .eq('student_name', studentName)
+      .eq('card_index', cardIndex)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching student feedback for card:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception fetching student feedback for card:', err);
+    return null;
   }
 };
 
@@ -169,14 +235,21 @@ export const getTeachingQuestionsForPresentation = async (
 };
 
 export const getTeachingFeedbackForPresentation = async (
-  presentationId: string
+  presentationId: string,
+  cardIndex?: number
 ): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('teaching_feedback')
       .select('*')
-      .eq('presentation_id', presentationId)
-      .order('created_at', { ascending: false });
+      .eq('presentation_id', presentationId);
+      
+    // Filter by card index if provided
+    if (cardIndex !== undefined) {
+      query = query.eq('card_index', cardIndex);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching teaching feedback:', error);
@@ -192,8 +265,14 @@ export const getTeachingFeedbackForPresentation = async (
 
 export const subscribeToTeachingFeedback = (
   presentationId: string,
-  callback: (feedback: any) => void
+  callback: (feedback: any) => void,
+  cardIndex?: number
 ) => {
+  // Create a filter including the card index if provided
+  const filter = cardIndex !== undefined 
+    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
+    : `presentation_id=eq.${presentationId}`;
+    
   return supabase
     .channel('teaching_feedback')
     .on(
@@ -202,7 +281,17 @@ export const subscribeToTeachingFeedback = (
         event: 'INSERT',
         schema: 'public',
         table: 'teaching_feedback',
-        filter: `presentation_id=eq.${presentationId}`,
+        filter,
+      },
+      (payload) => callback(payload.new)
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'teaching_feedback',
+        filter,
       },
       (payload) => callback(payload.new)
     )
@@ -211,8 +300,14 @@ export const subscribeToTeachingFeedback = (
 
 export const subscribeToTeachingQuestions = (
   presentationId: string,
-  callback: (question: any) => void
+  callback: (question: any) => void,
+  cardIndex?: number
 ) => {
+  // Create a filter including the card index if provided
+  const filter = cardIndex !== undefined 
+    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
+    : `presentation_id=eq.${presentationId}`;
+    
   return supabase
     .channel('teaching_questions')
     .on(
@@ -221,9 +316,33 @@ export const subscribeToTeachingQuestions = (
         event: 'INSERT',
         schema: 'public',
         table: 'teaching_questions',
-        filter: `presentation_id=eq.${presentationId}`,
+        filter,
       },
       (payload) => callback(payload.new)
     )
     .subscribe();
+};
+
+// Get feedback stats grouped by student and feedback type for a specific card
+export const getCardFeedbackByStudent = async (
+  presentationId: string,
+  cardIndex: number
+): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_feedback')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .eq('card_index', cardIndex);
+      
+    if (error) {
+      console.error('Error fetching card feedback by student:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching card feedback by student:', err);
+    return [];
+  }
 };
