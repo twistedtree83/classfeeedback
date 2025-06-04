@@ -28,14 +28,14 @@ export function SessionInfo({ sessionCode, teacherName, onEndSession }: SessionI
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg">
+    <div className="bg-white p-6 rounded-xl shadow-lg border border-teal/20">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Current Session</h2>
+        <h2 className="text-2xl font-bold text-teal">Current Session</h2>
         <Button 
           variant="outline" 
           size="sm"
           onClick={handleEndSession}
-          className="text-red-500 hover:bg-red-50 border-red-200 flex items-center gap-1"
+          className="text-red hover:bg-red/10 border-red/20 flex items-center gap-1"
         >
           <LogOut size={16} />
           <span>End Session</span>
@@ -45,24 +45,24 @@ export function SessionInfo({ sessionCode, teacherName, onEndSession }: SessionI
       <div className="flex flex-col md:flex-row md:items-center gap-4">
         <div>
           <p className="text-sm font-medium text-gray-500">Teacher</p>
-          <p className="font-semibold">{teacherName}</p>
+          <p className="font-semibold text-gray-800">{teacherName}</p>
         </div>
         
         <div className="md:ml-auto">
           <p className="text-sm font-medium text-gray-500">Class Code</p>
           <div className="flex items-center mt-1">
-            <div className="bg-indigo-100 text-indigo-800 font-mono text-xl px-4 py-1 rounded-lg tracking-widest">
+            <div className="bg-teal/10 text-teal font-mono text-xl px-4 py-1 rounded-lg tracking-widest">
               {sessionCode}
             </div>
             <button
               onClick={copyCodeToClipboard}
-              className="ml-2 p-1 hover:bg-gray-100 rounded-md transition-colors"
+              className="ml-2 p-1 hover:bg-teal/10 rounded-md transition-colors text-teal"
               title="Copy code"
             >
               <ClipboardCopy size={20} />
             </button>
             {copied && (
-              <span className="ml-2 text-sm text-green-600 animate-fade-in">
+              <span className="ml-2 text-sm text-coral animate-fade-in">
                 Copied!
               </span>
             )}

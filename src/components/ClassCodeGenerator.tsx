@@ -44,18 +44,18 @@ export function ClassCodeGenerator({ onCodeGenerated }: ClassCodeGeneratorProps)
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Generate Class Code</h2>
+    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
+      <h2 className="text-2xl font-bold text-teal mb-6">Generate Class Code</h2>
       
       <div className="space-y-4">
         {error && (
-          <div className="text-red-600 text-sm">{error}</div>
+          <div className="text-red text-sm p-3 bg-red/10 rounded-lg">{error}</div>
         )}
 
         <Button
           onClick={handleGenerateCode}
           disabled={isGenerating}
-          className="w-full"
+          className="w-full bg-teal hover:bg-teal/90 text-white"
           size="lg"
         >
           {isGenerating ? 'Generating...' : 'Generate Class Code'}

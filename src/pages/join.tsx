@@ -10,11 +10,11 @@ export function JoinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-teal/5">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center">
           <div className="w-full max-w-md mb-4 flex justify-start">
-            <Link to="/" className="text-indigo-600 hover:text-indigo-800 flex items-center">
+            <Link to="/" className="text-teal hover:text-coral flex items-center">
               <ArrowLeft size={16} className="mr-1" />
               Back to Home
             </Link>

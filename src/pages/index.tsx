@@ -51,7 +51,7 @@ export function TeacherDashboard() {
   }, [activeSession]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-teal/5">
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="space-y-8">
           {!activeSession ? (
@@ -74,7 +74,7 @@ export function TeacherDashboard() {
                   <div className="relative">
                     <ParticipantsList sessionCode={activeSession.code} />
                     {pendingCount > 0 && (
-                      <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
+                      <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-coral text-white text-xs rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
                         {pendingCount}
                       </div>
                     )}
@@ -82,14 +82,14 @@ export function TeacherDashboard() {
                 </div>
               </div>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
-                <h3 className="font-bold mb-2">Student Join Instructions</h3>
+              <div className="bg-orange/10 border border-orange/30 rounded-xl p-4 text-gray-800">
+                <h3 className="font-bold mb-2 text-teal">Student Join Instructions</h3>
                 <p>
                   Students can join this session by visiting the{' '}
-                  <Link to="/join" className="text-blue-600 hover:text-blue-800 underline">
+                  <Link to="/join" className="text-coral hover:text-orange underline">
                     join page
                   </Link>{' '}
-                  and entering the code: <strong>{activeSession.code}</strong>
+                  and entering the code: <strong className="text-coral">{activeSession.code}</strong>
                 </p>
               </div>
             </>

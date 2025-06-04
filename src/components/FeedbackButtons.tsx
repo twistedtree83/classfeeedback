@@ -20,9 +20,9 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const feedbackOptions: FeedbackOption[] = [
-    { value: '👍', label: 'I understand', color: 'bg-green-100 hover:bg-green-200 border-green-300' },
-    { value: '😕', label: 'I\'m confused', color: 'bg-yellow-100 hover:bg-yellow-200 border-yellow-300' },
-    { value: '❓', label: 'I have a question', color: 'bg-blue-100 hover:bg-blue-200 border-blue-300' }
+    { value: '👍', label: 'I understand', color: 'bg-teal/10 hover:bg-teal/20 border-teal/30' },
+    { value: '😕', label: 'I\'m confused', color: 'bg-coral/10 hover:bg-coral/20 border-coral/30' },
+    { value: '❓', label: 'I have a question', color: 'bg-orange/10 hover:bg-orange/20 border-orange/30' }
   ];
 
   const handleSubmit = async () => {
@@ -56,8 +56,8 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold text-center mb-6">How are you feeling?</h2>
+    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
+      <h2 className="text-2xl font-bold text-center text-teal mb-6">How are you feeling?</h2>
       
       <div className="grid grid-cols-3 gap-4 mb-6">
         {feedbackOptions.map((option) => (
@@ -68,7 +68,7 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
               "flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all",
               option.color,
               selectedFeedback === option.value 
-                ? "ring-2 ring-indigo-500 border-indigo-500 transform scale-105" 
+                ? "ring-2 ring-teal border-teal transform scale-105" 
                 : "hover:scale-105"
             )}
           >
@@ -82,7 +82,7 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
         <div 
           className={cn(
             "p-3 mb-4 rounded-lg text-center",
-            message.type === 'success' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+            message.type === 'success' ? "bg-teal/20 text-teal" : "bg-red/20 text-red"
           )}
         >
           {message.text}
@@ -92,7 +92,7 @@ export function FeedbackButtons({ sessionCode, studentName }: FeedbackButtonsPro
       <Button
         onClick={handleSubmit}
         disabled={!selectedFeedback || isSubmitting}
-        className="w-full"
+        className="w-full bg-teal hover:bg-teal/90 text-white"
         size="lg"
       >
         {isSubmitting ? 'Submitting...' : 'Submit Feedback'}

@@ -69,9 +69,9 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
 
   if (loading) {
     return (
-      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
         <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal"></div>
         </div>
       </div>
     );
@@ -79,8 +79,8 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
 
   if (error) {
     return (
-      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
-        <div className="text-red-500 text-center">{error}</div>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
+        <div className="text-red text-center">{error}</div>
       </div>
     );
   }
@@ -89,26 +89,26 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
   const totalFeedback = feedback.length;
 
   return (
-    <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+    <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Live Feedback</h2>
+        <h2 className="text-2xl font-bold text-teal">Live Feedback</h2>
         
         <div className="flex space-x-2">
           <button
             onClick={() => setView('list')}
-            className={`p-2 rounded-md ${view === 'list' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`p-2 rounded-md ${view === 'list' ? 'bg-teal/10 text-teal' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             List
           </button>
           <button
             onClick={() => setView('students')}
-            className={`p-2 rounded-md ${view === 'students' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`p-2 rounded-md ${view === 'students' ? 'bg-teal/10 text-teal' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             <Users size={20} />
           </button>
           <button
             onClick={() => setView('chart')}
-            className={`p-2 rounded-md ${view === 'chart' ? 'bg-indigo-100 text-indigo-800' : 'text-gray-500 hover:bg-gray-100'}`}
+            className={`p-2 rounded-md ${view === 'chart' ? 'bg-teal/10 text-teal' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             <BarChart3 size={20} />
           </button>
@@ -127,7 +127,7 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div 
-              className="bg-green-500 h-4 rounded-full transition-all duration-500 ease-out"
+              className="bg-teal h-4 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(feedbackCounts['👍'] / totalFeedback) * 100}%` }}
             ></div>
           </div>
@@ -138,7 +138,7 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div 
-              className="bg-yellow-500 h-4 rounded-full transition-all duration-500 ease-out"
+              className="bg-coral h-4 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(feedbackCounts['😕'] / totalFeedback) * 100}%` }}
             ></div>
           </div>
@@ -149,7 +149,7 @@ export function LiveFeedbackPanel({ sessionCode }: LiveFeedbackPanelProps) {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-4">
             <div 
-              className="bg-blue-500 h-4 rounded-full transition-all duration-500 ease-out"
+              className="bg-orange h-4 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(feedbackCounts['❓'] / totalFeedback) * 100}%` }}
             ></div>
           </div>

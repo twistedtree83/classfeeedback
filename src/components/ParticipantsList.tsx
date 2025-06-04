@@ -82,9 +82,9 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   if (loading) {
     return (
-      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
         <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal"></div>
         </div>
       </div>
     );
@@ -92,8 +92,8 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
 
   if (error) {
     return (
-      <div className="w-full p-6 bg-white rounded-xl shadow-lg">
-        <div className="text-red-500 text-center">{error}</div>
+      <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
+        <div className="text-red text-center">{error}</div>
       </div>
     );
   }
@@ -103,11 +103,11 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const approvedParticipants = participants.filter(p => p.status === 'approved');
 
   return (
-    <div className="w-full p-6 bg-white rounded-xl shadow-lg">
+    <div className="w-full p-6 bg-white rounded-xl shadow-lg border border-teal/20">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Users className="h-6 w-6 text-indigo-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Participants</h2>
+          <Users className="h-6 w-6 text-teal" />
+          <h2 className="text-2xl font-bold text-teal">Participants</h2>
         </div>
         <span className="text-sm text-gray-500">
           Total: {participants.length}
@@ -122,7 +122,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
         <div className="space-y-6">
           {pendingParticipants.length > 0 && (
             <div>
-              <h3 className="font-medium text-yellow-600 mb-3 flex items-center">
+              <h3 className="font-medium text-coral mb-3 flex items-center">
                 <XCircle className="h-4 w-4 mr-2" />
                 Pending Approval ({pendingParticipants.length})
               </h3>
@@ -155,7 +155,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
                             onClick={() => handleApproveParticipant(participant.id)}
                             disabled={processingIds.has(participant.id)}
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-teal hover:bg-teal/90 text-white"
                           >
                             {processingIds.has(participant.id) ? 'Approving...' : 'Approve'}
                           </Button>
@@ -169,7 +169,7 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
           )}
 
           <div>
-            <h3 className="font-medium text-green-600 mb-3 flex items-center">
+            <h3 className="font-medium text-teal mb-3 flex items-center">
               <CheckCircle className="h-4 w-4 mr-2" />
               Approved ({approvedParticipants.length})
             </h3>

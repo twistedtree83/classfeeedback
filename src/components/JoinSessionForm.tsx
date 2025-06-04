@@ -171,21 +171,21 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
 
   if (status === 'pending') {
     return (
-      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
         <div className="text-center py-6">
           <div className="flex justify-center mb-4">
             {checking ? (
-              <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+              <Loader2 className="w-12 h-12 text-teal animate-spin" />
             ) : (
-              <AlertCircle className="w-12 h-12 text-yellow-500" />
+              <AlertCircle className="w-12 h-12 text-orange" />
             )}
           </div>
-          <h2 className="text-xl font-semibold mb-2">Waiting for Approval</h2>
+          <h2 className="text-xl font-semibold mb-2 text-teal">Waiting for Approval</h2>
           <p className="text-gray-600 mb-4">
             Your request to join this session is being reviewed by the teacher.
             Please wait a moment...
           </p>
-          <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg inline-block">
+          <div className="animate-pulse bg-orange/20 text-orange px-4 py-2 rounded-lg inline-block">
             Waiting for teacher approval...
           </div>
         </div>
@@ -195,17 +195,17 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
 
   if (status === 'approved') {
     return (
-      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
         <div className="text-center py-6">
           <div className="flex justify-center mb-4">
-            <CheckCircle2 className="w-12 h-12 text-green-500" />
+            <CheckCircle2 className="w-12 h-12 text-teal" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Approved!</h2>
+          <h2 className="text-xl font-semibold mb-2 text-teal">Approved!</h2>
           <p className="text-gray-600 mb-4">
             Your name has been approved by the teacher.
             Joining session...
           </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal mx-auto"></div>
         </div>
       </div>
     );
@@ -213,18 +213,18 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
 
   if (status === 'rejected') {
     return (
-      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
         <div className="text-center py-6">
           <div className="flex justify-center mb-4">
-            <AlertCircle className="w-12 h-12 text-red-500" />
+            <AlertCircle className="w-12 h-12 text-red" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Membership Declined</h2>
+          <h2 className="text-xl font-semibold mb-2 text-red">Membership Declined</h2>
           <p className="text-gray-600 mb-4">
             {error || "Your request to join this session was declined by the teacher."}
           </p>
           <Button
             onClick={() => setStatus(null)}
-            className="w-full mt-2"
+            className="w-full mt-2 bg-teal hover:bg-teal/90 text-white"
           >
             Try Again
           </Button>
@@ -234,8 +234,8 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
   }
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Join Class Session</h2>
+    <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg border border-teal/20">
+      <h2 className="text-2xl font-bold text-center text-teal mb-6">Join Class Session</h2>
       
       <form onSubmit={handleJoinSession} className="space-y-4">
         <Input
@@ -245,7 +245,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
           placeholder="Enter 6-character code"
           maxLength={6}
           disabled={isJoining}
-          className="uppercase"
+          className="uppercase border-teal/30 focus:border-teal focus:ring-teal"
           autoFocus
         />
 
@@ -255,6 +255,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
           onChange={(e) => setStudentName(e.target.value)}
           placeholder="Enter your name or leave blank for random name"
           disabled={isJoining}
+          className="border-teal/30 focus:border-teal focus:ring-teal"
         />
 
         <div className="space-y-2">
@@ -268,8 +269,8 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
                 onClick={() => handleSelectAvatar(avatar)}
                 className={`cursor-pointer p-2 rounded-lg transition-all ${
                   selectedAvatar === avatar 
-                    ? 'ring-2 ring-indigo-500 bg-indigo-50 scale-110' 
-                    : 'hover:bg-gray-50'
+                    ? 'ring-2 ring-teal bg-teal/10 scale-110' 
+                    : 'hover:bg-teal/5 border border-teal/10'
                 }`}
               >
                 <Avatar className="h-12 w-12 mx-auto">
@@ -282,7 +283,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-red-100 text-red-800 text-center flex items-center justify-center gap-2">
+          <div className="p-3 rounded-lg bg-red-100 text-red border border-red/20 text-center flex items-center justify-center gap-2">
             <AlertCircle className="h-5 w-5 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -291,7 +292,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         <Button
           type="submit"
           disabled={isJoining || !sessionCode.trim()}
-          className="w-full"
+          className="w-full bg-teal hover:bg-teal/90 text-white"
           size="lg"
         >
           {isJoining ? 'Joining...' : 'Join Session'}
