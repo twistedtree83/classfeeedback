@@ -14,7 +14,15 @@ import {
   Target, 
   Loader2, 
   CheckSquare,
-  Split
+  Split,
+  UserCircle,
+  GraduationCap,
+  PencilRuler,
+  Lightbulb,
+  BookMarked,
+  Wand2,
+  FileEdit,
+  ListChecks
 } from 'lucide-react';
 import { sanitizeHtml } from '../lib/utils';
 import { useLessonCardAI } from '../hooks/useLessonCardAI';
@@ -276,7 +284,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                       {isProcessing ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Sparkles className="h-4 w-4" />
+                        <Wand2 className="h-4 w-4" />
                       )}
                     </button>
                     <button
@@ -298,9 +306,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         title={card.studentFriendly ? "Show teacher version" : "Show student version"}
                       >
                         {card.studentFriendly ? (
-                          <Target className="h-4 w-4" />
+                          <GraduationCap className="h-4 w-4" />
                         ) : (
-                          <CheckSquare className="h-4 w-4" />
+                          <UserCircle className="h-4 w-4" />
                         )}
                       </button>
                     )}
@@ -311,21 +319,23 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         title={card.isDifferentiated ? "Show standard version" : "Show differentiated version"}
                       >
                         {card.isDifferentiated ? (
-                          <Target className="h-4 w-4" />
+                          <BookOpen className="h-4 w-4" />
                         ) : (
-                          <Split className="h-4 w-4" />
+                          <BookMarked className="h-4 w-4" />
                         )}
                       </button>
                     )}
                     <button
                       onClick={() => handleEditCard(card)}
                       className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
+                      title="Edit card"
                     >
-                      <Edit className="h-4 w-4" />
+                      <PencilRuler className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleRemoveCard(card.id)}
                       className="p-1 text-gray-500 hover:text-red-600 rounded-full"
+                      title="Remove card"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -403,7 +413,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             {generatingCriteria ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <CheckSquare className="h-4 w-4" />
+              <ListChecks className="h-4 w-4" />
             )}
             Generate Success Criteria
           </Button>
@@ -420,7 +430,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             size="sm"
             onClick={createMaterialsCard}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Lightbulb className="h-4 w-4 mr-1" />
             Add Materials
           </Button>
           {lesson.topic_background && (
@@ -438,7 +448,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             size="sm"
             onClick={handleAddCustomCard}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <FileEdit className="h-4 w-4 mr-1" />
             Add Custom Card
           </Button>
         </div>
@@ -472,7 +482,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" />
+                  <UserCircle className="h-4 w-4" />
                   Make Accessible for Students
                 </>
               )}
@@ -491,7 +501,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </>
               ) : (
                 <>
-                  <Split className="h-4 w-4" />
+                  <BookMarked className="h-4 w-4" />
                   Generate Differentiated Cards
                 </>
               )}
