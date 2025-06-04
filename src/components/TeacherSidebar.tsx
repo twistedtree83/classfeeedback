@@ -135,9 +135,9 @@ export function TeacherSidebar({
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {open && (
-          <div className="mb-4">
+          <div className="h-full overflow-y-auto">
             {activeTab === 'feedback' && (
               <TeachingFeedbackPanel 
                 presentationId={presentationId}

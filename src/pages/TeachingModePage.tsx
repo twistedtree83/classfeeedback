@@ -90,7 +90,7 @@ export function TeachingModePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col h-screen overflow-hidden">
       <TeachingHeader
         sessionCode={presentation.session_code}
         hasNewQuestions={hasNewQuestions}

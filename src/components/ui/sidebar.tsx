@@ -92,7 +92,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-2 py-4 hidden md:flex md:flex-col bg-white flex-shrink-0 border-r border-gray-200 shadow-lg",
+        "h-screen flex-shrink-0 hidden md:flex md:flex-col bg-white border-r border-gray-200 shadow-lg overflow-hidden",
         className
       )}
       initial={false}
@@ -106,7 +106,9 @@ export const DesktopSidebar = ({
       }}
       {...props}
     >
-      {children}
+      <div className="px-2 py-4 flex flex-col h-full overflow-hidden">
+        {children}
+      </div>
     </motion.div>
   );
 };
