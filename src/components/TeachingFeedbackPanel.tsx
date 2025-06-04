@@ -211,7 +211,14 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
           q.id === questionId ? { ...q, answered: true } : q
         )
       );
+      // Check if there are still new questions
+      const newQuestionsExist = questions.some(q => !q.answered && q.id !== questionId);
+      if (!newQuestionsExist) {
+        setNewQuestionAlert(false);
+      }
+      return true;
     }
+    return false;
   };
 
   // Get unique student names who have provided feedback
@@ -229,53 +236,51 @@ export function TeachingFeedbackPanel({ presentationId, currentCardIndex }: Teac
 
   return (
     <div className="w-full bg-white rounded-xl">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800">
-          Live Feedback
-          {newQuestionAlert && (
-            <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-              <Bell className="h-3 w-3 mr-1" />
-              New Question
+      <h2 className="text-xl font-bold text-gray-800 mb-3">
+        Live Feedback
+        {newQuestionAlert && (
+          <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+            <Bell className="h-3 w-3 mr-1" />
+            New Question
+          </span>
+        )}
+      </h2>
+      
+      <div className="flex space-x-2 mb-4">
+        <Button
+          variant={view === 'chart' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setView('chart')}
+        >
+          <BarChart3 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={view === 'students' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setView('students')}
+        >
+          <Users className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={view === 'list' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setView('list')}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={view === 'questions' ? 'primary' : 'outline'}
+          size="sm"
+          onClick={() => setView('questions')}
+          className="relative"
+        >
+          <MessageSquare className="h-4 w-4" />
+          {newQuestionsCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {newQuestionsCount}
             </span>
           )}
-        </h2>
-        
-        <div className="flex space-x-2">
-          <Button
-            variant={view === 'chart' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setView('chart')}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === 'students' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setView('students')}
-          >
-            <Users className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === 'list' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setView('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={view === 'questions' ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setView('questions')}
-            className="relative"
-          >
-            <MessageSquare className="h-4 w-4" />
-            {newQuestionsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {newQuestionsCount}
-              </span>
-            )}
-          </Button>
-        </div>
+        </Button>
       </div>
       
       <div className="mb-3 flex items-center">
