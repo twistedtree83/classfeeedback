@@ -64,7 +64,7 @@ export function TeacherSidebar({
     {
       label: "Feedback",
       href: "#feedback",
-      icon: <BarChart3 className="h-5 w-5 flex-shrink-0" />,
+      icon: <BarChart3 className="h-5 w-5" />,
       onClick: () => setActiveTab('feedback'),
       active: activeTab === 'feedback',
       notification: false
@@ -72,7 +72,7 @@ export function TeacherSidebar({
     {
       label: "Participants",
       href: "#participants",
-      icon: <Users className="h-5 w-5 flex-shrink-0" />,
+      icon: <Users className="h-5 w-5" />,
       onClick: () => setActiveTab('participants'),
       active: activeTab === 'participants',
       notification: pendingCount > 0,
@@ -81,7 +81,7 @@ export function TeacherSidebar({
     {
       label: "Questions",
       href: "#questions",
-      icon: <HelpCircle className="h-5 w-5 flex-shrink-0" />,
+      icon: <HelpCircle className="h-5 w-5" />,
       onClick: () => setActiveTab('questions'),
       active: activeTab === 'questions',
       notification: hasNewQuestions
@@ -92,7 +92,7 @@ export function TeacherSidebar({
     {
       label: "Lesson Plan",
       href: "#lesson",
-      icon: <FileText className="h-5 w-5 flex-shrink-0" />,
+      icon: <FileText className="h-5 w-5" />,
       onClick: () => {
         // Navigate to the lesson plan
         if (presentationId) {
@@ -103,7 +103,7 @@ export function TeacherSidebar({
     {
       label: "End Session",
       href: "#end",
-      icon: <LogOut className="h-5 w-5 flex-shrink-0 text-red-600" />,
+      icon: <LogOut className="h-5 w-5 text-red-600" />,
       onClick: onEndSession
     }
   ];
