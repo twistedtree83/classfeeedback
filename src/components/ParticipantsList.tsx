@@ -12,13 +12,22 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   const [participants, setParticipants] = useState<SessionParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [processingIds, setProcessingIds] = useState<string[]>([]);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadParticipants() {
       try {
         const data = await getParticipantsForSession(sessionCode);
-        setParticipants(data);
+        // Filter out duplicates by student name, keeping the most recent entry
+        const uniqueParticipants = data.reduce((acc, current) => {
+          const existing = acc.find(p => p.student_name === current.student_name);
+          if (!existing || new Date(current.joined_at) > new Date(existing.joined_at)) {
+            const filtered = acc.filter(p => p.student_name !== current.student_name);
+            return [...filtered, current];
+          }
+          return acc;
+        }, [] as SessionParticipant[]);
+        setParticipants(uniqueParticipants);
       } catch (err) {
         console.error('Error loading participants:', err);
         setError('Failed to load participants');
@@ -31,10 +40,15 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   }, [sessionCode]);
 
   useEffect(() => {
-    const subscription = subscribeToSessionParticipants(
+    const subscription = subscribeToSessionParticipants( 
       sessionCode,
       (newParticipant) => {
-        setParticipants(current => [...current, newParticipant]);
+        setParticipants(current => {
+          // Remove any existing participant with the same name
+          const filtered = current.filter(p => p.student_name !== newParticipant.student_name);
+          // Add the new/updated participant
+          return [...filtered, newParticipant];
+        });
       }
     );
     
@@ -44,19 +58,25 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
   }, [sessionCode]);
 
   const handleApproveParticipant = async (participantId: string) => {
-    setProcessingIds(prev => [...prev, participantId]);
+    setProcessingIds(prev => new Set(prev).add(participantId));
     try {
       const success = await approveParticipant(participantId);
       if (success) {
         // Update local state
         setParticipants(prev => 
-          prev.map(p => p.id === participantId ? { ...p, status: 'approved' } : p)
+          prev.map(p => p.id === participantId ? { ...p, status: 'approved' } : p).filter((p, i, arr) => 
+            arr.findIndex(x => x.student_name === p.student_name) === i
+          )
         );
       }
     } catch (err) {
       console.error('Error approving participant:', err);
     } finally {
-      setProcessingIds(prev => prev.filter(id => id !== participantId));
+      setProcessingIds(prev => {
+        const next = new Set(prev);
+        next.delete(participantId);
+        return next;
+      });
     }
   };
 
@@ -130,14 +150,14 @@ export function ParticipantsList({ sessionCode }: ParticipantsListProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatTime(participant.joined_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <Button
                             onClick={() => handleApproveParticipant(participant.id)}
-                            disabled={processingIds.includes(participant.id)}
+                            disabled={processingIds.has(participant.id)}
                             size="sm"
                             className="bg-green-600 hover:bg-green-700"
                           >
-                            {processingIds.includes(participant.id) ? 'Approving...' : 'Approve'}
+                            {processingIds.has(participant.id) ? 'Approving...' : 'Approve'}
                           </Button>
                         </td>
                       </tr>
