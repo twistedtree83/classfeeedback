@@ -121,25 +121,25 @@ export function TeacherSidebar({
         )}
       </div>
       
-      <div className={cn(
-        "mb-6", 
-        !open ? "mx-auto" : "bg-indigo-50 text-indigo-800 px-3 py-2 rounded-lg flex items-center justify-between"
-      )}>
-        {open ? (
-          <>
-            <div className="font-mono font-medium">{sessionCode}</div>
-            {pendingCount > 0 && (
+      {pendingCount > 0 && (
+        <div className={cn(
+          "mb-6",
+          !open ? "mx-auto" : "bg-red-50 text-red-800 px-3 py-2 rounded-lg flex items-center justify-between"
+        )}>
+          {open ? (
+            <>
+              <div className="font-medium">Pending Approval</div>
               <div className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
                 {pendingCount}
               </div>
-            )}
-          </>
-        ) : (
-          <div className="text-xs font-mono text-center text-indigo-800 font-medium">
-            {sessionCode}
-          </div>
-        )}
-      </div>
+            </>
+          ) : (
+            <div className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
+              {pendingCount}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-1 mb-4">
         {links.map((link, idx) => (
