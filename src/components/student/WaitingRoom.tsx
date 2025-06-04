@@ -30,12 +30,28 @@ export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
   }, []);
   
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${gradients[backgroundIndex]} transition-colors duration-5000 flex items-center justify-center p-4`}>
+    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative">
+      {/* Animated background layers */}
+      {gradients.map((gradient, index) => (
+        <motion.div
+          key={index}
+          className={`absolute inset-0 bg-gradient-to-br ${gradient}`}
+          initial={{ opacity: index === 0 ? 1 : 0 }}
+          animate={{ 
+            opacity: index === backgroundIndex ? 1 : 0 
+          }}
+          transition={{ 
+            duration: 2,
+            ease: "easeInOut"
+          }}
+        />
+      ))}
+      
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 md:p-12 max-w-2xl w-full text-center"
+        className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 md:p-12 max-w-2xl w-full text-center z-10"
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -114,12 +130,54 @@ export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
         </motion.div>
         
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.5, 1, 0.5, 0] }}
-          transition={{ repeat: Infinity, duration: 3, delay: 0.7 }}
-          className="text-teal/80 text-sm"
+          className="flex items-center justify-center gap-3 text-teal/80 text-sm"
         >
-          Waiting for your teacher to start the lesson...
+          <motion.div
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              scale: [0.98, 1.02, 0.98]
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity,
+              ease: "easeInOut" 
+            }}
+            className="w-2 h-2 rounded-full bg-teal"
+          />
+          <motion.div
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              scale: [0.98, 1.02, 0.98]
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.3
+            }}
+            className="w-2 h-2 rounded-full bg-teal"
+          />
+          <motion.div
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              scale: [0.98, 1.02, 0.98]
+            }}
+            transition={{ 
+              duration: 1.5, 
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.6
+            }}
+            className="w-2 h-2 rounded-full bg-teal"
+          />
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7, duration: 1 }}
+            className="ml-2"
+          >
+            Waiting for your teacher to start the lesson...
+          </motion.span>
         </motion.div>
       </motion.div>
     </div>
