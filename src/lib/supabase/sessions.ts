@@ -42,13 +42,9 @@ export const getSessionByCode = async (code: string, includeInactive: boolean = 
       query = query.eq('active', true);
     }
     
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No session found - this is not an error case
-        return null;
-      }
       console.error('Error fetching session:', error);
       return null;
     }

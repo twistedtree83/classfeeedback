@@ -287,10 +287,15 @@ export const getLessonPresentationByCode = async (
       sessionQuery.eq('active', true);
     }
     
-    const { data: session, error: sessionError } = await sessionQuery.single();
+    const { data: session, error: sessionError } = await sessionQuery.maybeSingle();
 
     if (sessionError) {
       console.error('Session not found or inactive:', sessionError);
+      return null;
+    }
+    
+    if (!session) {
+      console.log('No active session found with code:', code);
       return null;
     }
 
@@ -307,10 +312,15 @@ export const getLessonPresentationByCode = async (
       presentationQuery.eq('active', true);
     }
     
-    const { data, error } = await presentationQuery.single();
+    const { data, error } = await presentationQuery.maybeSingle();
     
-    if (error || !data) {
+    if (error) {
       console.error('Error fetching presentation:', error);
+      return null;
+    }
+    
+    if (!data) {
+      console.log('No active presentation found with code:', code);
       return null;
     }
     
@@ -443,13 +453,9 @@ export const getSessionByCode = async (code: string, includeInactive: boolean = 
       query = query.eq('active', true);
     }
     
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No session found - this is not an error case
-        return null;
-      }
       console.error('Error fetching session:', error);
       return null;
     }
