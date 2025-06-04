@@ -805,7 +805,13 @@ export function StudentView() {
             <div className="flex items-center gap-2">
               <User size={18} className="text-indigo-600" />
               <div className="flex items-center gap-2">
-                <img src={selectedAvatar} alt="Avatar" className="w-8 h-8 rounded-full" />
+                {selectedAvatar && (
+                  <img 
+                    src={selectedAvatar} 
+                    alt="Avatar" 
+                    className="w-8 h-8 rounded-full border-2 border-indigo-200"
+                  />
+                )}
                 <span className="font-medium">{studentName}</span>
               </div>
             </div>
@@ -835,4 +841,4 @@ export function StudentView() {
       {teacherMessage && (
         <div 
           ref={messageToastRef}
-          className="fixed top-20 left-1/
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-50 text-blue-800 px-4 py-3 rounded-lg shadow-md flex items-start gap-3 max-w-md border border-blue-200"
