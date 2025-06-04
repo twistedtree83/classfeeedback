@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, BarChart3, MessageSquare, ArrowLeft, Menu, X } from 'lucide-react';
+import { MessageSquare, Menu, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface TeachingHeaderProps {
@@ -31,6 +31,7 @@ export function TeachingHeader({
               size="sm"
               onClick={onToggleSidebar}
               className="mr-2"
+              aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
             >
               {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -42,31 +43,6 @@ export function TeachingHeader({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {!showSidebar && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={onToggleSidebar}
-                  size="sm"
-                  className="relative"
-                >
-                  <BarChart3 className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={onToggleSidebar}
-                  size="sm"
-                  className="relative"
-                >
-                  <Users className="h-5 w-5" />
-                  {pendingCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
-                      {pendingCount}
-                    </span>
-                  )}
-                </Button>
-              </>
-            )}
             <Button
               variant="outline"
               onClick={onOpenMessageModal}

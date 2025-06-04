@@ -91,14 +91,16 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-white w-[300px] flex-shrink-0 border-r border-gray-200 shadow-lg",
+        "h-full px-2 py-4 hidden md:flex md:flex-col bg-white flex-shrink-0 border-r border-gray-200 shadow-lg",
         className
       )}
       animate={{
-        width: animate ? (open ? "300px" : "60px") : "300px",
+        width: animate ? (open ? "300px" : "70px") : "300px",
       }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      transition={{
+        duration: 0.2,
+        ease: "easeInOut",
+      }}
       {...props}
     >
       {children}
@@ -168,19 +170,28 @@ export const SidebarLink = ({
   const { open, animate } = useSidebar();
   
   const content = (
-    <>
-      {link.icon}
-      <motion.span
-        animate={{
-          display: animate ? (open ? "inline-block" : "none") : "inline-block",
-          opacity: animate ? (open ? 1 : 0) : 1,
-        }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
-      >
-        {link.label}
-      </motion.span>
+    <div className="flex items-center w-full">
+      <div className="flex-shrink-0">
+        {link.icon}
+      </div>
+      {(open || !animate) && (
+        <motion.span
+          initial={animate ? { opacity: 0, width: 0 } : { opacity: 1 }}
+          animate={animate ? 
+            { opacity: open ? 1 : 0, width: open ? "auto" : 0 } : 
+            { opacity: 1, width: "auto" }
+          }
+          transition={{ duration: 0.2 }}
+          className={cn(
+            "ml-3 text-sm font-medium whitespace-nowrap overflow-hidden",
+            !open && "hidden"
+          )}
+        >
+          {link.label}
+        </motion.span>
+      )}
       {link.notification && (
-        <div className="ml-auto">
+        <div className={cn("ml-auto flex-shrink-0", !open && "ml-0")}>
           {typeof link.count === 'number' ? (
             <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {link.count}
@@ -190,7 +201,7 @@ export const SidebarLink = ({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 
   // If there's an onClick handler, we render a button instead of a link
@@ -199,8 +210,9 @@ export const SidebarLink = ({
       <button
         onClick={link.onClick}
         className={cn(
-          "flex items-center justify-start gap-2 group/sidebar py-2 w-full text-left",
-          link.active ? "text-indigo-600 font-medium" : "text-gray-600",
+          "flex items-center justify-start px-3 py-2 rounded-lg cursor-pointer transition-colors",
+          link.active ? "bg-indigo-100 text-indigo-900" : "hover:bg-gray-100 text-gray-700",
+          !open && "justify-center px-2",
           className
         )}
         {...props}
@@ -214,8 +226,9 @@ export const SidebarLink = ({
     <RouterLink
       to={link.href}
       className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2",
-        link.active ? "text-indigo-600 font-medium" : "text-gray-600",
+        "flex items-center justify-start px-3 py-2 rounded-lg cursor-pointer transition-colors",
+        link.active ? "bg-indigo-100 text-indigo-900" : "hover:bg-gray-100 text-gray-700",
+        !open && "justify-center px-2",
         className
       )}
       {...props}

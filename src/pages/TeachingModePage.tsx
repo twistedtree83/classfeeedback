@@ -101,18 +101,15 @@ export function TeachingModePage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        {showSidebar && (
-          <TeacherSidebar 
-            sessionCode={presentation.session_code}
-            presentationId={presentation.id}
-            teacherName={teacherName}
-            pendingCount={pendingCount}
-            hasNewQuestions={hasNewQuestions}
-            currentCardIndex={actualCardIndex}
-            onEndSession={handleEndSession}
-          />
-        )}
+        <TeacherSidebar 
+          sessionCode={presentation.session_code}
+          presentationId={presentation.id}
+          teacherName={teacherName}
+          pendingCount={pendingCount}
+          hasNewQuestions={hasNewQuestions}
+          currentCardIndex={actualCardIndex}
+          onEndSession={handleEndSession}
+        />
 
         <main className="flex-1 overflow-auto p-6">
           <TeachingContentArea
