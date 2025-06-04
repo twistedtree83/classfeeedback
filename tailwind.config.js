@@ -17,6 +17,17 @@ export default {
   			ring: 'hsl(var(--ring))',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+        // Custom color scheme
+        orange: {
+          DEFAULT: '#FF9F1C',
+          light: '#FFBF69'
+        },
+        pink: {
+          muted: '#CB997E'
+        },
+        peach: {
+          pale: '#FFE8D6'
+        },
   			primary: {
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'

@@ -64,22 +64,22 @@ export function HeroCard({
     <div 
       ref={cardRef}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-100",
+        "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-[#FFE8D6]",
         "max-w-6xl w-full mx-auto h-[80vh] min-h-[600px] max-h-[800px]",
-        "transition-all duration-500 hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)]",
+        "transition-all duration-500 hover:shadow-[0_20px_50px_rgba(255,_159,_28,_0.4)]",
         className
       )}
     >
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-[#FFE8D6] to-[#FFE8D6]/50">
         {/* Background blobs */}
         <div 
-          className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-blue-100/50 filter blur-3xl"
+          className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-[#FFBF69]/70 filter blur-3xl"
           style={{
             transform: `translate(${(mousePosition.x - 0.5) * -20}px, ${(mousePosition.y - 0.5) * -20}px)`
           }}
         ></div>
         <div 
-          className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-purple-100/50 filter blur-3xl"
+          className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-[#CB997E]/50 filter blur-3xl"
           style={{
             transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${(mousePosition.y - 0.5) * 20}px)`
           }}
@@ -93,7 +93,7 @@ export function HeroCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6 }}
-            className="text-sm font-medium text-indigo-600 mb-3 tracking-wider uppercase"
+            className="text-sm font-medium text-[#FF9F1C] mb-3 tracking-wider uppercase"
           >
             {subtitle}
           </motion.div>
@@ -111,7 +111,7 @@ export function HeroCard({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-gray-600 mb-8 max-w-lg"
+            className="text-lg text-[#CB997E] mb-8 max-w-lg"
           >
             {description}
           </motion.p>
@@ -124,7 +124,7 @@ export function HeroCard({
           >
             <Button 
               size="lg" 
-              className="group"
+              className="group bg-[#FF9F1C] hover:bg-[#FF9F1C]/90 text-white border-none"
               onClick={onPrimaryButtonClick}
               asChild={!!primaryButtonLink}
             >
@@ -144,6 +144,7 @@ export function HeroCard({
             <Button 
               variant="outline" 
               size="lg"
+              className="border-[#CB997E] text-[#CB997E] hover:bg-[#CB997E]/10"
               onClick={onSecondaryButtonClick}
               asChild={!!secondaryButtonLink}
             >
@@ -167,7 +168,7 @@ export function HeroCard({
             className="absolute inset-0 z-0"
             style={parallaxStyle}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FF9F1C]/30 to-transparent z-10"></div>
             <img 
               src={image} 
               alt={imageAlt}
@@ -186,12 +187,12 @@ export function HeroCard({
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-2 rounded-full">
-                <BarChart3 className="h-6 w-6 text-green-700" />
+              <div className="bg-[#FFBF69] p-2 rounded-full">
+                <BarChart3 className="h-6 w-6 text-[#FF9F1C]" />
               </div>
               <div>
                 <p className="font-medium text-gray-800">Live Feedback</p>
-                <p className="text-sm text-gray-500">10 students participating</p>
+                <p className="text-sm text-[#CB997E]">10 students participating</p>
               </div>
             </div>
           </motion.div>
