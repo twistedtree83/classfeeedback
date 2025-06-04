@@ -92,11 +92,15 @@ export function processContentWithUrls(content: string): string {
 /**
  * Sanitizes HTML content for safe display and renders markdown
  */
-export function sanitizeHtml(content: string): string {
+export function sanitizeHtml(content: any): string {
+  // Ensure content is a string
   if (!content) return '';
   
+  // Convert content to string to handle non-string inputs
+  const contentStr = String(content);
+  
   // Replace markdown headers
-  let formatted = content
+  let formatted = contentStr
     .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold my-2">$1</h3>')
     .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold my-3">$1</h2>')
     .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold my-4">$1</h1>');
