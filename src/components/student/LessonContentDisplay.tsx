@@ -9,7 +9,7 @@ interface LessonContentDisplayProps {
   viewingDifferentiated: boolean;
   generatingDifferentiated: boolean;
   onToggleDifferentiatedView: () => void;
-  onGenerateDifferentiated: () => void;
+  onGenerateDifferentiated: () => Promise<void>;
 }
 
 export function LessonContentDisplay({

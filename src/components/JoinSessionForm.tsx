@@ -39,7 +39,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         console.log(`Received status update for participant ${participantId}: ${newStatus}`);
         
         // Update the status state
-        setStatus(newStatus as any);
+        setStatus(newStatus as 'pending' | 'approved' | 'rejected');
         
         // Handle approval
         if (newStatus === 'approved') {
@@ -66,7 +66,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
         console.log("Current participant status:", currentStatus);
         
         if (currentStatus) {
-          setStatus(currentStatus as any);
+          setStatus(currentStatus as 'pending' | 'approved' | 'rejected');
         
           if (currentStatus === 'approved') {
             // Already approved, join immediately
@@ -211,6 +211,28 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
     );
   }
 
+  if (status === 'rejected') {
+    return (
+      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+        <div className="text-center py-6">
+          <div className="flex justify-center mb-4">
+            <AlertCircle className="w-12 h-12 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Membership Declined</h2>
+          <p className="text-gray-600 mb-4">
+            {error || "Your request to join this session was declined by the teacher."}
+          </p>
+          <Button
+            onClick={() => setStatus(null)}
+            className="w-full mt-2"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Join Class Session</h2>
@@ -237,7 +259,7 @@ export function JoinSessionForm({ onJoinSession }: JoinSessionFormProps) {
 
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
-            Choose an Avatar
+            Choose an Avatar (Optional)
           </label>
           <div className="grid grid-cols-4 gap-3 mt-2">
             {avatars.map((avatar, index) => (

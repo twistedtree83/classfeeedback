@@ -1,15 +1,12 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { JoinSessionForm } from '../components/JoinSessionForm';
 
 export function JoinPage() {
-  const navigate = useNavigate();
-
-  // Instead of an automatic redirect, show the join form directly
   const handleJoinSession = (code: string, name: string, avatarUrl?: string) => {
     // Navigate to student view with code as URL parameter
-    navigate(`/student?code=${code}`);
+    window.location.href = `/student?code=${code}&name=${encodeURIComponent(name)}${avatarUrl ? `&avatar=${encodeURIComponent(avatarUrl)}` : ''}`;
   };
 
   return (
