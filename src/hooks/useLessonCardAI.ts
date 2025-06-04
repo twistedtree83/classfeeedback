@@ -7,9 +7,9 @@ import {
 import type { LessonCard } from '../lib/types';
 
 export function useLessonCardAI(
-  cards: LessonCard[],
+  selectedCards: LessonCard[],
   lesson: any,
-  onUpdateCards: (updatedCards: LessonCard[]) => void
+  onSave: (updatedCards: LessonCard[]) => void
 ) {
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
   const [processingAllCards, setProcessingAllCards] = useState(false);
@@ -26,10 +26,10 @@ export function useLessonCardAI(
     setProcessingCardId(cardId);
     
     try {
-      const cardIndex = cards.findIndex(card => card.id === cardId);
+      const cardIndex = selectedCards.findIndex(card => card.id === cardId);
       if (cardIndex === -1) return false;
       
-      const card = cards[cardIndex];
+      const card = selectedCards[cardIndex];
       
       // Save original content if not already saved
       const originalContent = card.originalContent || card.content;
@@ -41,8 +41,8 @@ export function useLessonCardAI(
         lesson.level
       );
       
-      // Update the card
-      const updatedCards = [...cards];
+      // Update the cards
+      const updatedCards = [...selectedCards];
       updatedCards[cardIndex] = {
         ...card,
         content: studentFriendlyContent,
@@ -50,7 +50,7 @@ export function useLessonCardAI(
         studentFriendly: true
       };
       
-      onUpdateCards(updatedCards);
+      onSave(updatedCards);
       return true;
     } catch (error) {
       console.error('Error making card student-friendly:', error);
@@ -62,13 +62,13 @@ export function useLessonCardAI(
 
   // Make all cards student-friendly
   const makeAllCardsStudentFriendly = async () => {
-    if (processingAllCards || cards.length === 0) return false;
+    if (processingAllCards || selectedCards.length === 0) return false;
     
     setProcessingAllCards(true);
     
     try {
       // Process each card sequentially to avoid rate limits
-      let updatedCards = [...cards];
+      let updatedCards = [...selectedCards];
       
       for (let i = 0; i < updatedCards.length; i++) {
         const card = updatedCards[i];
@@ -95,7 +95,7 @@ export function useLessonCardAI(
         };
       }
       
-      onUpdateCards(updatedCards);
+      onSave(updatedCards);
       return true;
     } catch (error) {
       console.error('Error making cards student-friendly:', error);
@@ -123,7 +123,7 @@ export function useLessonCardAI(
         });
         
         // Update any existing objective cards with the new success criteria
-        const updatedCards = cards.map(card => {
+        const updatedCards = selectedCards.map(card => {
           if (card.type === 'objective') {
             const objectives = lesson.objectives.map(obj => `• ${obj}`).join('\n');
             const content = `${objectives}\n\n**Success Criteria:**\n${criteria.map(sc => `• ${sc}`).join('\n')}`;
@@ -137,7 +137,7 @@ export function useLessonCardAI(
           return card;
         });
         
-        onUpdateCards(updatedCards);
+        onSave(updatedCards);
         return true;
       } else {
         throw new Error('Failed to generate success criteria');
@@ -168,10 +168,10 @@ export function useLessonCardAI(
     setDifferentiatingCardId(cardId);
     
     try {
-      const cardIndex = cards.findIndex(card => card.id === cardId);
+      const cardIndex = selectedCards.findIndex(card => card.id === cardId);
       if (cardIndex === -1) return false;
       
-      const card = cards[cardIndex];
+      const card = selectedCards[cardIndex];
       
       // Use the student-friendly content as base if available, otherwise use original
       const contentToAdapt = card.studentFriendly && card.originalContent 
@@ -186,13 +186,13 @@ export function useLessonCardAI(
       );
       
       // Update the card
-      const updatedCards = [...cards];
+      const updatedCards = [...selectedCards];
       updatedCards[cardIndex] = {
         ...card,
         differentiatedContent
       };
       
-      onUpdateCards(updatedCards);
+      onSave(updatedCards);
       return true;
     } catch (error) {
       console.error('Error creating differentiated card:', error);
@@ -204,13 +204,13 @@ export function useLessonCardAI(
 
   // Create differentiated version of all cards
   const createDifferentiatedCards = async () => {
-    if (generatingDifferentiated || cards.length === 0) return false;
+    if (generatingDifferentiated || selectedCards.length === 0) return false;
     
     setGeneratingDifferentiated(true);
     
     try {
       // Process each card sequentially to avoid rate limits
-      let updatedCards = [...cards];
+      let updatedCards = [...selectedCards];
       
       for (let i = 0; i < updatedCards.length; i++) {
         const card = updatedCards[i];
@@ -237,7 +237,7 @@ export function useLessonCardAI(
         };
       }
       
-      onUpdateCards(updatedCards);
+      onSave(updatedCards);
       return true;
     } catch (error) {
       console.error('Error creating differentiated cards:', error);

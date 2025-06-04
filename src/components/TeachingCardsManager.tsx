@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -26,13 +26,12 @@ interface TeachingCardsManagerProps {
 }
 
 export function TeachingCardsManager({ lesson, selectedCards, onSave }: TeachingCardsManagerProps) {
-  const [cards, setCards] = useState<LessonCard[]>(selectedCards);
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editDuration, setEditDuration] = useState('');
 
-  // Use our custom AI hook
+  // Use our custom AI hook with the direct onSave callback
   const {
     processingCardId,
     processingAllCards,
@@ -46,17 +45,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     handleGenerateSuccessCriteria,
     createDifferentiatedCard,
     createDifferentiatedCards,
-  } = useLessonCardAI(cards, lesson, setCards);
-
-  // Update local cards state when selectedCards changes from parent
-  useEffect(() => {
-    setCards(selectedCards);
-  }, [selectedCards]);
-
-  // Whenever cards change, notify the parent
-  useEffect(() => {
-    onSave(cards);
-  }, [cards, onSave]);
+  } = useLessonCardAI(selectedCards, lesson, onSave);
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -65,11 +54,11 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       return;
     }
 
-    const reorderedCards = Array.from(cards);
+    const reorderedCards = Array.from(selectedCards);
     const [removed] = reorderedCards.splice(result.source.index, 1);
     reorderedCards.splice(result.destination.index, 0, removed);
 
-    setCards(reorderedCards);
+    onSave(reorderedCards);
   };
 
   // Add a new custom card
@@ -84,7 +73,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    setCards(prev => [...prev, newCard]);
+    onSave([...selectedCards, newCard]);
     
     // Start editing the new card
     setEditingCardId(newCard.id);
@@ -95,7 +84,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Remove a card
   const handleRemoveCard = (id: string) => {
-    setCards(cards.filter(card => card.id !== id));
+    onSave(selectedCards.filter(card => card.id !== id));
     
     // If we're editing this card, stop editing
     if (editingCardId === id) {
@@ -113,7 +102,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Save edited card
   const handleSaveEdit = (id: string) => {
-    setCards(prevCards => prevCards.map(card => {
+    const updatedCards = selectedCards.map(card => {
       if (card.id === id) {
         return {
           ...card,
@@ -123,8 +112,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
         };
       }
       return card;
-    }));
+    });
     
+    onSave(updatedCards);
     setEditingCardId(null);
   };
 
@@ -147,7 +137,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    setCards(prev => [...prev, newCard]);
+    onSave([...selectedCards, newCard]);
   };
 
   // Create a materials card from lesson
@@ -162,7 +152,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    setCards(prev => [...prev, newCard]);
+    onSave([...selectedCards, newCard]);
   };
 
   // Create a topic background card from lesson
@@ -179,20 +169,20 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    setCards(prev => [...prev, newCard]);
+    onSave([...selectedCards, newCard]);
   };
 
   // Toggle a card between teacher and student versions
   const toggleCardMode = (cardId: string) => {
-    const cardIndex = cards.findIndex(card => card.id === cardId);
+    const cardIndex = selectedCards.findIndex(card => card.id === cardId);
     if (cardIndex === -1) return;
     
-    const card = cards[cardIndex];
+    const card = selectedCards[cardIndex];
     
     // Only toggle if we have both versions
     if (!card.studentFriendly || !card.originalContent) return;
     
-    const updatedCards = [...cards];
+    const updatedCards = [...selectedCards];
     updatedCards[cardIndex] = {
       ...card,
       content: card.studentFriendly ? card.originalContent : card.content,
@@ -200,15 +190,15 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       isDifferentiated: false // Reset differentiated state when toggling
     };
     
-    setCards(updatedCards);
+    onSave(updatedCards);
   };
 
   // Toggle a card between standard and differentiated versions
   const toggleDifferentiated = (cardId: string) => {
-    const cardIndex = cards.findIndex(card => card.id === cardId);
+    const cardIndex = selectedCards.findIndex(card => card.id === cardId);
     if (cardIndex === -1) return;
     
-    const card = cards[cardIndex];
+    const card = selectedCards[cardIndex];
     
     // Only toggle if differentiated content exists
     if (!card.differentiatedContent) return;
@@ -218,14 +208,14 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       ? (card.studentFriendly ? card.content : card.originalContent || card.content)
       : card.content;
     
-    const updatedCards = [...cards];
+    const updatedCards = [...selectedCards];
     updatedCards[cardIndex] = {
       ...card,
       content: card.isDifferentiated ? regularContent : card.differentiatedContent,
       isDifferentiated: !card.isDifferentiated
     };
     
-    setCards(updatedCards);
+    onSave(updatedCards);
   };
 
   // Render a card based on its state (normal or editing)
@@ -466,13 +456,13 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       
       <div className="border-t pt-4">
         <div className="flex justify-between items-center mb-4 flex-wrap">
-          <h3 className="font-medium">Card Sequence ({cards.length} cards)</h3>
+          <h3 className="font-medium">Card Sequence ({selectedCards.length} cards)</h3>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={makeAllCardsStudentFriendly}
-              disabled={processingAllCards || cards.length === 0}
+              disabled={processingAllCards || selectedCards.length === 0}
               className="flex items-center gap-1"
             >
               {processingAllCards ? (
@@ -491,7 +481,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
               variant="outline"
               size="sm"
               onClick={createDifferentiatedCards}
-              disabled={generatingDifferentiated || cards.length === 0}
+              disabled={generatingDifferentiated || selectedCards.length === 0}
               className="flex items-center gap-1"
             >
               {generatingDifferentiated ? (
@@ -516,12 +506,12 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 ref={provided.innerRef}
                 className="space-y-2"
               >
-                {cards.length === 0 ? (
+                {selectedCards.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
                     No cards added yet. Add cards from the lesson plan or create custom cards.
                   </div>
                 ) : (
-                  cards.map((card, index) => renderCard(card, index))
+                  selectedCards.map((card, index) => renderCard(card, index))
                 )}
                 {provided.placeholder}
               </div>
