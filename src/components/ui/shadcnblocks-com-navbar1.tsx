@@ -1,4 +1,5 @@
 import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Accordion,
@@ -31,6 +32,12 @@ interface MenuItem {
   items?: MenuItem[];
 }
 
+interface NavAuthItem {
+  text: string;
+  url: string;
+  onClick?: () => void;
+}
+
 interface Navbar1Props {
   logo?: {
     url: string;
@@ -44,14 +51,8 @@ interface Navbar1Props {
     url: string;
   }[];
   auth?: {
-    login: {
-      text: string;
-      url: string;
-    };
-    signup: {
-      text: string;
-      url: string;
-    };
+    login: NavAuthItem;
+    signup: NavAuthItem;
   };
 }
 
@@ -145,6 +146,17 @@ const Navbar1 = ({
     signup: { text: "Sign up", url: "#" },
   },
 }: Navbar1Props) => {
+  const navigate = useNavigate();
+
+  const handleNavAuthClick = (item: NavAuthItem) => (e: React.MouseEvent) => {
+    if (item.onClick) {
+      e.preventDefault();
+      item.onClick();
+    } else if (item.url) {
+      navigate(item.url);
+    }
+  };
+
   return (
     <section className="py-4">
       <div className="container">
@@ -163,11 +175,28 @@ const Navbar1 = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <a href={auth.login.url}>{auth.login.text}</a>
+            <Button 
+              asChild={!auth.login.onClick} 
+              variant="outline" 
+              size="sm"
+              onClick={auth.login.onClick ? handleNavAuthClick(auth.login) : undefined}
+            >
+              {!auth.login.onClick ? (
+                <a href={auth.login.url}>{auth.login.text}</a>
+              ) : (
+                auth.login.text
+              )}
             </Button>
-            <Button asChild size="sm">
-              <a href={auth.signup.url}>{auth.signup.text}</a>
+            <Button 
+              asChild={!auth.signup.onClick} 
+              size="sm"
+              onClick={auth.signup.onClick ? handleNavAuthClick(auth.signup) : undefined}
+            >
+              {!auth.signup.onClick ? (
+                <a href={auth.signup.url}>{auth.signup.text}</a>
+              ) : (
+                auth.signup.text
+              )}
             </Button>
           </div>
         </nav>
@@ -216,11 +245,26 @@ const Navbar1 = ({
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline">
-                      <a href={auth.login.url}>{auth.login.text}</a>
+                    <Button 
+                      asChild={!auth.login.onClick} 
+                      variant="outline"
+                      onClick={auth.login.onClick ? handleNavAuthClick(auth.login) : undefined}
+                    >
+                      {!auth.login.onClick ? (
+                        <a href={auth.login.url}>{auth.login.text}</a>
+                      ) : (
+                        auth.login.text
+                      )}
                     </Button>
-                    <Button asChild>
-                      <a href={auth.signup.url}>{auth.signup.text}</a>
+                    <Button 
+                      asChild={!auth.signup.onClick}
+                      onClick={auth.signup.onClick ? handleNavAuthClick(auth.signup) : undefined}
+                    >
+                      {!auth.signup.onClick ? (
+                        <a href={auth.signup.url}>{auth.signup.text}</a>
+                      ) : (
+                        auth.signup.text
+                      )}
                     </Button>
                   </div>
                 </div>

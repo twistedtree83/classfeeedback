@@ -68,8 +68,8 @@ export function Header() {
   const logo = {
     url: "/",
     src: "/images/logo.png", 
-    alt: "Classroom Feedback",
-    title: "Classroom Feedback"
+    alt: "CoTeach",
+    title: ""
   };
   
   // If user is signed in, override auth options with profile dropdown
@@ -83,7 +83,7 @@ export function Header() {
       menu={menuItems}
       auth={user ? {
         login: { text: userInitials, url: "/profile" },
-        signup: { text: "Sign out", url: "#", onClick: handleSignOut }
+        signup: { text: "Sign out", url: "#" }
       } : authOptions}
       mobileExtraLinks={[
         { name: "Profile", url: "/profile" },
