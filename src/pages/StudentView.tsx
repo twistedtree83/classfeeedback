@@ -91,7 +91,8 @@ export function StudentView() {
     messages, 
     newMessage, 
     teacherName,
-    lessonStarted
+    lessonStarted,
+    sessionHookError // Added this to capture errors from the hook
   } = useStudentSession(sessionCode, studentName);
   
   const { 
@@ -488,7 +489,7 @@ export function StudentView() {
     );
   }
 
-  // Render loading view
+  // Render loading view or session not found error
   if (loading || !presentation || !currentCard) {
     return (
       <div className="min-h-screen bg-teal/5 flex items-center justify-center p-4">
@@ -506,7 +507,7 @@ export function StudentView() {
                 </div>
                 <h2 className="text-2xl font-semibold mb-4">Session Not Found</h2>
                 <p className="text-gray-600 mb-6">
-                  This session may have ended or the code is invalid.
+                  {sessionHookError || error || "This session may have ended or the code is invalid."}
                 </p>
                 <Button 
                   onClick={() => {
@@ -514,7 +515,7 @@ export function StudentView() {
                     setStatus(null);
                     setParticipantId(null);
                     setJoined(false);
-                    setPresentation(null);
+                    setLoading(false);
                     setError(null);
                   }}
                   className="bg-teal hover:bg-teal/90 text-white"
