@@ -89,8 +89,17 @@ export function TeachingModePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Main teacher view with sidebar */}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TeachingHeader
+        sessionCode={presentation.session_code}
+        hasNewQuestions={hasNewQuestions}
+        pendingCount={pendingCount}
+        showSidebar={showSidebar}
+        onToggleSidebar={handleToggleSidebar}
+        onOpenMessageModal={openMessageModal}
+        onEndSession={handleEndSession}
+      />
+
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         {showSidebar && (
@@ -105,32 +114,19 @@ export function TeachingModePage() {
           />
         )}
 
-        {/* Main content area */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <TeachingHeader
+        <main className="flex-1 overflow-auto p-6">
+          <TeachingContentArea
+            currentCard={currentCard}
+            displayedCardIndex={displayedCardIndex}
+            totalCards={totalCards}
+            progressPercentage={progressPercentage}
+            isFirstCard={isFirstCard}
+            isLastCard={isLastCard}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
             sessionCode={presentation.session_code}
-            hasNewQuestions={hasNewQuestions}
-            pendingCount={pendingCount}
-            showSidebar={showSidebar}
-            onToggleSidebar={handleToggleSidebar}
-            onOpenMessageModal={openMessageModal}
-            onEndSession={handleEndSession}
           />
-
-          <main className="flex-1 overflow-auto p-6">
-            <TeachingContentArea
-              currentCard={currentCard}
-              displayedCardIndex={displayedCardIndex}
-              totalCards={totalCards}
-              progressPercentage={progressPercentage}
-              isFirstCard={isFirstCard}
-              isLastCard={isLastCard}
-              onPrevious={handlePrevious}
-              onNext={handleNext}
-              sessionCode={presentation.session_code}
-            />
-          </main>
-        </div>
+        </main>
       </div>
 
       <SendMessageModal

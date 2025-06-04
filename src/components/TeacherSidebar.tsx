@@ -91,7 +91,13 @@ export function TeacherSidebar({
     {
       label: "Lesson Plan",
       href: "#lesson",
-      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      onClick: () => {
+        // Navigate to the lesson plan
+        if (presentationId) {
+          navigate(`/planner/${presentationId}`);
+        }
+      }
     },
     {
       label: "End Session",
@@ -103,7 +109,7 @@ export function TeacherSidebar({
 
   return (
     <Sidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="border-l border-gray-200 shadow-lg">
+      <SidebarBody className="h-full overflow-hidden">
         <div className="flex flex-col h-full">
           <div className="flex items-center gap-2 mb-6">
             <BookOpen className="text-indigo-600 h-6 w-6 flex-shrink-0" />

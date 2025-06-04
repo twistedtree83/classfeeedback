@@ -8,6 +8,10 @@ interface Links {
   label: string;
   href: string;
   icon: React.ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+  notification?: boolean;
+  count?: number;
 }
 
 interface SidebarContextProps {
@@ -87,7 +91,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-white w-[300px] flex-shrink-0 border-r border-gray-200 shadow-lg",
         className
       )}
       animate={{
@@ -112,7 +116,7 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
+          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-white w-full"
         )}
         {...props}
       >
@@ -162,15 +166,9 @@ export const SidebarLink = ({
   props?: RouterLinkProps;
 }) => {
   const { open, animate } = useSidebar();
-  return (
-    <RouterLink
-      to={link.href}
-      className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2",
-        className
-      )}
-      {...props}
-    >
+  
+  const content = (
+    <>
       {link.icon}
       <motion.span
         animate={{
@@ -181,6 +179,48 @@ export const SidebarLink = ({
       >
         {link.label}
       </motion.span>
+      {link.notification && (
+        <div className="ml-auto">
+          {typeof link.count === 'number' ? (
+            <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {link.count}
+            </span>
+          ) : (
+            <span className="h-2 w-2 bg-red-500 rounded-full"></span>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  // If there's an onClick handler, we render a button instead of a link
+  if (link.onClick) {
+    return (
+      <button
+        onClick={link.onClick}
+        className={cn(
+          "flex items-center justify-start gap-2 group/sidebar py-2 w-full text-left",
+          link.active ? "text-indigo-600 font-medium" : "text-gray-600",
+          className
+        )}
+        {...props}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <RouterLink
+      to={link.href}
+      className={cn(
+        "flex items-center justify-start gap-2 group/sidebar py-2",
+        link.active ? "text-indigo-600 font-medium" : "text-gray-600",
+        className
+      )}
+      {...props}
+    >
+      {content}
     </RouterLink>
   );
 };
