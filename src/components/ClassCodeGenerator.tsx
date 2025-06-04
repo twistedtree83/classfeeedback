@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { createSession } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';

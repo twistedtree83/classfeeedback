@@ -17,8 +17,8 @@ export function LessonDetails() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartingTeaching, setIsStartingTeaching] = useState(false);
-  const [teacherName, setTeacherName] = useState('');
   const [showTeacherPrompt, setShowTeacherPrompt] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -68,18 +68,23 @@ export function LessonDetails() {
   };
 
   const handleBeginTeaching = () => {
-    setShowTeacherPrompt(true);
+    startTeaching();
   };
 
-  const startTeaching = async () => {
+  const startTeaching = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
     if (!lesson?.processed_content) return;
-    if (!teacherName.trim()) {
-      setError('Please enter your name');
+    
+    if (!user?.user_metadata?.title || !user?.user_metadata?.full_name) {
+      setError('Please set your title and name in your profile first');
       return;
     }
     
     setIsStartingTeaching(true);
     setError(null);
+
+    const teacherName = `${user.user_metadata.title} ${user.user_metadata.full_name.split(' ').pop()}`;
 
     try {
       // Use the selected cards from the teaching cards manager
@@ -90,7 +95,7 @@ export function LessonDetails() {
       const presentation = await createLessonPresentation(
         lesson.id,
         selectedCards,
-        teacherName.trim()
+        teacherName
       );
 
       if (!presentation) {
@@ -191,40 +196,8 @@ export function LessonDetails() {
           </div>
         )}
         
-        {showTeacherPrompt && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">Enter Teacher Name</h3>
-              <input
-                type="text"
-                value={teacherName}
-                onChange={(e) => setTeacherName(e.target.value)}
-                placeholder="Your name"
-                className="w-full px-3 py-2 border rounded-lg mb-4"
-                autoFocus
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowTeacherPrompt(false);
-                    setTeacherName('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={startTeaching}
-                  disabled={!teacherName.trim() || isStartingTeaching}
-                >
-                  {isStartingTeaching ? 'Starting...' : 'Start Teaching'}
-                </Button>
-              </div>
-              {error && (
-                <p className="mt-2 text-sm text-red-600">{error}</p>
-              )}
-            </div>
-          </div>
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
         )}
       </div>
     </div>
