@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRotatingFact } from '@/lib/educationalFacts';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ArrowRight } from 'lucide-react';
 
 interface WaitingRoomProps {
   studentName: string;
   avatarUrl?: string | null;
+  sessionCode?: string;
+  teacherName?: string;
 }
 
-export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
+export function WaitingRoom({ 
+  studentName, 
+  avatarUrl,
+  sessionCode = '',
+  teacherName = 'your teacher'
+}: WaitingRoomProps) {
   const fact = useRotatingFact();
   const [backgroundIndex, setBackgroundIndex] = useState(0);
   
@@ -53,6 +60,17 @@ export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
         transition={{ duration: 0.5 }}
         className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 md:p-12 max-w-2xl w-full text-center z-10"
       >
+        {sessionCode && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="mb-4 bg-teal/10 inline-block px-3 py-1 rounded-full text-sm text-teal"
+          >
+            Session: {sessionCode}
+          </motion.div>
+        )}
+        
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -87,7 +105,7 @@ export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="text-gray-600 mb-10"
         >
-          Your teacher is preparing the lesson. Please wait...
+          {teacherName} is preparing the lesson. Please wait...
         </motion.p>
         
         <motion.div 
@@ -132,52 +150,69 @@ export function WaitingRoom({ studentName, avatarUrl }: WaitingRoomProps) {
         <motion.div
           className="flex items-center justify-center gap-3 text-teal/80 text-sm"
         >
+          <div className="flex items-center">
+            <motion.div
+              animate={{ 
+                opacity: [0.4, 1, 0.4],
+                scale: [0.98, 1.02, 0.98]
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                ease: "easeInOut" 
+              }}
+              className="w-2 h-2 rounded-full bg-teal"
+            />
+            <motion.div
+              animate={{ 
+                opacity: [0.4, 1, 0.4],
+                scale: [0.98, 1.02, 0.98]
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.3
+              }}
+              className="ml-1 w-2 h-2 rounded-full bg-teal"
+            />
+            <motion.div
+              animate={{ 
+                opacity: [0.4, 1, 0.4],
+                scale: [0.98, 1.02, 0.98]
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.6
+              }}
+              className="ml-1 w-2 h-2 rounded-full bg-teal"
+            />
+          </div>
+          
           <motion.div
-            animate={{ 
-              opacity: [0.4, 1, 0.4],
-              scale: [0.98, 1.02, 0.98]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity,
-              ease: "easeInOut" 
-            }}
-            className="w-2 h-2 rounded-full bg-teal"
-          />
-          <motion.div
-            animate={{ 
-              opacity: [0.4, 1, 0.4],
-              scale: [0.98, 1.02, 0.98]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.3
-            }}
-            className="w-2 h-2 rounded-full bg-teal"
-          />
-          <motion.div
-            animate={{ 
-              opacity: [0.4, 1, 0.4],
-              scale: [0.98, 1.02, 0.98]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.6
-            }}
-            className="w-2 h-2 rounded-full bg-teal"
-          />
-          <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7, duration: 1 }}
-            className="ml-2"
+            className="ml-2 flex items-center gap-2"
           >
-            Waiting for your teacher to start the lesson...
-          </motion.span>
+            <span>
+              Waiting for {teacherName} to start the lesson
+            </span>
+            <motion.div
+              animate={{
+                x: [0, 5, 0]
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <ArrowRight className="h-4 w-4 text-teal" />
+            </motion.div>
+          </motion.div>
         </motion.div>
       </motion.div>
     </div>

@@ -49,7 +49,6 @@ export function StudentView() {
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [joined, setJoined] = useState(false);
-  const [lessonStarted, setLessonStarted] = useState(false);
   
   // Available avatars
   const availableAvatars: AvatarOption[] = [
@@ -88,9 +87,11 @@ export function StudentView() {
   const { 
     presentation, 
     currentCard, 
+    currentCardAttachments,
     messages, 
     newMessage, 
-    teacherName 
+    teacherName,
+    lessonStarted
   } = useStudentSession(sessionCode, studentName);
   
   const { 
@@ -108,11 +109,6 @@ export function StudentView() {
   useEffect(() => {
     if (presentation) {
       setCurrentCardIndex(presentation.current_card_index);
-      
-      // If the teacher has moved past the welcome card (index 0), the lesson has started
-      if (presentation.current_card_index > 0) {
-        setLessonStarted(true);
-      }
     }
   }, [presentation?.current_card_index, setCurrentCardIndex]);
   
@@ -132,23 +128,7 @@ export function StudentView() {
         if (newStatus === 'approved') {
           console.log('Participant approved - loading lesson presentation');
           setJoined(true);
-          
-          // Get presentation data
-          getLessonPresentationByCode(sessionCode)
-            .then(presentationData => {
-              if (presentationData) {
-                console.log("Approved for teaching session:", presentationData);
-                setLoading(false);
-              } else {
-                console.error('Presentation not found after approval');
-                setError('Presentation not found');
-              }
-            })
-            .catch(err => {
-              console.error('Error loading presentation after approval:', err);
-              setError('Error loading presentation');
-            })
-            .finally(() => setLoading(false));
+          setLoading(false);
         } else if (newStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setLoading(false);
@@ -166,20 +146,8 @@ export function StudentView() {
         setStatus(currentStatus);
         
         if (currentStatus === 'approved') {
-          // Already approved, proceed with loading presentation
+          // Already approved, proceed with joining
           setJoined(true);
-          const presentationData = await getLessonPresentationByCode(sessionCode);
-          if (presentationData) {
-            console.log("Initially approved for teaching session:", presentationData);
-            
-            // Check if the lesson has already started
-            if (presentationData.current_card_index > 0) {
-              setLessonStarted(true);
-            }
-          } else {
-            console.error('Presentation not found on initial check');
-            setError('Presentation not found');
-          }
           setLoading(false);
         } else if (currentStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
@@ -203,14 +171,7 @@ export function StudentView() {
         const currentStatus = await checkParticipantStatus(participantId);
         if (currentStatus === 'approved') {
           setJoined(true);
-          const presentationData = await getLessonPresentationByCode(sessionCode);
-          if (presentationData) {
-            console.log("Approved via polling:", presentationData);
-            if (presentationData.current_card_index > 0) {
-              setLessonStarted(true);
-            }
-            setLoading(false);
-          }
+          setLoading(false);
         } else if (currentStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setLoading(false);
@@ -521,6 +482,8 @@ export function StudentView() {
       <WaitingRoom
         studentName={studentName}
         avatarUrl={selectedAvatar}
+        sessionCode={sessionCode}
+        teacherName={teacherName}
       />
     );
   }
@@ -568,8 +531,7 @@ export function StudentView() {
   }
 
   // Get the current card based on the presentation's current_card_index
-  const currentCardIndex = presentation.current_card_index;
-  const card = presentation.cards[currentCardIndex];
+  const card = currentCard;
   const hasDifferentiatedContent = card?.differentiatedContent ? true : false;
   
   // Get the appropriate content to display based on differentiation settings
@@ -603,6 +565,7 @@ export function StudentView() {
           {currentCard && (
             <LessonContentDisplay 
               content={cardContent}
+              attachments={currentCardAttachments}
               hasDifferentiatedContent={hasDifferentiatedContent}
               viewingDifferentiated={viewingDifferentiated}
               generatingDifferentiated={generatingDifferentiated}
