@@ -533,7 +533,12 @@ export function StudentView() {
             <div className="mb-6">
               <h3 className="text-lg font-medium text-gray-700 mb-3">Choose your avatar</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {['/images/avatars/co2.png', '/images/avatars/co5.png', '/images/avatars/co6.png', '/images/avatars/co7.png'].map((avatar) => (
+                {[
+                  '/images/avatars/co2.png',
+                  '/images/avatars/co5.png', 
+                  '/images/avatars/co6.png',
+                  '/images/avatars/co7.png'
+                ].map((avatar) => (
                   <button
                     key={avatar}
                     onClick={() => setSelectedAvatar(avatar)}
