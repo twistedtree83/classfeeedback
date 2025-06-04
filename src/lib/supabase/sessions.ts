@@ -34,7 +34,7 @@ export const getSessionByCode = async (code: string, includeInactive: boolean = 
   try {
     let query = supabase
       .from('sessions')
-      .select()
+      .select('*')
       .eq('code', code);
     
     // Only filter by active status if we're not including inactive sessions

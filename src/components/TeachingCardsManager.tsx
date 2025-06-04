@@ -36,7 +36,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     processingCardId,
     processingAllCards,
     generatingCriteria,
-    generatingDifferentiated,
+    generatingDifferentiated, 
     differentiatingCardId,
     successCriteria,
     criteriaMessage,

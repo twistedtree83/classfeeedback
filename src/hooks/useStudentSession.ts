@@ -4,6 +4,7 @@ import {
   subscribeToLessonPresentation,
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
+  getSessionByCode,
   TeacherMessage,
   LessonPresentation
 } from '../lib/supabase';
@@ -27,6 +28,14 @@ export function useStudentSession(code: string, studentName: string) {
       setError(null);
       
       try {
+        // Get session info first
+        const sessionData = await getSessionByCode(code);
+        if (!sessionData) {
+          throw new Error('Session not found or has ended');
+        }
+        
+        setTeacherName(sessionData.teacher_name || 'Teacher');
+        
         // Get presentation data
         const presentationData = await getLessonPresentationByCode(code);
         
@@ -35,7 +44,6 @@ export function useStudentSession(code: string, studentName: string) {
         }
         
         setPresentation(presentationData);
-        setTeacherName(presentationData.teacher_name || 'Teacher');
         
         // Set current card
         if (presentationData.cards && presentationData.cards.length > 0) {
