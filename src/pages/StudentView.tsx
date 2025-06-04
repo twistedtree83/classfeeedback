@@ -13,6 +13,7 @@ import { MessagePanel } from '../components/MessagePanel';
 import { StudentHeader } from '../components/student/StudentHeader';
 import { LessonContentDisplay } from '../components/student/LessonContentDisplay';
 import { StudentInteractionPanel } from '../components/student/StudentInteractionPanel';
+import { WaitingRoom } from '../components/student/WaitingRoom';
 import {
   AlertCircle,
   CheckCircle2,
@@ -48,6 +49,7 @@ export function StudentView() {
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [joined, setJoined] = useState(false);
+  const [lessonStarted, setLessonStarted] = useState(false);
   
   // Available avatars
   const availableAvatars: AvatarOption[] = [
@@ -101,14 +103,19 @@ export function StudentView() {
     currentFeedback,
     setCurrentCardIndex
   } = useFeedbackSubmission(presentation?.id, studentName);
-  
+
   // Update current card index when it changes in the presentation
   useEffect(() => {
     if (presentation) {
       setCurrentCardIndex(presentation.current_card_index);
+      
+      // If the teacher has moved past the welcome card (index 0), the lesson has started
+      if (presentation.current_card_index > 0) {
+        setLessonStarted(true);
+      }
     }
   }, [presentation?.current_card_index, setCurrentCardIndex]);
-
+  
   // Check participant approval status with direct subscription
   useEffect(() => {
     if (!participantId || !sessionCode) return;
@@ -164,6 +171,11 @@ export function StudentView() {
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
             console.log("Initially approved for teaching session:", presentationData);
+            
+            // Check if the lesson has already started
+            if (presentationData.current_card_index > 0) {
+              setLessonStarted(true);
+            }
           } else {
             console.error('Presentation not found on initial check');
             setError('Presentation not found');
@@ -194,6 +206,9 @@ export function StudentView() {
           const presentationData = await getLessonPresentationByCode(sessionCode);
           if (presentationData) {
             console.log("Approved via polling:", presentationData);
+            if (presentationData.current_card_index > 0) {
+              setLessonStarted(true);
+            }
             setLoading(false);
           }
         } else if (currentStatus === 'rejected') {
@@ -354,14 +369,14 @@ export function StudentView() {
   // Render join form when not joined
   if (!joined && !status) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-teal/5 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-teal/20">
             <div className="flex justify-center mb-6">
-              <BookOpen className="h-12 w-12 text-indigo-600" />
+              <BookOpen className="h-12 w-12 text-teal" />
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+            <h2 className="text-2xl font-bold text-teal mb-6 text-center">
               Join Classroom Session
             </h2>
 
@@ -373,7 +388,7 @@ export function StudentView() {
                 placeholder="Enter 6-character code"
                 maxLength={6}
                 disabled={loading}
-                className="uppercase text-lg tracking-wide"
+                className="uppercase text-lg tracking-wide border-teal/30 focus:border-teal focus:ring-teal"
                 autoFocus
               />
 
@@ -387,6 +402,7 @@ export function StudentView() {
                   placeholder="Enter your name"
                   disabled={loading}
                   required
+                  className="border-teal/30 focus:border-teal focus:ring-teal"
                 />
               </div>
 
@@ -401,8 +417,8 @@ export function StudentView() {
                       onClick={() => setSelectedAvatar(avatar.src)}
                       className={`cursor-pointer p-2 rounded-lg border-2 transition-all ${
                         selectedAvatar === avatar.src 
-                          ? 'border-indigo-500 bg-indigo-50 scale-105' 
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-teal bg-teal/10 scale-105' 
+                          : 'border-gray-200 hover:border-teal/30 hover:bg-teal/5'
                       }`}
                     >
                       <img 
@@ -416,7 +432,7 @@ export function StudentView() {
               </div>
 
               {error && (
-                <div className="p-4 rounded-lg bg-red-50 text-red-800 text-center flex items-center justify-center gap-2">
+                <div className="p-4 rounded-lg bg-red/10 text-red border border-red/20 text-center flex items-center justify-center gap-2">
                   <AlertCircle className="h-5 w-5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
@@ -425,7 +441,7 @@ export function StudentView() {
               <Button
                 type="submit"
                 disabled={loading || !sessionCode.trim() || !studentName.trim()}
-                className="w-full"
+                className="w-full bg-teal hover:bg-teal/90 text-white"
                 size="lg"
               >
                 {loading ? 'Joining...' : 'Join Session'}
@@ -440,23 +456,23 @@ export function StudentView() {
   // Render pending approval view
   if (status === 'pending') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-teal/5 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center border border-teal/20">
             <div className="flex justify-center mb-6">
               {checking ? (
-                <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+                <Loader2 className="h-12 w-12 text-teal animate-spin" />
               ) : (
-                <AlertCircle className="h-12 w-12 text-yellow-500" />
+                <AlertCircle className="h-12 w-12 text-orange" />
               )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            <h2 className="text-2xl font-bold text-teal mb-4">
               Waiting for Approval
             </h2>
             <p className="text-gray-600 mb-6">
               Your request to join this session is being reviewed by {teacherName || 'the teacher'}.
             </p>
-            <div className="animate-pulse bg-yellow-100 text-yellow-800 px-4 py-3 rounded-lg inline-block">
+            <div className="animate-pulse bg-orange/10 text-orange border border-orange/30 px-4 py-3 rounded-lg inline-block">
               Please wait while the teacher approves your name...
             </div>
           </div>
@@ -468,13 +484,13 @@ export function StudentView() {
   // Render rejected view
   if (status === 'rejected') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-teal/5 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center border border-teal/20">
             <div className="flex justify-center mb-6">
-              <XCircle className="h-12 w-12 text-red-500" />
+              <XCircle className="h-12 w-12 text-red" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            <h2 className="text-2xl font-bold text-red mb-4">
               Name Not Approved
             </h2>
             <p className="text-gray-600 mb-6">
@@ -488,7 +504,7 @@ export function StudentView() {
                 setJoined(false);
                 setLoading(false);
               }}
-              className="w-full"
+              className="w-full bg-teal hover:bg-teal/90 text-white"
               size="lg"
             >
               Try Again with a Different Name
@@ -499,20 +515,30 @@ export function StudentView() {
     );
   }
 
+  // Show waiting room when student is approved but lesson hasn't started yet
+  if (joined && presentation && !lessonStarted) {
+    return (
+      <WaitingRoom
+        studentName={studentName}
+        avatarUrl={selectedAvatar}
+      />
+    );
+  }
+
   // Render loading view
   if (loading || !presentation || !currentCard) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-teal/5 flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center border border-teal/20">
             {loading ? (
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal mb-4"></div>
                 <p className="text-gray-600">Loading lesson content...</p>
               </div>
             ) : (
               <div className="text-center">
-                <div className="text-red-600 mb-6">
+                <div className="text-red mb-6">
                   <AlertCircle className="h-16 w-16 mx-auto" />
                 </div>
                 <h2 className="text-2xl font-semibold mb-4">Session Not Found</h2>
@@ -525,8 +551,10 @@ export function StudentView() {
                     setStatus(null);
                     setParticipantId(null);
                     setJoined(false);
+                    setPresentation(null);
                     setError(null);
                   }}
+                  className="bg-teal hover:bg-teal/90 text-white"
                   size="lg"
                 >
                   Try Another Code
@@ -551,7 +579,7 @@ export function StudentView() {
 
   // Main student view
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-teal/5 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10 py-3 px-4">
         <StudentHeader 
           studentName={studentName}
@@ -564,7 +592,7 @@ export function StudentView() {
 
       {/* Success Message Toast */}
       {successMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-teal/20 text-teal px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5" />
           <span>{successMessage}</span>
         </div>
@@ -604,7 +632,7 @@ export function StudentView() {
         <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={toggleMessagePanel}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+            className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-full shadow-lg hover:bg-teal/90 transition-colors"
           >
             <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
           </button>

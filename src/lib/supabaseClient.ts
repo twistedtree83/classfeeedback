@@ -270,32 +270,44 @@ export const createLessonPresentation = async (
 };
 
 export const getLessonPresentationByCode = async (
-  code: string
+  code: string,
+  includeInactive: boolean = false
 ): Promise<LessonPresentation | null> => {
   try {
     console.log('Student requesting presentation for code:', code);
     
-    // First check if session is active
-    const { data: session, error: sessionError } = await supabase
+    // First check if session exists
+    const sessionQuery = supabase
       .from('sessions')
       .select('*')
-      .eq('code', code)
-      .eq('active', true)
-      .single();
+      .eq('code', code);
+    
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      sessionQuery.eq('active', true);
+    }
+    
+    const { data: session, error: sessionError } = await sessionQuery.single();
 
-    if (sessionError || !session) {
-      console.error('Session not found or inactive');
+    if (sessionError) {
+      console.error('Session not found or inactive:', sessionError);
       return null;
     }
 
     console.log('Found active session:', JSON.stringify(session, null, 2));
 
-    const { data, error } = await supabase
+    // Now get the presentation
+    const presentationQuery = supabase
       .from('lesson_presentations')
       .select('*')
-      .eq('session_code', code)
-      .eq('active', true)
-      .single();
+      .eq('session_code', code);
+    
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      presentationQuery.eq('active', true);
+    }
+    
+    const { data, error } = await presentationQuery.single();
     
     if (error || !data) {
       console.error('Error fetching presentation:', error);
@@ -419,14 +431,19 @@ export const createSession = async (teacherName: string): Promise<Session | null
   }
 };
 
-export const getSessionByCode = async (code: string): Promise<Session | null> => {
+export const getSessionByCode = async (code: string, includeInactive: boolean = false): Promise<Session | null> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('sessions')
-      .select()
-      .eq('code', code)
-      .eq('active', true)
-      .single();
+      .select('*')
+      .eq('code', code);
+    
+    // Only filter by active status if we're not including inactive sessions
+    if (!includeInactive) {
+      query = query.eq('active', true);
+    }
+    
+    const { data, error } = await query.single();
     
     if (error) {
       if (error.code === 'PGRST116') {
@@ -699,20 +716,57 @@ export const subscribeToSessionFeedback = (
     .subscribe();
 };
 
-// Real-time teaching functions
+// Teaching feedback
 export const submitTeachingFeedback = async (
   presentationId: string,
   studentName: string,
   feedbackType: string,
+  cardIndex?: number,
   content?: string
 ): Promise<boolean> => {
   try {
+    // Check if the student has already submitted feedback for this card
+    if (cardIndex !== undefined) {
+      const { data: existingFeedback, error: checkError } = await supabase
+        .from('teaching_feedback')
+        .select('id')
+        .eq('presentation_id', presentationId)
+        .eq('student_name', studentName)
+        .eq('card_index', cardIndex)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking existing feedback:', checkError);
+      }
+      
+      // If student already provided feedback for this card, update instead of insert
+      if (existingFeedback) {
+        const { error: updateError } = await supabase
+          .from('teaching_feedback')
+          .update({ 
+            feedback_type: feedbackType,
+            content,
+            created_at: new Date().toISOString() 
+          })
+          .eq('id', existingFeedback.id);
+          
+        if (updateError) {
+          console.error('Error updating existing feedback:', updateError);
+          return false;
+        }
+        
+        return true;
+      }
+    }
+    
+    // No existing feedback found or card index not provided, insert new feedback
     const { error } = await supabase
       .from('teaching_feedback')
       .insert([{
         presentation_id: presentationId,
         student_name: studentName,
         feedback_type: feedbackType,
+        card_index: cardIndex,
         content
       }]);
     
@@ -727,13 +781,15 @@ export const submitTeachingFeedback = async (
 export const submitTeachingQuestion = async (
   presentationId: string,
   studentName: string,
-  question: string
+  question: string,
+  cardIndex?: number
 ): Promise<boolean> => {
   try {
     console.log('Submitting question:', {
       presentation_id: presentationId,
       student_name: studentName,
-      question: question
+      question: question,
+      card_index: cardIndex
     });
     
     const { data, error } = await supabase
@@ -741,7 +797,8 @@ export const submitTeachingQuestion = async (
       .insert([{
         presentation_id: presentationId,
         student_name: studentName,
-        question
+        question,
+        card_index: cardIndex
       }])
       .select();
     
@@ -755,6 +812,32 @@ export const submitTeachingQuestion = async (
   } catch (err) {
     console.error('Error submitting question:', err);
     return false;
+  }
+};
+
+export const getStudentFeedbackForCard = async (
+  presentationId: string,
+  studentName: string,
+  cardIndex: number
+): Promise<any | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_feedback')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .eq('student_name', studentName)
+      .eq('card_index', cardIndex)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching student feedback for card:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Exception fetching student feedback for card:', err);
+    return null;
   }
 };
 
@@ -798,14 +881,21 @@ export const getTeachingQuestionsForPresentation = async (
 };
 
 export const getTeachingFeedbackForPresentation = async (
-  presentationId: string
+  presentationId: string,
+  cardIndex?: number
 ): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('teaching_feedback')
       .select('*')
-      .eq('presentation_id', presentationId)
-      .order('created_at', { ascending: false });
+      .eq('presentation_id', presentationId);
+      
+    // Filter by card index if provided
+    if (cardIndex !== undefined) {
+      query = query.eq('card_index', cardIndex);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching teaching feedback:', error);
@@ -821,8 +911,14 @@ export const getTeachingFeedbackForPresentation = async (
 
 export const subscribeToTeachingFeedback = (
   presentationId: string,
-  callback: (feedback: any) => void
+  callback: (feedback: any) => void,
+  cardIndex?: number
 ) => {
+  // Create a filter including the card index if provided
+  const filter = cardIndex !== undefined 
+    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
+    : `presentation_id=eq.${presentationId}`;
+    
   return supabase
     .channel('teaching_feedback')
     .on(
@@ -831,7 +927,17 @@ export const subscribeToTeachingFeedback = (
         event: 'INSERT',
         schema: 'public',
         table: 'teaching_feedback',
-        filter: `presentation_id=eq.${presentationId}`,
+        filter,
+      },
+      (payload) => callback(payload.new)
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'teaching_feedback',
+        filter,
       },
       (payload) => callback(payload.new)
     )
@@ -840,8 +946,14 @@ export const subscribeToTeachingFeedback = (
 
 export const subscribeToTeachingQuestions = (
   presentationId: string,
-  callback: (question: any) => void
+  callback: (question: any) => void,
+  cardIndex?: number
 ) => {
+  // Create a filter including the card index if provided
+  const filter = cardIndex !== undefined 
+    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
+    : `presentation_id=eq.${presentationId}`;
+    
   return supabase
     .channel('teaching_questions')
     .on(
@@ -850,11 +962,35 @@ export const subscribeToTeachingQuestions = (
         event: 'INSERT',
         schema: 'public',
         table: 'teaching_questions',
-        filter: `presentation_id=eq.${presentationId}`,
+        filter,
       },
       (payload) => callback(payload.new)
     )
     .subscribe();
+};
+
+// Get feedback stats grouped by student and feedback type for a specific card
+export const getCardFeedbackByStudent = async (
+  presentationId: string,
+  cardIndex: number
+): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('teaching_feedback')
+      .select('*')
+      .eq('presentation_id', presentationId)
+      .eq('card_index', cardIndex);
+      
+    if (error) {
+      console.error('Error fetching card feedback by student:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching card feedback by student:', err);
+    return [];
+  }
 };
 
 // Teacher messages functions
@@ -960,4 +1096,39 @@ export const subscribeToTeacherMessages = (
       unsubscribe: () => console.log('Dummy unsubscribe called')
     };
   }
+};
+
+// Generate a random name function for anonymous students
+export const generateRandomName = (): string => {
+  const adjectives = [
+    'Happy', 'Bright', 'Clever', 'Quick', 'Kind',
+    'Brave', 'Swift', 'Wise', 'Calm', 'Noble'
+  ];
+  
+  const nouns = [
+    'Student', 'Scholar', 'Learner', 'Thinker', 'Mind',
+    'Explorer', 'Achiever', 'Reader', 'Creator', 'Genius'
+  ];
+  
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  
+  return `${randomAdjective}${randomNoun}`;
+};
+
+// Group feedback by type
+export const groupFeedbackByType = (feedback: Array<{ value: string }>) => {
+  const counts = {
+    '👍': 0,
+    '😕': 0,
+    '❓': 0
+  };
+  
+  feedback.forEach(item => {
+    if (item.value in counts) {
+      counts[item.value as keyof typeof counts]++;
+    }
+  });
+  
+  return counts;
 };
