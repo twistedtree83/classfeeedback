@@ -16,12 +16,8 @@ import {
   CheckSquare,
   Split
 } from 'lucide-react';
-import { 
-  makeContentStudentFriendly, 
-  generateSuccessCriteria,
-  generateDifferentiatedContent
-} from '../lib/aiService';
 import { sanitizeHtml } from '../lib/utils';
+import { useLessonCardAI } from '../hooks/useLessonCardAI';
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -35,17 +31,32 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editDuration, setEditDuration] = useState('');
-  const [processingCardId, setProcessingCardId] = useState<string | null>(null);
-  const [processingAllCards, setProcessingAllCards] = useState(false);
-  const [successCriteria, setSuccessCriteria] = useState<string[]>(lesson.success_criteria || []);
-  const [generatingCriteria, setGeneratingCriteria] = useState(false);
-  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
-  const [differentiatingCardId, setDifferentiatingCardId] = useState<string | null>(null);
+
+  // Use our custom AI hook
+  const {
+    processingCardId,
+    processingAllCards,
+    generatingCriteria,
+    generatingDifferentiated,
+    differentiatingCardId,
+    successCriteria,
+    criteriaMessage,
+    makeCardStudentFriendly,
+    makeAllCardsStudentFriendly,
+    handleGenerateSuccessCriteria,
+    createDifferentiatedCard,
+    createDifferentiatedCards,
+  } = useLessonCardAI(cards, lesson, setCards);
 
   // Update local cards state when selectedCards changes from parent
   useEffect(() => {
     setCards(selectedCards);
   }, [selectedCards]);
+
+  // Whenever cards change, notify the parent
+  useEffect(() => {
+    onSave(cards);
+  }, [cards, onSave]);
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -59,7 +70,6 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     reorderedCards.splice(result.destination.index, 0, removed);
 
     setCards(reorderedCards);
-    onSave(reorderedCards);
   };
 
   // Add a new custom card
@@ -74,9 +84,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    const updatedCards = [...cards, newCard];
-    setCards(updatedCards);
-    onSave(updatedCards);
+    setCards(prev => [...prev, newCard]);
     
     // Start editing the new card
     setEditingCardId(newCard.id);
@@ -87,9 +95,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Remove a card
   const handleRemoveCard = (id: string) => {
-    const updatedCards = cards.filter(card => card.id !== id);
-    setCards(updatedCards);
-    onSave(updatedCards);
+    setCards(cards.filter(card => card.id !== id));
     
     // If we're editing this card, stop editing
     if (editingCardId === id) {
@@ -107,7 +113,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Save edited card
   const handleSaveEdit = (id: string) => {
-    const updatedCards = cards.map(card => {
+    setCards(prevCards => prevCards.map(card => {
       if (card.id === id) {
         return {
           ...card,
@@ -117,10 +123,8 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
         };
       }
       return card;
-    });
+    }));
     
-    setCards(updatedCards);
-    onSave(updatedCards);
     setEditingCardId(null);
   };
 
@@ -143,9 +147,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    const updatedCards = [...cards, newCard];
-    setCards(updatedCards);
-    onSave(updatedCards);
+    setCards(prev => [...prev, newCard]);
   };
 
   // Create a materials card from lesson
@@ -160,9 +162,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    const updatedCards = [...cards, newCard];
-    setCards(updatedCards);
-    onSave(updatedCards);
+    setCards(prev => [...prev, newCard]);
   };
 
   // Create a topic background card from lesson
@@ -179,211 +179,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       activityIndex: null
     };
     
-    const updatedCards = [...cards, newCard];
-    setCards(updatedCards);
-    onSave(updatedCards);
-  };
-
-  // Generate success criteria from learning objectives
-  const handleGenerateSuccessCriteria = async () => {
-    if (generatingCriteria || lesson.objectives.length === 0) return;
-    
-    setGeneratingCriteria(true);
-    
-    try {
-      const criteria = await generateSuccessCriteria(lesson.objectives, lesson.level);
-      setSuccessCriteria(criteria);
-      
-      // Update any existing objective cards with the new success criteria
-      const updatedCards = cards.map(card => {
-        if (card.type === 'objective') {
-          const objectives = lesson.objectives.map(obj => `• ${obj}`).join('\n');
-          const content = `${objectives}\n\n**Success Criteria:**\n${criteria.map(sc => `• ${sc}`).join('\n')}`;
-          
-          return {
-            ...card,
-            content,
-            title: 'Learning Intentions and Success Criteria'
-          };
-        }
-        return card;
-      });
-      
-      setCards(updatedCards);
-      onSave(updatedCards);
-    } catch (error) {
-      console.error('Error generating success criteria:', error);
-    } finally {
-      setGeneratingCriteria(false);
-    }
-  };
-
-  // Make all cards student-friendly
-  const makeAllCardsStudentFriendly = async () => {
-    if (processingAllCards || cards.length === 0) return;
-    
-    setProcessingAllCards(true);
-    
-    try {
-      // Process each card sequentially to avoid rate limits
-      let updatedCards = [...cards];
-      
-      for (let i = 0; i < updatedCards.length; i++) {
-        const card = updatedCards[i];
-        
-        // Skip cards that are already student-friendly
-        if (card.studentFriendly) continue;
-        
-        // Save original content if not already saved
-        const originalContent = card.originalContent || card.content;
-        
-        // Make content student-friendly
-        const studentFriendlyContent = await makeContentStudentFriendly(
-          originalContent,
-          card.type,
-          lesson.level
-        );
-        
-        // Update the card
-        updatedCards[i] = {
-          ...card,
-          content: studentFriendlyContent,
-          originalContent: originalContent,
-          studentFriendly: true
-        };
-      }
-      
-      setCards(updatedCards);
-      onSave(updatedCards);
-    } catch (error) {
-      console.error('Error making cards student-friendly:', error);
-    } finally {
-      setProcessingAllCards(false);
-    }
-  };
-
-  // Make a single card student-friendly
-  const makeCardStudentFriendly = async (cardId: string) => {
-    if (processingCardId) return;
-    
-    setProcessingCardId(cardId);
-    
-    try {
-      const cardIndex = cards.findIndex(card => card.id === cardId);
-      if (cardIndex === -1) return;
-      
-      const card = cards[cardIndex];
-      
-      // Save original content if not already saved
-      const originalContent = card.originalContent || card.content;
-      
-      // Make content student-friendly
-      const studentFriendlyContent = await makeContentStudentFriendly(
-        originalContent,
-        card.type,
-        lesson.level
-      );
-      
-      // Update the card
-      const updatedCards = [...cards];
-      updatedCards[cardIndex] = {
-        ...card,
-        content: studentFriendlyContent,
-        originalContent: originalContent,
-        studentFriendly: true
-      };
-      
-      setCards(updatedCards);
-      onSave(updatedCards);
-    } catch (error) {
-      console.error('Error making card student-friendly:', error);
-    } finally {
-      setProcessingCardId(null);
-    }
-  };
-
-  // Create differentiated version of all cards
-  const createDifferentiatedCards = async () => {
-    if (generatingDifferentiated || cards.length === 0) return;
-    
-    setGeneratingDifferentiated(true);
-    
-    try {
-      // Process each card sequentially to avoid rate limits
-      let updatedCards = [...cards];
-      
-      for (let i = 0; i < updatedCards.length; i++) {
-        const card = updatedCards[i];
-        
-        // Skip cards that already have differentiated content
-        if (card.differentiatedContent) continue;
-        
-        // Use the student-friendly content as base if available, otherwise use original
-        const contentToAdapt = card.studentFriendly && card.originalContent 
-          ? card.content 
-          : card.originalContent || card.content;
-        
-        // Generate differentiated content
-        const differentiatedContent = await generateDifferentiatedContent(
-          contentToAdapt,
-          card.type,
-          lesson.level
-        );
-        
-        // Update the card
-        updatedCards[i] = {
-          ...card,
-          differentiatedContent
-        };
-      }
-      
-      setCards(updatedCards);
-      onSave(updatedCards);
-    } catch (error) {
-      console.error('Error creating differentiated cards:', error);
-    } finally {
-      setGeneratingDifferentiated(false);
-    }
-  };
-
-  // Create differentiated version of a single card
-  const createDifferentiatedCard = async (cardId: string) => {
-    if (differentiatingCardId) return;
-    
-    setDifferentiatingCardId(cardId);
-    
-    try {
-      const cardIndex = cards.findIndex(card => card.id === cardId);
-      if (cardIndex === -1) return;
-      
-      const card = cards[cardIndex];
-      
-      // Use the student-friendly content as base if available, otherwise use original
-      const contentToAdapt = card.studentFriendly && card.originalContent 
-        ? card.content 
-        : card.originalContent || card.content;
-      
-      // Generate differentiated content
-      const differentiatedContent = await generateDifferentiatedContent(
-        contentToAdapt,
-        card.type,
-        lesson.level
-      );
-      
-      // Update the card
-      const updatedCards = [...cards];
-      updatedCards[cardIndex] = {
-        ...card,
-        differentiatedContent
-      };
-      
-      setCards(updatedCards);
-      onSave(updatedCards);
-    } catch (error) {
-      console.error('Error creating differentiated card:', error);
-    } finally {
-      setDifferentiatingCardId(null);
-    }
+    setCards(prev => [...prev, newCard]);
   };
 
   // Toggle a card between teacher and student versions
@@ -405,7 +201,6 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     };
     
     setCards(updatedCards);
-    onSave(updatedCards);
   };
 
   // Toggle a card between standard and differentiated versions
@@ -431,7 +226,6 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     };
     
     setCards(updatedCards);
-    onSave(updatedCards);
   };
 
   // Render a card based on its state (normal or editing)
@@ -659,6 +453,16 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
           </Button>
         </div>
       </div>
+      
+      {criteriaMessage && (
+        <div className={`p-3 rounded-lg ${
+          criteriaMessage.type === 'success' 
+            ? 'bg-green-50 text-green-700' 
+            : 'bg-red-50 text-red-700'
+        }`}>
+          {criteriaMessage.text}
+        </div>
+      )}
       
       <div className="border-t pt-4">
         <div className="flex justify-between items-center mb-4 flex-wrap">
