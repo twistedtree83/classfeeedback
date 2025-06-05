@@ -50,12 +50,9 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [joined, setJoined] = useState(false);
   
-  // Reference to track if auto-join has already been triggered
-  const autoJoinTriggered = useRef(false);
-  // Reference to track if a user has been approved and joined
-  const joinedFromApproval = useRef(false);
-  // Store the approved status in sessionStorage to persist across page reloads
-  const sessionStorageKey = `student_approved_${sessionCode}`;
+  // Refs to prevent duplicated operations
+  const processingJoin = useRef(false);
+  const processedApproval = useRef(false);
   
   // Available avatars
   const availableAvatars: AvatarOption[] = [
@@ -67,42 +64,55 @@ export function StudentView() {
 
   // Extract code and name from URL query params if present
   useEffect(() => {
+    if (processingJoin.current) return;
+    
     const params = new URLSearchParams(location.search);
     const codeParam = params.get('code');
     const nameParam = params.get('name');
     const avatarParam = params.get('avatar');
     
-    if (codeParam) {
-      setSessionCode(codeParam);
-      
-      // Check if this student was previously approved for this session
-      const wasApproved = sessionStorage.getItem(sessionStorageKey) === 'approved';
-      if (wasApproved && nameParam) {
-        // Skip approval flow if already approved
-        joinedFromApproval.current = true;
-        setJoined(true);
-        setStudentName(nameParam);
-        if (avatarParam && availableAvatars.some(a => a.src === avatarParam)) {
-          setSelectedAvatar(avatarParam);
+    if (!codeParam) return;
+    
+    // Always update session code
+    setSessionCode(codeParam);
+    
+    // Check if we have already been approved for this session
+    const approvedKey = `student_approved_${codeParam}`;
+    const approvedData = localStorage.getItem(approvedKey);
+    
+    if (approvedData) {
+      try {
+        const parsed = JSON.parse(approvedData);
+        if (parsed && parsed.approved && parsed.name) {
+          console.log('Found saved approval:', parsed);
+          setStudentName(parsed.name);
+          setJoined(true);
+          processedApproval.current = true;
+          
+          if (parsed.avatar) {
+            setSelectedAvatar(parsed.avatar);
+          }
+          return;
         }
-        return;
+      } catch (e) {
+        console.error('Failed to parse saved approval data:', e);
+        localStorage.removeItem(approvedKey);
       }
     }
     
-    if (nameParam) {
+    // If we have name from URL and we're not already processing something
+    if (nameParam && !joined && !status && !loading && !processingJoin.current) {
       setStudentName(nameParam);
-    }
-    
-    if (avatarParam && availableAvatars.some(a => a.src === avatarParam)) {
-      setSelectedAvatar(avatarParam);
-    }
-    
-    // If we have both code and name from URL, auto-join (only once)
-    if (codeParam && nameParam && !autoJoinTriggered.current) {
-      autoJoinTriggered.current = true;
+      
+      if (avatarParam && availableAvatars.some(a => a.src === avatarParam)) {
+        setSelectedAvatar(avatarParam);
+      }
+      
+      // Trigger auto-join
+      processingJoin.current = true;
       handleJoinWithParams(codeParam, nameParam, avatarParam || '/images/avatars/co2.png');
     }
-  }, [location]);
+  }, [location, joined, status, loading]);
 
   // Use custom hooks for session and feedback
   const { 
@@ -113,7 +123,7 @@ export function StudentView() {
     newMessage, 
     teacherName,
     lessonStarted,
-    sessionHookError // Added this to capture errors from the hook
+    sessionHookError
   } = useStudentSession(sessionCode, studentName);
   
   const { 
@@ -138,34 +148,38 @@ export function StudentView() {
   useEffect(() => {
     if (!participantId || !sessionCode) return;
     
+    // Skip if we're already approved and joined
+    if (processedApproval.current && joined) {
+      return;
+    }
+    
     console.log(`Setting up participant status subscription for ${participantId}`);
     
     const subscription = subscribeToParticipantStatus(
       participantId,
       (newStatus) => {
         console.log(`Received status update for participant ${participantId}: ${newStatus}`);
+        
+        // Only process if we haven't already processed approval
+        if (processedApproval.current) {
+          return;
+        }
+        
         setStatus(newStatus);
         
-        // Handle approval - only set joined to true once
-        if (newStatus === 'approved' && !joinedFromApproval.current) {
-          console.log('Participant approved - loading lesson presentation');
-          joinedFromApproval.current = true;
-          setJoined(true);
-          setLoading(false);
-          
-          // Save approval status in sessionStorage
-          sessionStorage.setItem(sessionStorageKey, 'approved');
+        // Handle approval
+        if (newStatus === 'approved') {
+          processApproval();
         } else if (newStatus === 'rejected') {
-          setError('Your name was not approved by the teacher. Please try again with a different name.');
-          setLoading(false);
-          // Clear approval status
-          sessionStorage.removeItem(sessionStorageKey);
+          handleRejection();
         }
       }
     );
     
     // Initial status check
     const checkStatus = async () => {
+      if (processedApproval.current) return;
+      
       setChecking(true);
       try {
         const currentStatus = await checkParticipantStatus(participantId);
@@ -173,19 +187,10 @@ export function StudentView() {
         
         setStatus(currentStatus);
         
-        if (currentStatus === 'approved' && !joinedFromApproval.current) {
-          // Already approved, proceed with joining
-          joinedFromApproval.current = true;
-          setJoined(true);
-          setLoading(false);
-          
-          // Save approval status in sessionStorage
-          sessionStorage.setItem(sessionStorageKey, 'approved');
+        if (currentStatus === 'approved') {
+          processApproval();
         } else if (currentStatus === 'rejected') {
-          setError('Your name was not approved by the teacher. Please try again with a different name.');
-          setLoading(false);
-          // Clear approval status
-          sessionStorage.removeItem(sessionStorageKey);
+          handleRejection();
         }
       } catch (err) {
         console.error('Error in initial status check:', err);
@@ -199,23 +204,14 @@ export function StudentView() {
     
     // Set up a polling fallback just in case the subscription doesn't work
     const pollingInterval = setInterval(async () => {
-      if (status !== 'pending') return;
+      if (processedApproval.current || status !== 'pending') return;
       
       try {
         const currentStatus = await checkParticipantStatus(participantId);
-        if (currentStatus === 'approved' && !joinedFromApproval.current) {
-          joinedFromApproval.current = true;
-          setJoined(true);
-          setLoading(false);
-          
-          // Save approval status in sessionStorage
-          sessionStorage.setItem(sessionStorageKey, 'approved');
+        if (currentStatus === 'approved') {
+          processApproval();
         } else if (currentStatus === 'rejected') {
-          setStatus('rejected');
-          setError('Your name was not approved by the teacher. Please try again with a different name.');
-          setLoading(false);
-          // Clear approval status
-          sessionStorage.removeItem(sessionStorageKey);
+          handleRejection();
         }
       } catch (err) {
         console.error('Error checking participant status:', err);
@@ -227,7 +223,35 @@ export function StudentView() {
       subscription.unsubscribe();
       clearInterval(pollingInterval);
     };
-  }, [participantId, sessionCode, sessionStorageKey, status]);
+  }, [participantId, sessionCode, status, joined]);
+
+  // Handle successful approval
+  const processApproval = () => {
+    if (processedApproval.current) return;
+    
+    processedApproval.current = true;
+    setJoined(true);
+    setLoading(false);
+    
+    // Save approval in localStorage to persist across page reloads
+    const approvalData = {
+      approved: true,
+      name: studentName,
+      avatar: selectedAvatar,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(`student_approved_${sessionCode}`, JSON.stringify(approvalData));
+  };
+  
+  // Handle rejection
+  const handleRejection = () => {
+    setError('Your name was not approved by the teacher. Please try again with a different name.');
+    setLoading(false);
+    setJoined(false);
+    processedApproval.current = false;
+    processingJoin.current = false;
+    localStorage.removeItem(`student_approved_${sessionCode}`);
+  };
 
   // Reset message count when panel is opened
   useEffect(() => {
@@ -245,25 +269,34 @@ export function StudentView() {
 
   // Auto-join using URL parameters
   const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
-    // Guard against duplicate joins
-    if (joined || loading || status || joinedFromApproval.current) {
-      console.log("Auto-join skipped - already joining or joined");
+    // Don't re-process if already handling a join or already joined
+    if (processingJoin.current || joined || status === 'pending' || loading) {
       return;
     }
     
-    // Check if this student was previously approved for this session
-    const wasApproved = sessionStorage.getItem(`student_approved_${code}`) === 'approved';
-    if (wasApproved) {
-      // Skip approval flow if already approved
-      joinedFromApproval.current = true;
-      setJoined(true);
-      setStudentName(name);
-      setSelectedAvatar(avatar);
-      return;
-    }
-    
+    processingJoin.current = true;
     setLoading(true);
     setError(null);
+    
+    // Check if already approved
+    const approvedData = localStorage.getItem(`student_approved_${code}`);
+    if (approvedData) {
+      try {
+        const parsed = JSON.parse(approvedData);
+        if (parsed && parsed.approved && parsed.name === name) {
+          setStudentName(name);
+          setSelectedAvatar(avatar);
+          processedApproval.current = true;
+          setJoined(true);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        // Invalid stored data, continue with normal join process
+        console.error('Failed to parse saved approval data:', e);
+        localStorage.removeItem(`student_approved_${code}`);
+      }
+    }
     
     try {
       const session = await getSessionByCode(code);
@@ -280,10 +313,18 @@ export function StudentView() {
       setStatus('pending');
       setSelectedAvatar(avatar);
       
+      // Update URL with session code and name for easy rejoining
+      const url = new URL(window.location.href);
+      url.searchParams.set('code', code);
+      url.searchParams.set('name', name);
+      url.searchParams.set('avatar', avatar);
+      window.history.pushState({}, '', url);
+      
     } catch (err) {
       console.error('Error auto-joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
       setLoading(false);
+      processingJoin.current = false;
     }
   };
 
@@ -299,6 +340,9 @@ export function StudentView() {
       setError('Please enter your name');
       return;
     }
+    
+    if (processingJoin.current) return;
+    processingJoin.current = true;
 
     setLoading(true);
     setError(null);
@@ -329,9 +373,6 @@ export function StudentView() {
       setParticipantId(participant.id);
       setStatus('pending');
       
-      // Mark that we've triggered an auto-join to prevent duplicates on reload
-      autoJoinTriggered.current = true;
-      
       // Update URL with session code and name for easy rejoining
       const url = new URL(window.location.href);
       url.searchParams.set('code', sessionCode.trim().toUpperCase());
@@ -343,6 +384,7 @@ export function StudentView() {
       console.error('Error joining session:', err);
       setError(err instanceof Error ? err.message : 'Failed to join session');
       setLoading(false);
+      processingJoin.current = false;
     }
   };
 
@@ -384,6 +426,18 @@ export function StudentView() {
     if (!showMessagePanel) {
       setNewMessageCount(0);
     }
+  };
+
+  // Reset student state completely
+  const resetStudentState = () => {
+    setStatus(null);
+    setParticipantId(null);
+    setJoined(false);
+    setLoading(false);
+    setError(null);
+    processedApproval.current = false;
+    processingJoin.current = false;
+    localStorage.removeItem(`student_approved_${sessionCode}`);
   };
 
   // Render join form when not joined
@@ -460,7 +514,7 @@ export function StudentView() {
 
               <Button
                 type="submit"
-                disabled={loading || !sessionCode.trim() || !studentName.trim()}
+                disabled={loading || !sessionCode.trim() || !studentName.trim() || processingJoin.current}
                 className="w-full bg-teal hover:bg-teal/90 text-white"
                 size="lg"
               >
@@ -517,18 +571,7 @@ export function StudentView() {
               {teacherName || 'The teacher'} did not approve your name. This may be because it was inappropriate or didn't match classroom guidelines.
             </p>
             <Button
-              onClick={() => {
-                // Reset all states to go back to the join form
-                setStatus(null);
-                setParticipantId(null);
-                setJoined(false);
-                setLoading(false);
-                joinedFromApproval.current = false;
-                // Remove the saved approval status
-                sessionStorage.removeItem(sessionStorageKey);
-                // Reset auto-join flag
-                autoJoinTriggered.current = false;
-              }}
+              onClick={resetStudentState}
               className="w-full bg-teal hover:bg-teal/90 text-white"
               size="lg"
             >
@@ -573,18 +616,7 @@ export function StudentView() {
                   {sessionHookError || error || "This session may have ended or the code is invalid."}
                 </p>
                 <Button 
-                  onClick={() => {
-                    // Reset states to go back to join form
-                    setStatus(null);
-                    setParticipantId(null);
-                    setJoined(false);
-                    setLoading(false);
-                    setError(null);
-                    joinedFromApproval.current = false;
-                    // Clear session storage
-                    sessionStorage.removeItem(sessionStorageKey);
-                    autoJoinTriggered.current = false;
-                  }}
+                  onClick={resetStudentState}
                   className="bg-teal hover:bg-teal/90 text-white"
                   size="lg"
                 >
