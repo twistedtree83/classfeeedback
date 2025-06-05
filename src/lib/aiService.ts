@@ -39,14 +39,33 @@ interface AIResponse {
   }[];
 }
 
-export async function aiAnalyzeLesson(content: string, level: string = ''): Promise<AIResponse> {
+interface LessonAnalysisResult {
+  data: AIResponse;
+  improvementAreas: ImprovementArea[];
+}
+
+export interface ImprovementArea {
+  id: string;
+  section: string;
+  issue: string;
+  suggestion: string;
+  priority: 'high' | 'medium' | 'low';
+  type: 'missing' | 'unclear' | 'incomplete';
+  fieldPath: string; // e.g., "objectives", "sections.0.activities"
+}
+
+export async function aiAnalyzeLesson(content: string, level: string = ''): Promise<LessonAnalysisResult> {
   try {
     // Get the API key from environment variables
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
 
     if (!apiKey) {
       console.error('OpenAI API key is missing');
-      return fallbackAnalysis(content, level);
+      const fallbackResult = fallbackAnalysis(content, level);
+      return {
+        data: fallbackResult,
+        improvementAreas: generateFallbackImprovementAreas(fallbackResult)
+      };
     }
   
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -56,7 +75,7 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this lesson plan content for ${level || 'any grade level'}, making sure to extract all important details and preserve any URLs or links: ${content}` }
@@ -69,27 +88,200 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
     if (!response.ok) {
       const errorData = await response.json();
       console.error('OpenAI API error:', errorData);
-      return fallbackAnalysis(content, level);
+      const fallbackResult = fallbackAnalysis(content, level);
+      return {
+        data: fallbackResult,
+        improvementAreas: generateFallbackImprovementAreas(fallbackResult)
+      };
     }
 
     const data = await response.json();
     
     if (!data.choices?.[0]?.message?.content) {
       console.error('Invalid AI response format:', data);
-      return fallbackAnalysis(content, level);
+      const fallbackResult = fallbackAnalysis(content, level);
+      return {
+        data: fallbackResult,
+        improvementAreas: generateFallbackImprovementAreas(fallbackResult)
+      };
     }
 
     try {
       const result = JSON.parse(data.choices[0].message.content);
-      return validateAndCleanResponse(result, level);
+      const cleanedResult = validateAndCleanResponse(result, level);
+      
+      // Generate improvement areas for the lesson plan
+      const improvementAreas = await identifyImprovementAreas(cleanedResult, apiKey);
+      
+      return {
+        data: cleanedResult,
+        improvementAreas
+      };
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      return fallbackAnalysis(content, level);
+      const fallbackResult = fallbackAnalysis(content, level);
+      return {
+        data: fallbackResult,
+        improvementAreas: generateFallbackImprovementAreas(fallbackResult)
+      };
     }
   } catch (error) {
     console.error('Error analyzing lesson:', error);
-    return fallbackAnalysis(content, level);
+    const fallbackResult = fallbackAnalysis(content, level);
+    return {
+      data: fallbackResult,
+      improvementAreas: generateFallbackImprovementAreas(fallbackResult)
+    };
   }
+}
+
+async function identifyImprovementAreas(lesson: AIResponse, apiKey: string): Promise<ImprovementArea[]> {
+  try {
+    const lessonJson = JSON.stringify(lesson);
+    
+    const IMPROVEMENT_PROMPT = `You are a curriculum expert reviewing a teacher's lesson plan. Analyze this lesson plan and identify 3-5 specific areas that could be improved or need more details.
+
+For each area needing improvement:
+1. Identify specifically what is missing, unclear, or incomplete
+2. Explain why this is important for effective teaching
+3. Provide a specific suggestion for improvement
+4. Assign a priority (high, medium, low)
+5. Categorize the type of issue (missing, unclear, incomplete)
+
+DO NOT suggest adding completely new sections or major restructuring.
+DO focus on enriching and clarifying what's already there.
+The goal is to help the teacher make targeted improvements to their existing plan.
+
+Provide your response as a JSON array of improvement areas, with each item having these fields:
+- id: A unique string identifier
+- section: The specific part of the lesson plan this applies to (e.g., "Learning Objectives", "Introduction Section")
+- issue: Concise description of what's missing or needs improvement
+- suggestion: Specific, actionable suggestion for improvement
+- priority: "high", "medium", or "low"
+- type: "missing", "unclear", or "incomplete"
+- fieldPath: The path to the field in the lesson object (e.g., "objectives", "sections.0.activities")
+
+Lesson plan to analyze: ${lessonJson}`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: IMPROVEMENT_PROMPT },
+          { role: 'user', content: 'Please analyze this lesson plan and suggest improvements.' }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate improvement suggestions');
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from improvement analysis');
+    }
+
+    const improvements = JSON.parse(data.choices[0].message.content);
+    return Array.isArray(improvements.improvements) ? improvements.improvements : [];
+    
+  } catch (error) {
+    console.error('Error identifying improvement areas:', error);
+    return generateFallbackImprovementAreas(lesson);
+  }
+}
+
+function generateFallbackImprovementAreas(lesson: AIResponse): ImprovementArea[] {
+  const improvements: ImprovementArea[] = [];
+  
+  // Check for objectives
+  if (!lesson.objectives || lesson.objectives.length < 3) {
+    improvements.push({
+      id: 'obj-1',
+      section: 'Learning Objectives',
+      issue: 'Not enough specific learning objectives',
+      suggestion: 'Add more measurable objectives that start with action verbs like "explain", "demonstrate", or "analyze"',
+      priority: 'high',
+      type: 'incomplete',
+      fieldPath: 'objectives'
+    });
+  }
+  
+  // Check for materials
+  if (!lesson.materials || lesson.materials.length < 2) {
+    improvements.push({
+      id: 'mat-1',
+      section: 'Materials',
+      issue: 'Limited materials list',
+      suggestion: 'Expand the list of materials needed for this lesson, including both physical and digital resources',
+      priority: 'medium',
+      type: 'incomplete',
+      fieldPath: 'materials'
+    });
+  }
+  
+  // Check for topic background
+  if (!lesson.topic_background || lesson.topic_background.length < 100) {
+    improvements.push({
+      id: 'bg-1',
+      section: 'Topic Background',
+      issue: 'Limited background information for the teacher',
+      suggestion: 'Add more context about the topic to help the teacher present with confidence',
+      priority: 'medium',
+      type: 'incomplete',
+      fieldPath: 'topic_background'
+    });
+  }
+  
+  // Check for sections
+  if (lesson.sections.length < 2) {
+    improvements.push({
+      id: 'sec-1',
+      section: 'Lesson Structure',
+      issue: 'Not enough lesson sections',
+      suggestion: 'Break the lesson into more distinct sections (e.g., Introduction, Main Activity, Conclusion)',
+      priority: 'high',
+      type: 'incomplete',
+      fieldPath: 'sections'
+    });
+  } else {
+    // Check for activities in the first section
+    const firstSection = lesson.sections[0];
+    if (!firstSection.activities || firstSection.activities.length === 0) {
+      improvements.push({
+        id: 'act-1',
+        section: `${firstSection.title} Section`,
+        issue: 'No activities defined for this section',
+        suggestion: 'Add at least one specific activity or task for students to complete',
+        priority: 'high',
+        type: 'missing',
+        fieldPath: `sections.0.activities`
+      });
+    }
+    
+    // Check for assessment
+    if (!firstSection.assessment || firstSection.assessment.length < 50) {
+      improvements.push({
+        id: 'ass-1',
+        section: `${firstSection.title} Section`,
+        issue: 'Limited assessment details',
+        suggestion: 'Add specific methods to check student understanding during or after this section',
+        priority: 'medium',
+        type: 'incomplete',
+        fieldPath: `sections.0.assessment`
+      });
+    }
+  }
+  
+  return improvements;
 }
 
 function validateAndCleanResponse(response: any, level: string = ''): AIResponse {
@@ -208,7 +400,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `This is ${cardType} content intended for ${level || 'students'}. Please adapt it to be student-friendly, preserving all URLs exactly as they appear: ${content}` }
@@ -284,7 +476,7 @@ export async function generateSuccessCriteria(objectives: string[], level: strin
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `For these learning objectives intended for ${level || 'students'}, generate appropriate success criteria:\n\n${objectives.join('\n')}` }
@@ -354,7 +546,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `This is ${cardType} content that students are finding difficult to understand. It's intended for ${level || 'students'}. Please create a differentiated, simpler version while preserving all URLs exactly as they appear: ${content}` }
@@ -405,4 +597,78 @@ function defaultDifferentiatedContent(content: string, cardType: string): string
   
   // Add helper text at the beginning
   return processContentWithUrls(`Let's break this down simply:\n\n${simplifiedSentences.join('. ')}\n\nStill confused? Just remember the main idea: ${sentences[0]}`);
+}
+
+export async function improveLessonSection(sectionType: string, currentContent: string, issueDescription: string, level: string = ''): Promise<string> {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    
+    if (!apiKey) {
+      console.error('OpenAI API key is missing');
+      return currentContent;
+    }
+
+    const systemPrompt = `You are an expert curriculum designer helping a teacher improve a specific part of their lesson plan.
+    You will be given:
+    1. The type of section being improved (e.g., "Learning Objectives", "Topic Background")
+    2. The current content for that section
+    3. A description of the issue or area needing improvement
+    4. The grade level the lesson is designed for
+    
+    Your task is to provide an improved version of this section that:
+    - Addresses the specific issue described
+    - Maintains the original intent and core content
+    - Is appropriate for the specified grade level
+    - Is well-structured and clearly written
+    - Preserves any URLs or links exactly as they appear
+    
+    Do NOT completely rewrite the section - build upon and enhance what the teacher has already created.
+    Do NOT add content unrelated to the original section's purpose.
+    Do NOT change the overall direction of the lesson.
+    
+    Focus on specific, targeted improvements to address the issue described.`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `
+            Section Type: ${sectionType}
+            Grade Level: ${level || 'unspecified'}
+            Issue: ${issueDescription}
+            
+            Current Content:
+            ${currentContent}
+            
+            Please provide an improved version of this section that addresses the issue described.
+          ` }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      return currentContent;
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid AI response format:', data);
+      return currentContent;
+    }
+
+    return processContentWithUrls(data.choices[0].message.content.trim());
+  } catch (error) {
+    console.error('Error improving lesson section:', error);
+    return currentContent;
+  }
 }
