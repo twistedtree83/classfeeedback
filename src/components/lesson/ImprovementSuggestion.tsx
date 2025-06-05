@@ -1,8 +1,9 @@
 import React from 'react';
-import { CheckCircle, XCircle, AlertCircle, AlertTriangle, Lightbulb } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui-shadcn/card';
 import { Button } from '@/components/ui/button';
 import { ImprovementArea } from '@/types/lessonTypes';
+import { sanitizeHtml } from '@/lib/utils';
 
 interface ImprovementSuggestionProps {
   improvement: ImprovementArea;
@@ -30,7 +31,7 @@ export function ImprovementSuggestion({
         return <div className="text-gray-400 italic">No activities defined</div>;
       }
       return (
-        <ul className="list-disc pl-4 space-y-1">
+        <ul className="list-disc pl-5 space-y-1">
           {value.map((item, i) => (
             <li key={i}>{item}</li>
           ))}
@@ -51,20 +52,6 @@ export function ImprovementSuggestion({
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  // Get icon based on issue type
-  const getTypeIcon = (type: 'missing' | 'unclear' | 'incomplete') => {
-    switch (type) {
-      case 'missing':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'unclear':
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case 'incomplete':
-        return <AlertCircle className="h-5 w-5 text-blue-500" />;
-      default:
-        return null;
     }
   };
 
@@ -91,13 +78,28 @@ export function ImprovementSuggestion({
     return null;
   };
 
+  // Format suggestion text to ensure no HTML tags are visible
+  const formatSuggestion = (text: string) => {
+    // First check if it looks like it contains HTML tags
+    if (text.includes('<') && text.includes('>')) {
+      return <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />;
+    }
+    
+    // Otherwise just render as text with line breaks preserved
+    return (
+      <div className="whitespace-pre-wrap">
+        {text}
+      </div>
+    );
+  };
+
   return (
     <Card className={`${isApproved ? 'border-green-200' : isRejected ? 'border-gray-200 opacity-75' : 'border-amber-200'} shadow-md`}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="text-lg flex items-center">
-              <Lightbulb className="h-5 w-5 text-amber-500 mr-2" />
+              <Lightbulb className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0" />
               <span>Activities for {improvement.section}</span>
             </CardTitle>
             <div className="flex items-center space-x-2 mt-1">
@@ -127,7 +129,7 @@ export function ImprovementSuggestion({
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
               <h4 className="text-sm font-medium text-amber-800 mb-1">Suggested Activities:</h4>
               <div className="text-sm text-amber-700">
-                {improvement.suggestion}
+                {formatSuggestion(improvement.suggestion)}
               </div>
             </div>
           </div>

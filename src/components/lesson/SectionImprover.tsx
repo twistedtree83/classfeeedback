@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { improveLessonSection } from '@/lib/aiService';
-import { Loader2, CheckCircle, XCircle, Edit, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Edit, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { ImprovementArea } from '@/types/lessonTypes';
+import { sanitizeHtml } from '@/lib/utils';
 
 interface SectionImproverProps {
   improvement: ImprovementArea;
@@ -40,11 +41,9 @@ export function SectionImprover({
           currentText,
           improvement.issue
         );
-        // Split back into an array
-        setSuggestedValue(result.split('\n').map(line => {
-          // Remove bullet points or numbering if present
-          return line.trim().replace(/^[•\-*]\s*/, '').replace(/^\d+\.\s*/, '');
-        }).filter(line => line.length > 0));
+        // Split back into an array, clean and parse the result
+        const processedResult = cleanAndParseActivities(result);
+        setSuggestedValue(processedResult);
       } else {
         // For string values
         result = await improveLessonSection(
@@ -61,6 +60,23 @@ export function SectionImprover({
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Clean and parse activities from AI response
+  const cleanAndParseActivities = (aiResponse: string): string[] => {
+    // Split by common separators (newlines, bullet points, numbers)
+    const lines = aiResponse.split(/\n+/);
+    
+    // Process each line to remove bullet points, numbering, etc.
+    return lines
+      .map(line => {
+        // Remove bullet points, numbers, and extra whitespace
+        return line.trim()
+          .replace(/^[•\-*]\s*/, '')  // Bullet points
+          .replace(/^\d+[.):]\s*/, '') // Numbering
+          .trim();
+      })
+      .filter(line => line.length > 0); // Remove empty lines
   };
 
   // Generate improvement when component mounts
@@ -141,12 +157,16 @@ export function SectionImprover({
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             {isArrayValue ? (
               <ul className="list-disc pl-5 space-y-2">
-                {(currentValue as string[]).map((item, i) => (
-                  <li key={i} className="text-gray-700">{item}</li>
-                ))}
+                {(currentValue as string[]).length > 0 ? (
+                  (currentValue as string[]).map((item, i) => (
+                    <li key={i} className="text-gray-700">{item}</li>
+                  ))
+                ) : (
+                  <li className="text-gray-400 italic">No activities defined</li>
+                )}
               </ul>
             ) : (
-              <p className="text-gray-700 whitespace-pre-wrap">{currentValue as string}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">{currentValue as string || <span className="text-gray-400 italic">No content</span>}</p>
             )}
           </div>
         </div>
@@ -184,7 +204,7 @@ export function SectionImprover({
                             className="text-red-500"
                             onClick={() => handleRemoveArrayItem(index)}
                           >
-                            <XCircle className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       ))}
@@ -194,7 +214,8 @@ export function SectionImprover({
                         onClick={handleAddArrayItem}
                         className="mt-2"
                       >
-                        + Add Activity
+                        <Plus className="h-4 w-4 mr-1" /> 
+                        Add Activity
                       </Button>
                     </div>
                   ) : (
@@ -211,12 +232,19 @@ export function SectionImprover({
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   {isArrayValue ? (
                     <ul className="list-disc pl-5 space-y-2">
-                      {(suggestedValue as string[]).map((item, i) => (
-                        <li key={i} className="text-blue-700">{item}</li>
-                      ))}
+                      {(suggestedValue as string[]).length > 0 ? (
+                        (suggestedValue as string[]).map((item, i) => (
+                          <li key={i} className="text-blue-700">{item}</li>
+                        ))
+                      ) : (
+                        <li className="text-blue-400 italic">No activities defined yet</li>
+                      )}
                     </ul>
                   ) : (
-                    <p className="text-blue-700 whitespace-pre-wrap">{suggestedValue as string}</p>
+                    <div 
+                      className="text-blue-700 whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(suggestedValue as string) }}
+                    />
                   )}
                 </div>
               )}
