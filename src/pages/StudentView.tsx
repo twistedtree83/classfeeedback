@@ -52,8 +52,10 @@ export function StudentView() {
   
   // Reference to track if auto-join has already been triggered
   const autoJoinTriggered = useRef(false);
-  // Reference to track if status effect has already set joined to true
+  // Reference to track if a user has been approved and joined
   const joinedFromApproval = useRef(false);
+  // Store the approved status in sessionStorage to persist across page reloads
+  const sessionStorageKey = `student_approved_${sessionCode}`;
   
   // Available avatars
   const availableAvatars: AvatarOption[] = [
@@ -72,6 +74,19 @@ export function StudentView() {
     
     if (codeParam) {
       setSessionCode(codeParam);
+      
+      // Check if this student was previously approved for this session
+      const wasApproved = sessionStorage.getItem(sessionStorageKey) === 'approved';
+      if (wasApproved && nameParam) {
+        // Skip approval flow if already approved
+        joinedFromApproval.current = true;
+        setJoined(true);
+        setStudentName(nameParam);
+        if (avatarParam && availableAvatars.some(a => a.src === avatarParam)) {
+          setSelectedAvatar(avatarParam);
+        }
+        return;
+      }
     }
     
     if (nameParam) {
@@ -137,9 +152,14 @@ export function StudentView() {
           joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
+          
+          // Save approval status in sessionStorage
+          sessionStorage.setItem(sessionStorageKey, 'approved');
         } else if (newStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setLoading(false);
+          // Clear approval status
+          sessionStorage.removeItem(sessionStorageKey);
         }
       }
     );
@@ -158,9 +178,14 @@ export function StudentView() {
           joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
+          
+          // Save approval status in sessionStorage
+          sessionStorage.setItem(sessionStorageKey, 'approved');
         } else if (currentStatus === 'rejected') {
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setLoading(false);
+          // Clear approval status
+          sessionStorage.removeItem(sessionStorageKey);
         }
       } catch (err) {
         console.error('Error in initial status check:', err);
@@ -182,9 +207,15 @@ export function StudentView() {
           joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
+          
+          // Save approval status in sessionStorage
+          sessionStorage.setItem(sessionStorageKey, 'approved');
         } else if (currentStatus === 'rejected') {
+          setStatus('rejected');
           setError('Your name was not approved by the teacher. Please try again with a different name.');
           setLoading(false);
+          // Clear approval status
+          sessionStorage.removeItem(sessionStorageKey);
         }
       } catch (err) {
         console.error('Error checking participant status:', err);
@@ -196,7 +227,7 @@ export function StudentView() {
       subscription.unsubscribe();
       clearInterval(pollingInterval);
     };
-  }, [participantId, sessionCode, status]);
+  }, [participantId, sessionCode, sessionStorageKey, status]);
 
   // Reset message count when panel is opened
   useEffect(() => {
@@ -215,8 +246,19 @@ export function StudentView() {
   // Auto-join using URL parameters
   const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
     // Guard against duplicate joins
-    if (joined || loading || status) {
+    if (joined || loading || status || joinedFromApproval.current) {
       console.log("Auto-join skipped - already joining or joined");
+      return;
+    }
+    
+    // Check if this student was previously approved for this session
+    const wasApproved = sessionStorage.getItem(`student_approved_${code}`) === 'approved';
+    if (wasApproved) {
+      // Skip approval flow if already approved
+      joinedFromApproval.current = true;
+      setJoined(true);
+      setStudentName(name);
+      setSelectedAvatar(avatar);
       return;
     }
     
@@ -482,6 +524,10 @@ export function StudentView() {
                 setJoined(false);
                 setLoading(false);
                 joinedFromApproval.current = false;
+                // Remove the saved approval status
+                sessionStorage.removeItem(sessionStorageKey);
+                // Reset auto-join flag
+                autoJoinTriggered.current = false;
               }}
               className="w-full bg-teal hover:bg-teal/90 text-white"
               size="lg"
@@ -535,6 +581,9 @@ export function StudentView() {
                     setLoading(false);
                     setError(null);
                     joinedFromApproval.current = false;
+                    // Clear session storage
+                    sessionStorage.removeItem(sessionStorageKey);
+                    autoJoinTriggered.current = false;
                   }}
                   className="bg-teal hover:bg-teal/90 text-white"
                   size="lg"
