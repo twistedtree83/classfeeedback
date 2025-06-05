@@ -52,6 +52,8 @@ export function StudentView() {
   
   // Reference to track if auto-join has already been triggered
   const autoJoinTriggered = useRef(false);
+  // Reference to track if status effect has already set joined to true
+  const joinedFromApproval = useRef(false);
   
   // Available avatars
   const availableAvatars: AvatarOption[] = [
@@ -129,9 +131,10 @@ export function StudentView() {
         console.log(`Received status update for participant ${participantId}: ${newStatus}`);
         setStatus(newStatus);
         
-        // Handle approval
-        if (newStatus === 'approved') {
+        // Handle approval - only set joined to true once
+        if (newStatus === 'approved' && !joinedFromApproval.current) {
           console.log('Participant approved - loading lesson presentation');
+          joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
         } else if (newStatus === 'rejected') {
@@ -150,8 +153,9 @@ export function StudentView() {
         
         setStatus(currentStatus);
         
-        if (currentStatus === 'approved') {
+        if (currentStatus === 'approved' && !joinedFromApproval.current) {
           // Already approved, proceed with joining
+          joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
         } else if (currentStatus === 'rejected') {
@@ -174,7 +178,8 @@ export function StudentView() {
       
       try {
         const currentStatus = await checkParticipantStatus(participantId);
-        if (currentStatus === 'approved') {
+        if (currentStatus === 'approved' && !joinedFromApproval.current) {
+          joinedFromApproval.current = true;
           setJoined(true);
           setLoading(false);
         } else if (currentStatus === 'rejected') {
@@ -476,6 +481,7 @@ export function StudentView() {
                 setParticipantId(null);
                 setJoined(false);
                 setLoading(false);
+                joinedFromApproval.current = false;
               }}
               className="w-full bg-teal hover:bg-teal/90 text-white"
               size="lg"
@@ -528,6 +534,7 @@ export function StudentView() {
                     setJoined(false);
                     setLoading(false);
                     setError(null);
+                    joinedFromApproval.current = false;
                   }}
                   className="bg-teal hover:bg-teal/90 text-white"
                   size="lg"
