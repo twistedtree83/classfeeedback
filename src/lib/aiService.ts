@@ -75,7 +75,7 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: `Analyze this lesson plan content for ${level || 'any grade level'}, making sure to extract all important details and preserve any URLs or links: ${content}` }
@@ -170,7 +170,7 @@ Lesson plan to analyze: ${lessonJson}`;
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: IMPROVEMENT_PROMPT },
           { role: 'user', content: 'Please analyze this lesson plan and suggest improvements.' }
@@ -400,7 +400,7 @@ export async function makeContentStudentFriendly(content: string, cardType: stri
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `This is ${cardType} content intended for ${level || 'students'}. Please adapt it to be student-friendly, preserving all URLs exactly as they appear: ${content}` }
@@ -476,7 +476,7 @@ export async function generateSuccessCriteria(objectives: string[], level: strin
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `For these learning objectives intended for ${level || 'students'}, generate appropriate success criteria:\n\n${objectives.join('\n')}` }
@@ -546,7 +546,7 @@ export async function generateDifferentiatedContent(content: string, cardType: s
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `This is ${cardType} content that students are finding difficult to understand. It's intended for ${level || 'students'}. Please create a differentiated, simpler version while preserving all URLs exactly as they appear: ${content}` }
@@ -635,7 +635,7 @@ export async function improveLessonSection(sectionType: string, currentContent: 
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `

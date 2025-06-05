@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Loader2, XCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Loader2, XCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface ApprovalStatusProps {

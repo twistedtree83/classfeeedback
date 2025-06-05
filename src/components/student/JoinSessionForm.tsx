@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { AlertCircle } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { BookOpen } from 'lucide-react';
 
 interface JoinSessionFormProps {
   sessionCode: string;
@@ -110,5 +111,3 @@ export function JoinSessionForm({
     </div>
   );
 }
-
-import { BookOpen } from 'lucide-react';
