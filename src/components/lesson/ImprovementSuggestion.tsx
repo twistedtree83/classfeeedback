@@ -78,18 +78,30 @@ export function ImprovementSuggestion({
     return null;
   };
 
-  // Format suggestion text to ensure no HTML tags are visible
+  // Format suggestion text into a structured format
   const formatSuggestion = (text: string) => {
-    // First check if it looks like it contains HTML tags
-    if (text.includes('<') && text.includes('>')) {
-      return <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }} />;
+    // Split by common separators (newlines, bullet points, numbers)
+    const lines = text.split(/\n+/);
+    
+    // Process each line and create an array of items
+    const items = lines
+      .map(line => line.trim()
+        .replace(/^[•\-*]\s*/, '')  // Remove bullet points
+        .replace(/^\d+[.):]\s*/, '') // Remove numbering
+        .trim())
+      .filter(line => line.length > 0); // Remove empty lines
+    
+    // Return a formatted list
+    if (items.length === 0) {
+      return <div className="text-gray-400 italic">No suggestions provided</div>;
     }
     
-    // Otherwise just render as text with line breaks preserved
     return (
-      <div className="whitespace-pre-wrap">
-        {text}
-      </div>
+      <ul className="list-disc pl-5 space-y-2">
+        {items.map((item, i) => (
+          <li key={i} className="mb-2">{item}</li>
+        ))}
+      </ul>
     );
   };
 

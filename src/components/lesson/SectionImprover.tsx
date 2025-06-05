@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { improveLessonSection } from '@/lib/aiService';
 import { Loader2, CheckCircle, XCircle, Edit, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { ImprovementArea } from '@/types/lessonTypes';
-import { sanitizeHtml } from '@/lib/utils';
 
 interface SectionImproverProps {
   improvement: ImprovementArea;
@@ -20,10 +19,10 @@ export function SectionImprover({
 }: SectionImproverProps) {
   const [editMode, setEditMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [suggestedValue, setSuggestedValue] = useState<string | string[]>(currentValue);
+  const [activities, setActivities] = useState<string[]>(Array.isArray(currentValue) ? 
+    [...currentValue] : 
+    currentValue ? [currentValue as string] : []);
   const [error, setError] = useState('');
-
-  const isArrayValue = Array.isArray(currentValue);
 
   // Function to generate improved content from AI
   const generateImprovement = async () => {
@@ -31,28 +30,20 @@ export function SectionImprover({
     setError('');
     
     try {
-      let result;
+      // For arrays (like activities), join with newlines
+      const currentText = (Array.isArray(currentValue) ? 
+        currentValue : 
+        currentValue ? [currentValue as string] : []).join('\n');
       
-      if (isArrayValue) {
-        // For arrays (like activities), join with newlines
-        const currentText = (currentValue as string[]).join('\n');
-        result = await improveLessonSection(
-          improvement.section,
-          currentText,
-          improvement.issue
-        );
-        // Split back into an array, clean and parse the result
-        const processedResult = cleanAndParseActivities(result);
-        setSuggestedValue(processedResult);
-      } else {
-        // For string values
-        result = await improveLessonSection(
-          improvement.section,
-          currentValue as string,
-          improvement.issue
-        );
-        setSuggestedValue(result);
-      }
+      const result = await improveLessonSection(
+        improvement.section,
+        currentText,
+        improvement.issue
+      );
+      
+      // Process the result into a clean array of activities
+      const processedActivities = cleanAndParseActivities(result);
+      setActivities(processedActivities);
       
     } catch (err) {
       console.error('Error improving section:', err);
@@ -80,38 +71,32 @@ export function SectionImprover({
   };
 
   // Generate improvement when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     generateImprovement();
   }, []);
 
-  // Handle editing for text fields
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSuggestedValue(e.target.value);
-  };
-
   // Handle editing for array fields (like activities)
-  const handleArrayItemChange = (index: number, value: string) => {
-    if (isArrayValue) {
-      const newArray = [...(suggestedValue as string[])];
-      newArray[index] = value;
-      setSuggestedValue(newArray);
-    }
+  const handleActivityChange = (index: number, value: string) => {
+    const newActivities = [...activities];
+    newActivities[index] = value;
+    setActivities(newActivities);
   };
 
   // Handle adding a new array item
-  const handleAddArrayItem = () => {
-    if (isArrayValue) {
-      setSuggestedValue([...(suggestedValue as string[]), '']);
-    }
+  const handleAddActivity = () => {
+    setActivities([...activities, '']);
   };
 
   // Handle removing an array item
-  const handleRemoveArrayItem = (index: number) => {
-    if (isArrayValue) {
-      const newArray = [...(suggestedValue as string[])];
-      newArray.splice(index, 1);
-      setSuggestedValue(newArray);
-    }
+  const handleRemoveActivity = (index: number) => {
+    const newActivities = [...activities];
+    newActivities.splice(index, 1);
+    setActivities(newActivities);
+  };
+
+  // Handle approving the changes
+  const handleApprove = () => {
+    onApprove(improvement.id, activities);
   };
 
   return (
@@ -155,10 +140,10 @@ export function SectionImprover({
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-2">Current Activities:</h4>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {isArrayValue ? (
+            {Array.isArray(currentValue) ? (
               <ul className="list-disc pl-5 space-y-2">
-                {(currentValue as string[]).length > 0 ? (
-                  (currentValue as string[]).map((item, i) => (
+                {currentValue.length > 0 ? (
+                  currentValue.map((item, i) => (
                     <li key={i} className="text-gray-700">{item}</li>
                   ))
                 ) : (
@@ -187,65 +172,48 @@ export function SectionImprover({
             <>
               {editMode ? (
                 <div>
-                  {isArrayValue ? (
-                    <div className="space-y-3">
-                      {(suggestedValue as string[]).map((item, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <textarea
-                            value={item}
-                            onChange={(e) => handleArrayItemChange(index, e.target.value)}
-                            className="flex-1 p-3 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                            rows={3}
-                            placeholder={`Activity ${index + 1} description...`}
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-red-500"
-                            onClick={() => handleRemoveArrayItem(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={handleAddArrayItem}
-                        className="mt-2"
-                      >
-                        <Plus className="h-4 w-4 mr-1" /> 
-                        Add Activity
-                      </Button>
-                    </div>
-                  ) : (
-                    <textarea
-                      value={suggestedValue as string}
-                      onChange={handleTextChange}
-                      className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                      rows={8}
-                      placeholder="Enter activity details..."
-                    />
-                  )}
+                  <div className="space-y-3">
+                    {activities.map((activity, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <textarea
+                          value={activity}
+                          onChange={(e) => handleActivityChange(index, e.target.value)}
+                          className="flex-1 p-3 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                          rows={3}
+                          placeholder={`Activity ${index + 1} description...`}
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-500"
+                          onClick={() => handleRemoveActivity(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleAddActivity}
+                      className="mt-2"
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> 
+                      Add Activity
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  {isArrayValue ? (
-                    <ul className="list-disc pl-5 space-y-2">
-                      {(suggestedValue as string[]).length > 0 ? (
-                        (suggestedValue as string[]).map((item, i) => (
-                          <li key={i} className="text-blue-700">{item}</li>
-                        ))
-                      ) : (
-                        <li className="text-blue-400 italic">No activities defined yet</li>
-                      )}
-                    </ul>
-                  ) : (
-                    <div 
-                      className="text-blue-700 whitespace-pre-wrap"
-                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(suggestedValue as string) }}
-                    />
-                  )}
+                  <ul className="list-disc pl-5 space-y-2">
+                    {activities.length > 0 ? (
+                      activities.map((item, i) => (
+                        <li key={i} className="text-blue-700">{item}</li>
+                      ))
+                    ) : (
+                      <li className="text-blue-400 italic">No activities defined yet</li>
+                    )}
+                  </ul>
                 </div>
               )}
             </>
@@ -263,8 +231,8 @@ export function SectionImprover({
         </Button>
         <Button
           className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={() => onApprove(improvement.id, suggestedValue)}
-          disabled={isGenerating}
+          onClick={handleApprove}
+          disabled={isGenerating || activities.length === 0}
         >
           <CheckCircle className="h-4 w-4 mr-1" />
           Apply These Activities

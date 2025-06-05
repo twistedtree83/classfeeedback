@@ -442,9 +442,9 @@ export function CreateLesson() {
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg flex items-start">
             <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-yellow-800 mb-1">Improvement Suggestions</h3>
+              <h3 className="font-semibold text-yellow-800 mb-1">Activity Improvement Suggestions</h3>
               <p className="text-yellow-700 text-sm">
-                We've identified {improvementAreas.length} areas where your lesson plan could be improved. 
+                We've identified {improvementAreas.length} areas where your lesson activities could be improved. 
                 You can apply these suggestions or skip them.
               </p>
             </div>
@@ -452,61 +452,9 @@ export function CreateLesson() {
         </div>
 
         <div className="grid grid-cols-6 gap-4 mb-6">
-          <div className={`col-span-6 md:col-span-3 lg:col-span-2 p-4 rounded-lg border ${getApprovedCount('main') === getImprovementsCount('main') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+          <div className={`col-span-6 p-4 rounded-lg border ${getApprovedCount('sections') === getImprovementsCount('sections') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">General</h3>
-              <span className="text-sm">{getApprovedCount('main')}/{getImprovementsCount('main')}</span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div 
-                className="h-2 bg-green-500 rounded-full" 
-                style={{width: `${getImprovementsCount('main') ? (getApprovedCount('main') / getImprovementsCount('main') * 100) : 0}%`}}
-              ></div>
-            </div>
-          </div>
-          
-          <div className={`col-span-6 md:col-span-3 lg:col-span-2 p-4 rounded-lg border ${getApprovedCount('objectives') === getImprovementsCount('objectives') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Objectives</h3>
-              <span className="text-sm">{getApprovedCount('objectives')}/{getImprovementsCount('objectives')}</span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div 
-                className="h-2 bg-green-500 rounded-full" 
-                style={{width: `${getImprovementsCount('objectives') ? (getApprovedCount('objectives') / getImprovementsCount('objectives') * 100) : 0}%`}}
-              ></div>
-            </div>
-          </div>
-          
-          <div className={`col-span-6 md:col-span-3 lg:col-span-2 p-4 rounded-lg border ${getApprovedCount('materials') === getImprovementsCount('materials') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Materials</h3>
-              <span className="text-sm">{getApprovedCount('materials')}/{getImprovementsCount('materials')}</span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div 
-                className="h-2 bg-green-500 rounded-full" 
-                style={{width: `${getImprovementsCount('materials') ? (getApprovedCount('materials') / getImprovementsCount('materials') * 100) : 0}%`}}
-              ></div>
-            </div>
-          </div>
-          
-          <div className={`col-span-6 md:col-span-3 lg:col-span-3 p-4 rounded-lg border ${getApprovedCount('background') === getImprovementsCount('background') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Background</h3>
-              <span className="text-sm">{getApprovedCount('background')}/{getImprovementsCount('background')}</span>
-            </div>
-            <div className="h-2 bg-gray-200 rounded-full">
-              <div 
-                className="h-2 bg-green-500 rounded-full" 
-                style={{width: `${getImprovementsCount('background') ? (getApprovedCount('background') / getImprovementsCount('background') * 100) : 0}%`}}
-              ></div>
-            </div>
-          </div>
-          
-          <div className={`col-span-6 md:col-span-3 lg:col-span-3 p-4 rounded-lg border ${getApprovedCount('sections') === getImprovementsCount('sections') ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Sections</h3>
+              <h3 className="font-semibold">Section Activities</h3>
               <span className="text-sm">{getApprovedCount('sections')}/{getImprovementsCount('sections')}</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full">
@@ -523,7 +471,7 @@ export function CreateLesson() {
           <div className="space-y-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center">
               <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
-              Suggested Improvements
+              Suggested Activity Improvements
             </h2>
             
             {unhandledImprovements.map(improvement => (
@@ -555,13 +503,13 @@ export function CreateLesson() {
               Addressed Improvements
             </h2>
             
-            {improvedFields.map(field => {
+            {improvedFields.map((field, index) => {
               const improvement = improvementAreas.find(imp => imp.fieldPath === field.fieldPath);
               if (!improvement) return null;
               
               return (
                 <ImprovementSuggestion
-                  key={improvement.id}
+                  key={`${improvement.id}-${index}`}
                   improvement={improvement}
                   currentValue={field.originalValue || ''}
                   onApprove={() => {}}

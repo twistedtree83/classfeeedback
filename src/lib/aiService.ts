@@ -609,6 +609,9 @@ export async function improveLessonSection(sectionType: string, currentContent: 
     - Promote critical thinking, collaboration, or creativity
     - Can be realistically implemented in a classroom setting
     
+    FORMAT YOUR RESPONSE AS A NUMBERED LIST OF DISTINCT ACTIVITIES.
+    Each activity should be detailed and specific, not just a general concept.
+    
     Focus ONLY on improving student activities, not other aspects of the lesson plan.`;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -629,7 +632,7 @@ export async function improveLessonSection(sectionType: string, currentContent: 
             Current Activities:
             ${currentContent}
             
-            Please provide improved activities that address the issue described. Format each activity as a separate paragraph or bullet point.
+            Please provide improved activities that address the issue described. Format each activity as a separate numbered item in a list.
           ` }
         ],
         temperature: 0.7
