@@ -111,7 +111,7 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
       const cleanedResult = validateAndCleanResponse(result, level);
       
       // Generate improvement areas for the lesson plan
-      const improvementAreas = await identifyImprovementAreas(cleanedResult, apiKey);
+      const improvementAreas = await identifyActivityImprovementAreas(cleanedResult, apiKey);
       
       return {
         data: cleanedResult,
@@ -135,31 +135,33 @@ export async function aiAnalyzeLesson(content: string, level: string = ''): Prom
   }
 }
 
-async function identifyImprovementAreas(lesson: AIResponse, apiKey: string): Promise<ImprovementArea[]> {
+async function identifyActivityImprovementAreas(lesson: AIResponse, apiKey: string): Promise<ImprovementArea[]> {
   try {
     const lessonJson = JSON.stringify(lesson);
     
-    const IMPROVEMENT_PROMPT = `You are a curriculum expert reviewing a teacher's lesson plan. Analyze this lesson plan and identify 3-5 specific areas that could be improved or need more details.
+    const IMPROVEMENT_PROMPT = `You are a curriculum expert focused specifically on designing engaging and effective student activities for lesson plans. Your task is to review this lesson plan and ONLY identify areas where student activities could be improved.
 
-For each area needing improvement:
-1. Identify specifically what is missing, unclear, or incomplete
-2. Explain why this is important for effective teaching
-3. Provide a specific suggestion for improvement
+FOCUS EXCLUSIVELY on activities within each lesson section. Do not suggest improvements for any other aspects of the lesson plan such as learning intentions, success criteria, materials, or topic background.
+
+For each section that needs activity improvements:
+1. Identify what's missing, unclear, or incomplete about the ACTIVITIES
+2. Explain why better activities would enhance student learning
+3. Suggest specific, grade-appropriate activities that align with the lesson objectives
 4. Assign a priority (high, medium, low)
 5. Categorize the type of issue (missing, unclear, incomplete)
 
-DO NOT suggest adding completely new sections or major restructuring.
-DO focus on enriching and clarifying what's already there.
-The goal is to help the teacher make targeted improvements to their existing plan.
+The goal is to help teachers create more engaging, student-centered activities that promote active learning.
 
-Provide your response as a JSON array of improvement areas, with each item having these fields:
+Provide your response as a JSON object with an "improvements" field containing an array of improvement areas, with each item having these fields:
 - id: A unique string identifier
-- section: The specific part of the lesson plan this applies to (e.g., "Learning Objectives", "Introduction Section")
-- issue: Concise description of what's missing or needs improvement
-- suggestion: Specific, actionable suggestion for improvement
+- section: The specific section title this applies to
+- issue: Concise description of what's missing or needs improvement with the activities
+- suggestion: Specific, actionable activity suggestions 
 - priority: "high", "medium", or "low"
 - type: "missing", "unclear", or "incomplete"
-- fieldPath: The path to the field in the lesson object (e.g., "objectives", "sections.0.activities")
+- fieldPath: The path to the activities field in the lesson object (e.g., "sections.0.activities", "sections.1.activities")
+
+IMPORTANT: Only suggest improvements for activities, not for any other aspect of the lesson plan.
 
 Lesson plan to analyze: ${lessonJson}`;
 
@@ -173,7 +175,7 @@ Lesson plan to analyze: ${lessonJson}`;
         model: 'gpt-4.1',
         messages: [
           { role: 'system', content: IMPROVEMENT_PROMPT },
-          { role: 'user', content: 'Please analyze this lesson plan and suggest improvements.' }
+          { role: 'user', content: 'Please analyze this lesson plan and suggest activity improvements only.' }
         ],
         temperature: 0.7,
         response_format: { type: 'json_object' }
@@ -195,93 +197,76 @@ Lesson plan to analyze: ${lessonJson}`;
     
   } catch (error) {
     console.error('Error identifying improvement areas:', error);
-    return generateFallbackImprovementAreas(lesson);
+    return generateFallbackActivityImprovements(lesson);
   }
 }
 
-function generateFallbackImprovementAreas(lesson: AIResponse): ImprovementArea[] {
+function generateFallbackActivityImprovements(lesson: AIResponse): ImprovementArea[] {
   const improvements: ImprovementArea[] = [];
   
-  // Check for objectives
-  if (!lesson.objectives || lesson.objectives.length < 3) {
-    improvements.push({
-      id: 'obj-1',
-      section: 'Learning Objectives',
-      issue: 'Not enough specific learning objectives',
-      suggestion: 'Add more measurable objectives that start with action verbs like "explain", "demonstrate", or "analyze"',
-      priority: 'high',
-      type: 'incomplete',
-      fieldPath: 'objectives'
-    });
-  }
-  
-  // Check for materials
-  if (!lesson.materials || lesson.materials.length < 2) {
-    improvements.push({
-      id: 'mat-1',
-      section: 'Materials',
-      issue: 'Limited materials list',
-      suggestion: 'Expand the list of materials needed for this lesson, including both physical and digital resources',
-      priority: 'medium',
-      type: 'incomplete',
-      fieldPath: 'materials'
-    });
-  }
-  
-  // Check for topic background
-  if (!lesson.topic_background || lesson.topic_background.length < 100) {
-    improvements.push({
-      id: 'bg-1',
-      section: 'Topic Background',
-      issue: 'Limited background information for the teacher',
-      suggestion: 'Add more context about the topic to help the teacher present with confidence',
-      priority: 'medium',
-      type: 'incomplete',
-      fieldPath: 'topic_background'
-    });
-  }
-  
-  // Check for sections
-  if (lesson.sections.length < 2) {
-    improvements.push({
-      id: 'sec-1',
-      section: 'Lesson Structure',
-      issue: 'Not enough lesson sections',
-      suggestion: 'Break the lesson into more distinct sections (e.g., Introduction, Main Activity, Conclusion)',
-      priority: 'high',
-      type: 'incomplete',
-      fieldPath: 'sections'
-    });
-  } else {
-    // Check for activities in the first section
-    const firstSection = lesson.sections[0];
-    if (!firstSection.activities || firstSection.activities.length === 0) {
+  // Check each section for activities
+  lesson.sections.forEach((section, index) => {
+    // Check if activities are missing or sparse
+    if (!section.activities || section.activities.length === 0) {
       improvements.push({
-        id: 'act-1',
-        section: `${firstSection.title} Section`,
+        id: `act-missing-${index}`,
+        section: `${section.title} Section`,
         issue: 'No activities defined for this section',
-        suggestion: 'Add at least one specific activity or task for students to complete',
+        suggestion: 'Add at least two specific activities that engage students actively with the content. Consider including both individual and group activities.',
         priority: 'high',
         type: 'missing',
-        fieldPath: `sections.0.activities`
+        fieldPath: `sections.${index}.activities`
       });
-    }
-    
-    // Check for assessment
-    if (!firstSection.assessment || firstSection.assessment.length < 50) {
+    } else if (section.activities.length < 2) {
       improvements.push({
-        id: 'ass-1',
-        section: `${firstSection.title} Section`,
-        issue: 'Limited assessment details',
-        suggestion: 'Add specific methods to check student understanding during or after this section',
+        id: `act-sparse-${index}`,
+        section: `${section.title} Section`,
+        issue: 'Limited activities for this section',
+        suggestion: 'Add more varied activities to engage different learning styles. Consider adding a collaborative or hands-on activity.',
         priority: 'medium',
         type: 'incomplete',
-        fieldPath: `sections.0.assessment`
+        fieldPath: `sections.${index}.activities`
       });
+    } else {
+      // Check for vague activities
+      const hasVagueActivity = section.activities.some(activity => 
+        activity.length < 30 || 
+        activity.indexOf(' ') === -1 || 
+        /^(discuss|review|complete|do)\s/i.test(activity)
+      );
+      
+      if (hasVagueActivity) {
+        improvements.push({
+          id: `act-vague-${index}`,
+          section: `${section.title} Section`,
+          issue: 'Some activities lack specific details or instructions',
+          suggestion: 'Expand activity descriptions with clear step-by-step instructions. Include specific questions, prompts, or examples to guide students.',
+          priority: 'medium',
+          type: 'unclear',
+          fieldPath: `sections.${index}.activities`
+        });
+      }
     }
+  });
+  
+  // If no improvements were found but there are sections, add a suggestion for the first section
+  if (improvements.length === 0 && lesson.sections.length > 0) {
+    improvements.push({
+      id: 'act-general-0',
+      section: `${lesson.sections[0].title} Section`,
+      issue: 'Activities could be more engaging and student-centered',
+      suggestion: 'Consider adding interactive activities like think-pair-share, a short role-play, or a problem-solving challenge to increase student engagement.',
+      priority: 'medium',
+      type: 'incomplete',
+      fieldPath: `sections.0.activities`
+    });
   }
   
   return improvements;
+}
+
+function generateFallbackImprovementAreas(lesson: AIResponse): ImprovementArea[] {
+  return generateFallbackActivityImprovements(lesson);
 }
 
 function validateAndCleanResponse(response: any, level: string = ''): AIResponse {
@@ -352,7 +337,7 @@ function fallbackAnalysis(content: string, level: string = ''): AIResponse {
         title: 'Introduction',
         duration: '10 minutes',
         content: processContentWithUrls(paragraphs.slice(0, Math.max(1, Math.floor(paragraphs.length * 0.2))).join('\n\n')),
-        activities: ['Class discussion'],
+        activities: ['Class discussion', 'KWL chart'],
         assessment: 'Monitor student participation and initial understanding'
       },
       {
@@ -608,25 +593,23 @@ export async function improveLessonSection(sectionType: string, currentContent: 
       return currentContent;
     }
 
-    const systemPrompt = `You are an expert curriculum designer helping a teacher improve a specific part of their lesson plan.
+    // Specialized prompt focusing on activities
+    const systemPrompt = `You are an expert at designing engaging educational activities for students. 
     You will be given:
-    1. The type of section being improved (e.g., "Learning Objectives", "Topic Background")
-    2. The current content for that section
+    1. The type of section being improved
+    2. The current content (typically existing activities)
     3. A description of the issue or area needing improvement
     4. The grade level the lesson is designed for
     
-    Your task is to provide an improved version of this section that:
-    - Addresses the specific issue described
-    - Maintains the original intent and core content
-    - Is appropriate for the specified grade level
-    - Is well-structured and clearly written
-    - Preserves any URLs or links exactly as they appear
+    Your task is to provide improved activities that:
+    - Are specific, engaging, and grade-level appropriate
+    - Include clear step-by-step instructions for implementation
+    - Incorporate active learning and student-centered approaches
+    - Support the learning objectives of the lesson
+    - Promote critical thinking, collaboration, or creativity
+    - Can be realistically implemented in a classroom setting
     
-    Do NOT completely rewrite the section - build upon and enhance what the teacher has already created.
-    Do NOT add content unrelated to the original section's purpose.
-    Do NOT change the overall direction of the lesson.
-    
-    Focus on specific, targeted improvements to address the issue described.`;
+    Focus ONLY on improving student activities, not other aspects of the lesson plan.`;
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -643,10 +626,10 @@ export async function improveLessonSection(sectionType: string, currentContent: 
             Grade Level: ${level || 'unspecified'}
             Issue: ${issueDescription}
             
-            Current Content:
+            Current Activities:
             ${currentContent}
             
-            Please provide an improved version of this section that addresses the issue described.
+            Please provide improved activities that address the issue described. Format each activity as a separate paragraph or bullet point.
           ` }
         ],
         temperature: 0.7
@@ -668,7 +651,7 @@ export async function improveLessonSection(sectionType: string, currentContent: 
 
     return processContentWithUrls(data.choices[0].message.content.trim());
   } catch (error) {
-    console.error('Error improving lesson section:', error);
+    console.error('Error improving activities:', error);
     return currentContent;
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, XCircle, AlertCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, AlertTriangle, Lightbulb } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui-shadcn/card';
 import { Button } from '@/components/ui/button';
 import { ImprovementArea } from '@/types/lessonTypes';
@@ -26,11 +26,18 @@ export function ImprovementSuggestion({
   // Format the current value for display
   const formatValue = (value: string | string[]) => {
     if (Array.isArray(value)) {
-      return value.map((item, i) => (
-        <li key={i} className="ml-4">• {item}</li>
-      ));
+      if (value.length === 0) {
+        return <div className="text-gray-400 italic">No activities defined</div>;
+      }
+      return (
+        <ul className="list-disc pl-4 space-y-1">
+          {value.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      );
     }
-    return value;
+    return value || <div className="text-gray-400 italic">No content</div>;
   };
 
   // Get color for priority badge
@@ -67,7 +74,7 @@ export function ImprovementSuggestion({
       return (
         <div className="flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
           <CheckCircle className="h-4 w-4 mr-1" />
-          Approved
+          Applied
         </div>
       );
     }
@@ -90,10 +97,10 @@ export function ImprovementSuggestion({
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="text-lg flex items-center">
-              {getTypeIcon(improvement.type)}
-              <span className="ml-2">{improvement.section}</span>
+              <Lightbulb className="h-5 w-5 text-amber-500 mr-2" />
+              <span>Activities for {improvement.section}</span>
             </CardTitle>
-            <div className="flex items-center space-x-2 mt-1 mb-2">
+            <div className="flex items-center space-x-2 mt-1">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(improvement.priority)}`}>
                 {improvement.priority.charAt(0).toUpperCase() + improvement.priority.slice(1)} Priority
               </span>
@@ -111,15 +118,15 @@ export function ImprovementSuggestion({
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <h4 className="text-sm font-medium text-gray-700 mb-1">Current Content:</h4>
-              <div className="text-sm text-gray-600 space-y-1">
+              <h4 className="text-sm font-medium text-gray-700 mb-1">Current Activities:</h4>
+              <div className="text-sm text-gray-600">
                 {formatValue(currentValue)}
               </div>
             </div>
             
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
-              <h4 className="text-sm font-medium text-amber-800 mb-1">Suggested Improvement:</h4>
-              <div className="text-sm text-amber-700 space-y-1">
+              <h4 className="text-sm font-medium text-amber-800 mb-1">Suggested Activities:</h4>
+              <div className="text-sm text-amber-700">
                 {improvement.suggestion}
               </div>
             </div>
@@ -144,7 +151,7 @@ export function ImprovementSuggestion({
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={() => onCustomEdit(improvement.id)}
           >
-            Edit
+            Edit Activities
           </Button>
           <Button 
             size="sm"
@@ -152,7 +159,7 @@ export function ImprovementSuggestion({
             onClick={() => onApprove(improvement.id)}
           >
             <CheckCircle className="h-4 w-4 mr-1" />
-            Apply
+            Apply Suggestion
           </Button>
         </CardFooter>
       )}

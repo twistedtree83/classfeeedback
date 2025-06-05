@@ -33,7 +33,7 @@ export function SectionImprover({
       let result;
       
       if (isArrayValue) {
-        // For arrays (like objectives or materials), join with newlines
+        // For arrays (like activities), join with newlines
         const currentText = (currentValue as string[]).join('\n');
         result = await improveLessonSection(
           improvement.section,
@@ -41,7 +41,10 @@ export function SectionImprover({
           improvement.issue
         );
         // Split back into an array
-        setSuggestedValue(result.split('\n').map(line => line.trim()).filter(line => line.length > 0));
+        setSuggestedValue(result.split('\n').map(line => {
+          // Remove bullet points or numbering if present
+          return line.trim().replace(/^[•\-*]\s*/, '').replace(/^\d+\.\s*/, '');
+        }).filter(line => line.length > 0));
       } else {
         // For string values
         result = await improveLessonSection(
@@ -70,7 +73,7 @@ export function SectionImprover({
     setSuggestedValue(e.target.value);
   };
 
-  // Handle editing for array fields (like objectives)
+  // Handle editing for array fields (like activities)
   const handleArrayItemChange = (index: number, value: string) => {
     if (isArrayValue) {
       const newArray = [...(suggestedValue as string[])];
@@ -99,7 +102,7 @@ export function SectionImprover({
     <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold text-gray-800">
-          Improve {improvement.section}
+          Improve Activities for {improvement.section}
         </h3>
         <div className="flex items-center space-x-2">
           <Button
@@ -134,10 +137,10 @@ export function SectionImprover({
 
       <div className="space-y-4 mb-6">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Original Content:</h4>
-          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Activities:</h4>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             {isArrayValue ? (
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-5 space-y-2">
                 {(currentValue as string[]).map((item, i) => (
                   <li key={i} className="text-gray-700">{item}</li>
                 ))}
@@ -149,12 +152,12 @@ export function SectionImprover({
         </div>
 
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Improved Content:</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Improved Activities:</h4>
           
           {isGenerating ? (
             <div className="flex justify-center items-center p-6">
               <Loader2 className="h-6 w-6 text-blue-500 animate-spin mr-2" />
-              <span>Generating improvement...</span>
+              <span>Generating improved activities...</span>
             </div>
           ) : error ? (
             <div className="bg-red-50 p-4 rounded-lg border border-red-200 text-red-700">
@@ -165,14 +168,15 @@ export function SectionImprover({
               {editMode ? (
                 <div>
                   {isArrayValue ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {(suggestedValue as string[]).map((item, index) => (
                         <div key={index} className="flex items-start gap-2">
                           <textarea
                             value={item}
                             onChange={(e) => handleArrayItemChange(index, e.target.value)}
-                            className="flex-1 p-2 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                            rows={2}
+                            className="flex-1 p-3 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                            rows={3}
+                            placeholder={`Activity ${index + 1} description...`}
                           />
                           <Button 
                             variant="outline" 
@@ -188,8 +192,9 @@ export function SectionImprover({
                         variant="outline" 
                         size="sm"
                         onClick={handleAddArrayItem}
+                        className="mt-2"
                       >
-                        + Add Item
+                        + Add Activity
                       </Button>
                     </div>
                   ) : (
@@ -198,13 +203,14 @@ export function SectionImprover({
                       onChange={handleTextChange}
                       className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                       rows={8}
+                      placeholder="Enter activity details..."
                     />
                   )}
                 </div>
               ) : (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   {isArrayValue ? (
-                    <ul className="list-disc pl-5 space-y-1">
+                    <ul className="list-disc pl-5 space-y-2">
                       {(suggestedValue as string[]).map((item, i) => (
                         <li key={i} className="text-blue-700">{item}</li>
                       ))}
@@ -233,7 +239,7 @@ export function SectionImprover({
           disabled={isGenerating}
         >
           <CheckCircle className="h-4 w-4 mr-1" />
-          Apply This Improvement
+          Apply These Activities
         </Button>
       </div>
     </div>
