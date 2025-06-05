@@ -13,6 +13,7 @@ import { SectionImprover } from '@/components/lesson/SectionImprover';
 import { ImprovedField } from '@/types/lessonTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowRight, CheckCircle, ArrowLeft, Sparkles, AlertTriangle } from 'lucide-react';
+import { LoadingProgress } from '@/components/LoadingProgress';
 
 export function CreateLesson() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export function CreateLesson() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'upload' | 'improve' | 'preview' | 'saving'>('upload');
   const [processingStep, setProcessingStep] = useState<string>('');
+  const [progress, setProgress] = useState<number>(0);
   
   // Content state
   const [processedContent, setProcessedContent] = useState<ProcessedLesson | null>(null);
@@ -57,6 +59,7 @@ export function CreateLesson() {
 
     setIsProcessing(true);
     setError(null);
+    setProgress(0);
     setProcessingStep('Extracting text from document...');
 
     try {
@@ -64,6 +67,7 @@ export function CreateLesson() {
       const text = await extractTextFromFile(selectedFile);
       console.log('Extracted text:', text.slice(0, 500)); // Log first 500 chars
       
+      setProgress(20);
       setProcessingStep('Analyzing lesson content...');
       
       // Analyze the text to create structured lesson plan
@@ -73,10 +77,14 @@ export function CreateLesson() {
         throw new Error('Failed to analyze lesson plan');
       }
       
+      setProgress(60);
       setProcessingStep('Generating success criteria...');
       
       // Generate success criteria based on objectives
       const criteria = await generateSuccessCriteria(analyzed.data.objectives, level);
+      
+      setProgress(80);
+      setProcessingStep('Finalizing lesson plan...');
       
       const processedLesson: ProcessedLesson = {
         id: crypto.randomUUID(),
@@ -86,6 +94,7 @@ export function CreateLesson() {
         success_criteria: criteria // Add success criteria
       };
       
+      setProgress(100);
       setProcessedContent(processedLesson);
       setImprovementAreas(analyzed.improvementAreas || []);
       
@@ -374,15 +383,17 @@ export function CreateLesson() {
               className="w-full"
               isLoading={isProcessing}
             >
-              {isProcessing ? processingStep : 'Process Lesson Plan'}
+              {isProcessing ? 'Processing...' : 'Process Lesson Plan'}
             </Button>
           </div>
 
           <div>
             {isProcessing && (
-              <div className="flex flex-col justify-center items-center h-full bg-white p-8 rounded-xl shadow-lg border border-gray-200">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal mb-4"></div>
-                <p className="text-center text-gray-600">{processingStep}</p>
+              <div className="flex flex-col justify-center items-center h-full">
+                <LoadingProgress 
+                  progress={progress} 
+                  step={processingStep} 
+                />
               </div>
             )}
           </div>
