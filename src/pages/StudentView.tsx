@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getLessonPresentationByCode,
@@ -33,6 +33,10 @@ interface AvatarOption {
 export function StudentView() {
   const navigate = useNavigate();
   const location = useLocation();
+  const autoJoinTriggered = useRef(false);
+
+  const getAutoJoinKey = (code: string, name: string) =>
+    `auto_join_${code}_${name}`;
   
   // State for session joining and status
   const [sessionCode, setSessionCode] = useState<string>('');
@@ -64,22 +68,33 @@ export function StudentView() {
     const codeParam = params.get('code');
     const nameParam = params.get('name');
     const avatarParam = params.get('avatar');
-    
+
     if (codeParam) {
       setSessionCode(codeParam);
     }
-    
+
     if (nameParam) {
       setStudentName(nameParam);
     }
-    
-    if (avatarParam && availableAvatars.some(a => a.src === avatarParam)) {
+
+    if (avatarParam && availableAvatars.some((a) => a.src === avatarParam)) {
       setSelectedAvatar(avatarParam);
     }
-    
+
     // If we have both code and name from URL, auto-join
-    if (codeParam && nameParam) {
-      handleJoinWithParams(codeParam, nameParam, avatarParam || '/images/avatars/co2.png');
+    if (codeParam && nameParam && !autoJoinTriggered.current) {
+      const key = getAutoJoinKey(codeParam, nameParam);
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, 'true');
+        autoJoinTriggered.current = true;
+        handleJoinWithParams(
+          codeParam,
+          nameParam,
+          avatarParam || '/images/avatars/co2.png'
+        );
+      } else {
+        autoJoinTriggered.current = true;
+      }
     }
   }, [location]);
 
@@ -204,8 +219,17 @@ export function StudentView() {
   }, [newMessage, showMessagePanel]);
 
   // Auto-join using URL parameters
-  const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
+  const handleJoinWithParams = async (
+    code: string,
+    name: string,
+    avatar: string
+  ) => {
     if (joined) return;
+    const key = getAutoJoinKey(code, name);
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, 'true');
+    if (autoJoinTriggered.current) return;
+    autoJoinTriggered.current = true;
     
     setLoading(true);
     setError(null);
@@ -248,7 +272,7 @@ export function StudentView() {
     setLoading(true);
     setError(null);
     setStatus(null);
-    
+
     try {
       console.log("Joining session with code:", sessionCode.trim().toUpperCase());
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
@@ -269,10 +293,16 @@ export function StudentView() {
       }
       
       console.log("Added as participant:", participant);
-      
+
       // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
+      const key = getAutoJoinKey(
+        sessionCode.trim().toUpperCase(),
+        studentName.trim()
+      );
+      sessionStorage.setItem(key, 'true');
+      autoJoinTriggered.current = true;
       
       // Update URL with session code and name for easy rejoining
       const url = new URL(window.location.href);
@@ -461,6 +491,9 @@ export function StudentView() {
             <Button
               onClick={() => {
                 // Reset all states to go back to the join form
+                const key = getAutoJoinKey(sessionCode.trim(), studentName.trim());
+                sessionStorage.removeItem(key);
+                autoJoinTriggered.current = false;
                 setStatus(null);
                 setParticipantId(null);
                 setJoined(false);
@@ -509,9 +542,15 @@ export function StudentView() {
                 <p className="text-gray-600 mb-6">
                   {sessionHookError || error || "This session may have ended or the code is invalid."}
                 </p>
-                <Button 
+                <Button
                   onClick={() => {
                     // Reset states to go back to join form
+                    const key = getAutoJoinKey(
+                      sessionCode.trim(),
+                      studentName.trim()
+                    );
+                    sessionStorage.removeItem(key);
+                    autoJoinTriggered.current = false;
                     setStatus(null);
                     setParticipantId(null);
                     setJoined(false);
