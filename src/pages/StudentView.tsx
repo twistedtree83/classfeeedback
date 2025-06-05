@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getLessonPresentationByCode,
@@ -50,6 +50,9 @@ export function StudentView() {
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [joined, setJoined] = useState(false);
   
+  // Reference to track if auto-join has already been triggered
+  const autoJoinTriggered = useRef(false);
+  
   // Available avatars
   const availableAvatars: AvatarOption[] = [
     { src: '/images/avatars/co2.png', alt: 'Avatar 1' },
@@ -77,8 +80,9 @@ export function StudentView() {
       setSelectedAvatar(avatarParam);
     }
     
-    // If we have both code and name from URL, auto-join
-    if (codeParam && nameParam) {
+    // If we have both code and name from URL, auto-join (only once)
+    if (codeParam && nameParam && !autoJoinTriggered.current) {
+      autoJoinTriggered.current = true;
       handleJoinWithParams(codeParam, nameParam, avatarParam || '/images/avatars/co2.png');
     }
   }, [location]);
@@ -205,7 +209,11 @@ export function StudentView() {
 
   // Auto-join using URL parameters
   const handleJoinWithParams = async (code: string, name: string, avatar: string) => {
-    if (joined) return;
+    // Guard against duplicate joins
+    if (joined || loading || status) {
+      console.log("Auto-join skipped - already joining or joined");
+      return;
+    }
     
     setLoading(true);
     setError(null);
@@ -273,6 +281,9 @@ export function StudentView() {
       // Store participant id for status checking
       setParticipantId(participant.id);
       setStatus('pending');
+      
+      // Mark that we've triggered an auto-join to prevent duplicates on reload
+      autoJoinTriggered.current = true;
       
       // Update URL with session code and name for easy rejoining
       const url = new URL(window.location.href);
