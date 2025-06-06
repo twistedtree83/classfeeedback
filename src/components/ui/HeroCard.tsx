@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/Button";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface HeroCardProps {
   title?: string;
@@ -31,7 +31,7 @@ export function HeroCard({
   secondaryButtonLink = "/join",
   onPrimaryButtonClick,
   onSecondaryButtonClick,
-  className
+  className,
 }: HeroCardProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -51,17 +51,19 @@ export function HeroCard({
 
     const card = cardRef.current;
     if (card) {
-      card.addEventListener('mousemove', handleMouseMove);
-      return () => card.removeEventListener('mousemove', handleMouseMove);
+      card.addEventListener("mousemove", handleMouseMove);
+      return () => card.removeEventListener("mousemove", handleMouseMove);
     }
   }, []);
 
   const parallaxStyle = {
-    transform: `translate(${(mousePosition.x - 0.5) * 15}px, ${(mousePosition.y - 0.5) * 15}px)`
+    transform: `translate(${(mousePosition.x - 0.5) * 15}px, ${
+      (mousePosition.y - 0.5) * 15
+    }px)`,
   };
 
   return (
-    <div 
+    <div
       ref={cardRef}
       className={cn(
         "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-teal/20",
@@ -70,18 +72,22 @@ export function HeroCard({
         className
       )}
     >
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-white to-white/50">
+      <div className="absolute inset-0 overflow-hidden">
         {/* Background blobs */}
-        <div 
+        <div
           className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-teal/30 filter blur-3xl"
           style={{
-            transform: `translate(${(mousePosition.x - 0.5) * -20}px, ${(mousePosition.y - 0.5) * -20}px)`
+            transform: `translate(${(mousePosition.x - 0.5) * -20}px, ${
+              (mousePosition.y - 0.5) * -20
+            }px)`,
           }}
         ></div>
-        <div 
+        <div
           className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-orange/30 filter blur-3xl"
           style={{
-            transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${(mousePosition.y - 0.5) * 20}px)`
+            transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${
+              (mousePosition.y - 0.5) * 20
+            }px)`,
           }}
         ></div>
       </div>
@@ -97,7 +103,7 @@ export function HeroCard({
           >
             {subtitle}
           </motion.div>
-          
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
@@ -106,7 +112,7 @@ export function HeroCard({
           >
             {title}
           </motion.h1>
-          
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
@@ -115,15 +121,15 @@ export function HeroCard({
           >
             {description}
           </motion.p>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="group bg-teal hover:bg-teal/90 text-white border-none"
               onClick={onPrimaryButtonClick}
               asChild={!!primaryButtonLink}
@@ -140,25 +146,23 @@ export function HeroCard({
                 </>
               )}
             </Button>
-            
-            <Button 
-              variant="outline" 
+
+            <Button
+              variant="outline"
               size="lg"
               className="border-coral text-coral hover:bg-coral/10"
               onClick={onSecondaryButtonClick}
               asChild={!!secondaryButtonLink}
             >
               {secondaryButtonLink ? (
-                <a href={secondaryButtonLink}>
-                  {secondaryButtonText}
-                </a>
+                <a href={secondaryButtonLink}>{secondaryButtonText}</a>
               ) : (
                 secondaryButtonText
               )}
             </Button>
           </motion.div>
         </div>
-        
+
         {/* Image Section */}
         <div className="w-full lg:w-1/2 h-full relative overflow-hidden">
           <motion.div
@@ -168,22 +172,24 @@ export function HeroCard({
             className="absolute inset-0 z-0"
             style={parallaxStyle}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-teal/20 to-transparent z-10"></div>
-            <img 
-              src={image} 
+            <div className="absolute inset-0 bg-transparent z-10"></div>
+            <img
+              src={image}
               alt={imageAlt}
               className="w-full h-full object-cover"
             />
           </motion.div>
-          
+
           {/* Floating cards */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 40 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="absolute bottom-12 left-12 bg-white p-4 rounded-lg shadow-xl z-20 max-w-xs"
             style={{
-              transform: `translate(${(mousePosition.x - 0.5) * -10}px, ${(mousePosition.y - 0.5) * -10}px)`
+              transform: `translate(${(mousePosition.x - 0.5) * -10}px, ${
+                (mousePosition.y - 0.5) * -10
+              }px)`,
             }}
           >
             <div className="flex items-center gap-3">
@@ -202,4 +208,4 @@ export function HeroCard({
   );
 }
 
-import { BarChart3 } from 'lucide-react';
+import { BarChart3 } from "lucide-react";

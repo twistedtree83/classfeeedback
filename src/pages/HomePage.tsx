@@ -1,20 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { MessageSquare, BarChart3, FileText, Users, Shield } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { LogoWrapper } from '@/components/LogoWrapper';
-import { HeroCard } from '@/components/ui/HeroCard';
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  MessageSquare,
+  BarChart3,
+  FileText,
+  Users,
+  Shield,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/contexts/AuthContext";
+import { LogoWrapper } from "@/components/LogoWrapper";
+import { HeroCard } from "@/components/ui/HeroCard";
 
 export function HomePage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal/10 to-white">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <HeroCard 
+          <HeroCard
             title="Real-time classroom feedback and engagement"
             subtitle="Interactive learning made simple"
             description="Help students learn better with instant feedback, interactive lessons, and AI-powered teaching tools. Create meaningful classroom interactions that improve learning outcomes."
@@ -31,36 +37,47 @@ export function HomePage() {
       {/* Features Section */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-teal text-center mb-12">Powerful features for modern educators</h2>
-          
+          <h2 className="text-3xl font-bold text-teal text-center mb-12">
+            Powerful features for modern educators
+          </h2>
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-teal/20 transition-all duration-200">
               <div className="bg-coral/10 p-3 rounded-full w-fit mb-4">
                 <MessageSquare className="h-7 w-7 text-coral" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">Real-time Feedback</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                Real-time Feedback
+              </h3>
               <p className="text-gray-700">
-                Get instant feedback from students during your lessons to gauge understanding and adjust your teaching on the fly.
+                Get instant feedback from students during your lessons to gauge
+                understanding and adjust your teaching on the fly.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-teal/20 transition-all duration-200">
               <div className="bg-coral/10 p-3 rounded-full w-fit mb-4">
                 <FileText className="h-7 w-7 text-coral" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">AI-Powered Lesson Planning</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                AI-Powered Lesson Planning
+              </h3>
               <p className="text-gray-700">
-                Upload your lesson plans and let our AI help organize, structure, and enhance them with teaching cards.
+                Upload your lesson plans and let our AI help organize,
+                structure, and enhance them with teaching cards.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg border border-teal/20 transition-all duration-200">
               <div className="bg-coral/10 p-3 rounded-full w-fit mb-4">
                 <Users className="h-7 w-7 text-coral" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">Student Engagement</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                Student Engagement
+              </h3>
               <p className="text-gray-700">
-                Keep students engaged with interactive sessions, real-time messaging, and differentiated content.
+                Keep students engaged with interactive sessions, real-time
+                messaging, and differentiated content.
               </p>
             </div>
           </div>
@@ -70,36 +87,47 @@ export function HomePage() {
       {/* How It Works Section */}
       <section className="py-16 px-4 bg-teal/5">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-teal text-center mb-12">How It Works</h2>
-          
+          <h2 className="text-3xl font-bold text-teal text-center mb-12">
+            How It Works
+          </h2>
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="bg-orange/20 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-orange">1</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">Create a Session</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                Create a Session
+              </h3>
               <p className="text-gray-700">
-                Generate a unique 6-digit class code for your students to join your teaching session.
+                Generate a unique 6-digit class code for your students to join
+                your teaching session.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="bg-orange/20 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-orange">2</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">Students Join</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                Students Join
+              </h3>
               <p className="text-gray-700">
-                Students enter the class code to join your session from any device with a web browser.
+                Students enter the class code to join your session from any
+                device with a web browser.
               </p>
             </div>
-            
+
             <div className="bg-white p-6 rounded-xl shadow-md text-center">
               <div className="bg-orange/20 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-orange">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-teal">Receive Feedback</h3>
+              <h3 className="text-xl font-semibold mb-2 text-teal">
+                Receive Feedback
+              </h3>
               <p className="text-gray-700">
-                Monitor student understanding and questions in real-time throughout your lesson.
+                Monitor student understanding and questions in real-time
+                throughout your lesson.
               </p>
             </div>
           </div>
@@ -109,15 +137,18 @@ export function HomePage() {
       {/* CTA Section */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto bg-coral/10 rounded-2xl p-8 md:p-12 text-center">
-          <h2 className="text-3xl font-bold mb-6 text-teal">Ready to transform your classroom?</h2>
+          <h2 className="text-3xl font-bold mb-6 text-teal">
+            Ready to transform your classroom?
+          </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto text-gray-700">
-            Join thousands of educators who are enhancing student engagement and improving learning outcomes.
+            Join thousands of educators who are enhancing student engagement and
+            improving learning outcomes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Link to="/dashboard">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-teal hover:bg-teal/90 text-white"
                 >
                   Go to Dashboard
@@ -126,7 +157,7 @@ export function HomePage() {
             ) : (
               <>
                 <Link to="/signup">
-                  <Button 
+                  <Button
                     size="lg"
                     className="bg-teal hover:bg-teal/90 text-white"
                   >
@@ -134,9 +165,9 @@ export function HomePage() {
                   </Button>
                 </Link>
                 <Link to="/join">
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
+                  <Button
+                    variant="outline"
+                    size="lg"
                     className="border-coral text-coral hover:bg-coral/10"
                   >
                     Join as Student
@@ -156,10 +187,18 @@ export function HomePage() {
               <LogoWrapper size="md" variant="full" className="text-white" />
             </div>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-orange transition-colors">About</a>
-              <a href="#" className="hover:text-orange transition-colors">Features</a>
-              <a href="#" className="hover:text-orange transition-colors">Pricing</a>
-              <a href="#" className="hover:text-orange transition-colors">Contact</a>
+              <a href="#" className="hover:text-orange transition-colors">
+                About
+              </a>
+              <a href="#" className="hover:text-orange transition-colors">
+                Features
+              </a>
+              <a href="#" className="hover:text-orange transition-colors">
+                Pricing
+              </a>
+              <a href="#" className="hover:text-orange transition-colors">
+                Contact
+              </a>
             </div>
           </div>
           <div className="border-t border-teal-600/30 pt-8 flex flex-col md:flex-row justify-between items-center">
