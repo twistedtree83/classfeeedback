@@ -99,8 +99,29 @@ export function sanitizeHtml(content: any): string {
   // Convert content to string to handle non-string inputs
   const contentStr = String(content);
   
+  // Step 1: Handle existing HTML links first (preserve them)
+  const htmlLinkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi;
+  const existingLinks: {full: string, href: string, text: string}[] = [];
+  let contentWithPlaceholders = contentStr;
+  
+  // Extract and replace existing HTML links with placeholders
+  let linkMatch;
+  let linkCounter = 0;
+  while ((linkMatch = htmlLinkRegex.exec(contentStr)) !== null) {
+    const fullLink = linkMatch[0];
+    const href = linkMatch[1];
+    const text = linkMatch[2];
+    
+    existingLinks.push({full: fullLink, href, text});
+    contentWithPlaceholders = contentWithPlaceholders.replace(
+      fullLink, 
+      `__LINK_PLACEHOLDER_${linkCounter++}__`
+    );
+  }
+  
+  // Step 2: Process markdown
   // Replace markdown headers
-  let formatted = contentStr
+  let formatted = contentWithPlaceholders
     .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold my-2">$1</h3>')
     .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold my-3">$1</h2>')
     .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold my-4">$1</h1>');
@@ -110,74 +131,70 @@ export function sanitizeHtml(content: any): string {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>');
   
-  // Fix URL rendering - first process any existing HTML links to ensure they're preserved
-  // This regex captures HTML <a> tags with their attributes
-  const linkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi;
-  const links: { fullMatch: string; url: string; text: string }[] = [];
-  
-  // Store existing links to preserve them
-  let match;
-  while ((match = linkRegex.exec(formatted)) !== null) {
-    links.push({
-      fullMatch: match[0],
-      url: match[1],
-      text: match[2]
-    });
-  }
-  
-  // Replace links with placeholders to protect them
-  let counter = 0;
-  links.forEach(link => {
-    formatted = formatted.replace(link.fullMatch, `__LINK_PLACEHOLDER_${counter++}__`);
-  });
-  
-  // Process URLs not already in links
-  formatted = convertUrlsToHyperlinks(formatted);
-  
-  // Put the original links back
-  counter = 0;
-  links.forEach(link => {
-    formatted = formatted.replace(
-      `__LINK_PLACEHOLDER_${counter++}__`, 
-      `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${link.text}</a>`
-    );
-  });
-  
-  // Replace markdown lists - Improved to handle empty list items
+  // Step 3: Process markdown lists
+  // Convert list items, but filter out empty ones
   const lines = formatted.split(/\n/);
   let inList = false;
+  let listItems: string[] = [];
   
-  formatted = lines.map(line => {
-    const listItemMatch = line.match(/^\s*[-*•]\s*(.*)/);
+  const processedLines = lines.map(line => {
+    // Check for markdown list indicators
+    const trimmedLine = line.trim();
+    const listItemMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
     
     if (listItemMatch) {
-      // Only create a list item if there's actual content after the bullet
       const content = listItemMatch[1].trim();
       if (content) {
         if (!inList) {
           inList = true;
-          return '<ul class="list-disc pl-5 my-2"><li>' + content + '</li>';
+          listItems = [`<li>${content}</li>`];
+          return null; // Mark for later replacement
+        } else {
+          listItems.push(`<li>${content}</li>`);
+          return null; // Mark for later replacement
         }
-        return '<li>' + content + '</li>';
       } else {
         // Skip empty list items
-        return '';
+        return null;
       }
     } else if (inList) {
+      // End of list
       inList = false;
-      return '</ul>' + line;
+      // Only return a list if there are actually items in it
+      if (listItems.length > 0) {
+        return `<ul class="list-disc pl-5 my-2">${listItems.join('')}</ul>${line}`;
+      } else {
+        return line;
+      }
     }
     return line;
-  }).filter(line => line !== '').join('\n');
+  }).filter(line => line !== null);
   
-  if (inList) {
-    formatted += '</ul>';
+  // Handle case where list is at end of content
+  if (inList && listItems.length > 0) {
+    processedLines.push(`<ul class="list-disc pl-5 my-2">${listItems.join('')}</ul>`);
   }
   
-  // Replace newlines with <br> tags for those not already handled
+  // Rejoin the processed lines
+  formatted = processedLines.join('\n');
+  
+  // Step 4: Convert plain URLs to links
+  formatted = convertUrlsToHyperlinks(formatted);
+  
+  // Step 5: Replace newlines with <br> tags
   formatted = formatted.replace(/\n/g, '<br>');
   
-  // Remove potentially dangerous tags while preserving links and other safe elements
+  // Step 6: Restore original HTML links
+  existingLinks.forEach((link, i) => {
+    formatted = formatted.replace(`__LINK_PLACEHOLDER_${i}__`, link.full);
+  });
+  
+  // Step 7: Clean up any dangling empty list items
+  formatted = formatted
+    .replace(/<li>\s*<\/li>/g, '') // Remove empty list items
+    .replace(/<ul class="list-disc pl-5 my-2">\s*<\/ul>/g, ''); // Remove empty lists
+  
+  // Step 8: Remove potentially dangerous tags and attributes
   return formatted
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+="[^"]*"/g, '')

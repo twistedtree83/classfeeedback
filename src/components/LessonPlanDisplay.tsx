@@ -42,7 +42,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
         </div>
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            {lesson.objectives.map((objective, index) => (
+            {lesson.objectives.filter(obj => obj.trim()).map((objective, index) => (
               <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(objective) }}></li>
             ))}
           </ul>
@@ -54,7 +54,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                 Success Criteria
               </h4>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-                {lesson.success_criteria.map((criteria, index) => (
+                {lesson.success_criteria.filter(criteria => criteria.trim()).map((criteria, index) => (
                   <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(criteria) }}></li>
                 ))}
               </ul>
@@ -120,7 +120,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
         </div>
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
-            {lesson.materials.map((material, index) => (
+            {lesson.materials.filter(material => material.trim()).map((material, index) => (
               <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }}></li>
             ))}
           </ul>
@@ -182,7 +182,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                 <div>
                   <h5 className="font-medium text-gray-700 mb-2">Activities:</h5>
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
-                    {section.activities.map((activity, index) => (
+                    {section.activities.filter(activity => activity.trim()).map((activity, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></span>
                         {onAddToTeaching && (

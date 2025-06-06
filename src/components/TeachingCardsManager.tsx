@@ -164,7 +164,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       id: crypto.randomUUID(),
       type: 'material',
       title: 'Required Materials',
-      content: lesson.materials.map(mat => `• ${mat}`).join('\n'),
+      content: lesson.materials.filter(m => m.trim()).map(mat => `• ${mat}`).join('\n'),
       duration: null,
       sectionId: null,
       activityIndex: null,
