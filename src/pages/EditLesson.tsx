@@ -1,32 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase/client';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { SectionEditor } from '../components/SectionEditor';
-import type { ProcessedLesson, LessonSection } from '../lib/types';
-import { aiAnalyzeLesson, generateSuccessCriteria } from '../lib/aiService';
-import { Sparkles, Loader2, CheckSquare } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase/client";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { SectionEditor } from "../components/SectionEditor";
+import type { ProcessedLesson, LessonSection } from "../lib/types";
+import {
+  aiAnalyzeLesson,
+  generateSuccessCriteria,
+  improveLearningIntentions,
+} from "../lib/aiService";
+import { Sparkles, Loader2, CheckSquare, RefreshCw } from "lucide-react";
 
 export function EditLesson() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [lesson, setLesson] = useState<ProcessedLesson | null>(null);
-  const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState('');
-  const [level, setLevel] = useState('');
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState("");
+  const [level, setLevel] = useState("");
   const [objectives, setObjectives] = useState<string[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [sections, setSections] = useState<LessonSection[]>([]);
-  const [topicBackground, setTopicBackground] = useState('');
+  const [topicBackground, setTopicBackground] = useState("");
   const [successCriteria, setSuccessCriteria] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatingBackground, setGeneratingBackground] = useState(false);
-  const [backgroundMessage, setBackgroundMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  const [backgroundMessage, setBackgroundMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
   const [generatingCriteria, setGeneratingCriteria] = useState(false);
-  const [criteriaMessage, setCriteriaMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  const [criteriaMessage, setCriteriaMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [improvingIntentions, setImprovingIntentions] = useState(false);
+  const [intentionsMessage, setIntentionsMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -34,27 +49,27 @@ export function EditLesson() {
 
       try {
         const { data, error: fetchError } = await supabase
-          .from('lesson_plans')
-          .select('*')
-          .eq('id', id)
+          .from("lesson_plans")
+          .select("*")
+          .eq("id", id)
           .single();
 
         if (fetchError) throw fetchError;
-        if (!data?.processed_content) throw new Error('Lesson not found');
+        if (!data?.processed_content) throw new Error("Lesson not found");
 
         const lessonContent = data.processed_content;
         setLesson(lessonContent);
         setTitle(lessonContent.title);
         setDuration(lessonContent.duration);
-        setLevel(lessonContent.level || '');
+        setLevel(lessonContent.level || "");
         setObjectives(lessonContent.objectives);
         setMaterials(lessonContent.materials);
         setSections(lessonContent.sections);
-        setTopicBackground(lessonContent.topic_background || '');
+        setTopicBackground(lessonContent.topic_background || "");
         setSuccessCriteria(lessonContent.success_criteria || []);
       } catch (err) {
-        console.error('Error fetching lesson:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load lesson');
+        console.error("Error fetching lesson:", err);
+        setError(err instanceof Error ? err.message : "Failed to load lesson");
       } finally {
         setLoading(false);
       }
@@ -79,23 +94,23 @@ export function EditLesson() {
         materials,
         sections,
         topic_background: topicBackground,
-        success_criteria: successCriteria
+        success_criteria: successCriteria,
       };
 
       const { error: updateError } = await supabase
-        .from('lesson_plans')
+        .from("lesson_plans")
         .update({
           title,
           level,
-          processed_content: updatedLesson
+          processed_content: updatedLesson,
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (updateError) throw updateError;
       navigate(`/planner/${id}`);
     } catch (err) {
-      console.error('Error updating lesson:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update lesson');
+      console.error("Error updating lesson:", err);
+      setError(err instanceof Error ? err.message : "Failed to update lesson");
       setSaving(false);
     }
   };
@@ -103,8 +118,8 @@ export function EditLesson() {
   const handleGenerateBackground = async () => {
     if (!lesson || !level) {
       setBackgroundMessage({
-        text: 'Please select a grade level before generating background information',
-        type: 'error'
+        text: "Please select a grade level before generating background information",
+        type: "error",
       });
       return;
     }
@@ -118,33 +133,36 @@ export function EditLesson() {
         Title: ${title}
         Duration: ${duration}
         Level: ${level}
-        Objectives: ${objectives.join('; ')}
-        Materials: ${materials.join('; ')}
-        Sections: ${sections.map(s => `${s.title}: ${s.content}`).join('\n')}
+        Objectives: ${objectives.join("; ")}
+        Materials: ${materials.join("; ")}
+        Sections: ${sections.map((s) => `${s.title}: ${s.content}`).join("\n")}
       `;
 
       // Use the AI service to generate background information
       const result = await aiAnalyzeLesson(lessonContent, level);
-      
+
       if (result && result.topic_background) {
         setTopicBackground(result.topic_background);
         setBackgroundMessage({
-          text: 'Background information generated successfully',
-          type: 'success'
+          text: "Background information generated successfully",
+          type: "success",
         });
       } else {
-        throw new Error('Failed to generate background information');
+        throw new Error("Failed to generate background information");
       }
     } catch (err) {
-      console.error('Error generating background:', err);
+      console.error("Error generating background:", err);
       setBackgroundMessage({
-        text: err instanceof Error ? err.message : 'Failed to generate background information',
-        type: 'error'
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to generate background information",
+        type: "error",
       });
     } finally {
       setGeneratingBackground(false);
       // Clear success message after 5 seconds
-      if (backgroundMessage?.type === 'success') {
+      if (backgroundMessage?.type === "success") {
         setTimeout(() => {
           setBackgroundMessage(null);
         }, 5000);
@@ -155,8 +173,8 @@ export function EditLesson() {
   const handleGenerateSuccessCriteria = async () => {
     if (objectives.length === 0) {
       setCriteriaMessage({
-        text: 'Please add learning objectives before generating success criteria',
-        type: 'error'
+        text: "Please add learning objectives before generating success criteria",
+        type: "error",
       });
       return;
     }
@@ -166,26 +184,29 @@ export function EditLesson() {
 
     try {
       const criteria = await generateSuccessCriteria(objectives, level);
-      
+
       if (criteria && criteria.length > 0) {
         setSuccessCriteria(criteria);
         setCriteriaMessage({
-          text: 'Success criteria generated successfully',
-          type: 'success'
+          text: "Success criteria generated successfully",
+          type: "success",
         });
       } else {
-        throw new Error('Failed to generate success criteria');
+        throw new Error("Failed to generate success criteria");
       }
     } catch (err) {
-      console.error('Error generating success criteria:', err);
+      console.error("Error generating success criteria:", err);
       setCriteriaMessage({
-        text: err instanceof Error ? err.message : 'Failed to generate success criteria',
-        type: 'error'
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to generate success criteria",
+        type: "error",
       });
     } finally {
       setGeneratingCriteria(false);
       // Clear success message after 5 seconds
-      if (criteriaMessage?.type === 'success') {
+      if (criteriaMessage?.type === "success") {
         setTimeout(() => {
           setCriteriaMessage(null);
         }, 5000);
@@ -193,8 +214,53 @@ export function EditLesson() {
     }
   };
 
+  const handleImproveLearningIntentions = async () => {
+    if (objectives.length === 0) {
+      setIntentionsMessage({
+        text: "Please add learning objectives before improving them",
+        type: "error",
+      });
+      return;
+    }
+
+    setImprovingIntentions(true);
+    setIntentionsMessage(null);
+
+    try {
+      const improvedObjectives = await improveLearningIntentions(
+        objectives,
+        level
+      );
+
+      if (improvedObjectives && improvedObjectives.length > 0) {
+        setObjectives(improvedObjectives);
+        setIntentionsMessage({
+          text: "Learning intentions improved successfully",
+          type: "success",
+        });
+      } else {
+        throw new Error("Failed to improve learning intentions");
+      }
+    } catch (err) {
+      console.error("Error improving learning intentions:", err);
+      setIntentionsMessage({
+        text:
+          err instanceof Error
+            ? err.message
+            : "Failed to improve learning intentions",
+        type: "error",
+      });
+    } finally {
+      setImprovingIntentions(false);
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setIntentionsMessage(null);
+      }, 5000);
+    }
+  };
+
   const handleAddObjective = () => {
-    setObjectives([...objectives, '']);
+    setObjectives([...objectives, ""]);
   };
 
   const handleObjectiveChange = (index: number, value: string) => {
@@ -208,7 +274,7 @@ export function EditLesson() {
   };
 
   const handleAddSuccessCriteria = () => {
-    setSuccessCriteria([...successCriteria, '']);
+    setSuccessCriteria([...successCriteria, ""]);
   };
 
   const handleSuccessCriteriaChange = (index: number, value: string) => {
@@ -222,7 +288,7 @@ export function EditLesson() {
   };
 
   const handleAddMaterial = () => {
-    setMaterials([...materials, '']);
+    setMaterials([...materials, ""]);
   };
 
   const handleMaterialChange = (index: number, value: string) => {
@@ -238,16 +304,19 @@ export function EditLesson() {
   const handleAddSection = () => {
     const newSection: LessonSection = {
       id: crypto.randomUUID(),
-      title: '',
-      duration: '15 minutes',
-      content: '',
+      title: "",
+      duration: "15 minutes",
+      content: "",
       activities: [],
-      assessment: ''
+      assessment: "",
     };
     setSections([...sections, newSection]);
   };
 
-  const handleUpdateSection = (index: number, updatedSection: LessonSection) => {
+  const handleUpdateSection = (
+    index: number,
+    updatedSection: LessonSection
+  ) => {
     const newSections = [...sections];
     newSections[index] = updatedSection;
     setSections(newSections);
@@ -268,16 +337,16 @@ export function EditLesson() {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto p-6">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg">{error}</div>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Lesson Plan</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Edit Lesson Plan
+      </h1>
 
       <div className="space-y-6">
         <Input
@@ -295,7 +364,10 @@ export function EditLesson() {
         />
 
         <div className="space-y-2">
-          <label htmlFor="level" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="level"
+            className="block text-sm font-medium text-gray-700"
+          >
             Lesson Level
           </label>
           <select
@@ -324,7 +396,9 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Learning Intentions</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Learning Intentions
+            </h2>
             <Button
               onClick={handleAddObjective}
               variant="outline"
@@ -357,7 +431,9 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Success Criteria</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Success Criteria
+            </h2>
             <div className="flex gap-2">
               <Button
                 onClick={handleGenerateSuccessCriteria}
@@ -388,22 +464,26 @@ export function EditLesson() {
               </Button>
             </div>
           </div>
-          
+
           {criteriaMessage && (
-            <div className={`p-3 rounded-lg ${
-              criteriaMessage.type === 'success' 
-                ? 'bg-green-50 text-green-700' 
-                : 'bg-red-50 text-red-700'
-            }`}>
+            <div
+              className={`p-3 rounded-lg ${
+                criteriaMessage.type === "success"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
+            >
               {criteriaMessage.text}
             </div>
           )}
-          
+
           {successCriteria.map((criteria, index) => (
             <div key={index} className="flex gap-2">
               <Input
                 value={criteria}
-                onChange={(e) => handleSuccessCriteriaChange(index, e.target.value)}
+                onChange={(e) =>
+                  handleSuccessCriteriaChange(index, e.target.value)
+                }
                 disabled={saving}
                 placeholder={`Success Criteria ${index + 1}`}
               />
@@ -422,7 +502,9 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Topic Background</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Topic Background
+            </h2>
             <Button
               onClick={handleGenerateBackground}
               variant="outline"
@@ -444,11 +526,13 @@ export function EditLesson() {
             </Button>
           </div>
           {backgroundMessage && (
-            <div className={`p-3 rounded-lg ${
-              backgroundMessage.type === 'success' 
-                ? 'bg-green-50 text-green-700' 
-                : 'bg-red-50 text-red-700'
-            }`}>
+            <div
+              className={`p-3 rounded-lg ${
+                backgroundMessage.type === "success"
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
+              }`}
+            >
               {backgroundMessage.text}
             </div>
           )}
@@ -464,7 +548,9 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Materials Needed</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Materials Needed
+            </h2>
             <Button
               onClick={handleAddMaterial}
               variant="outline"
@@ -497,7 +583,9 @@ export function EditLesson() {
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Lesson Sections</h2>
+            <h2 className="text-lg font-medium text-gray-900">
+              Lesson Sections
+            </h2>
             <Button
               onClick={handleAddSection}
               variant="outline"
@@ -511,7 +599,9 @@ export function EditLesson() {
             <SectionEditor
               key={section.id}
               section={section}
-              onUpdate={(updatedSection) => handleUpdateSection(index, updatedSection)}
+              onUpdate={(updatedSection) =>
+                handleUpdateSection(index, updatedSection)
+              }
               onDelete={() => handleRemoveSection(index)}
               isProcessing={saving}
             />
@@ -526,11 +616,8 @@ export function EditLesson() {
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
