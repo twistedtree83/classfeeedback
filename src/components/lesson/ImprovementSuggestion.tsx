@@ -78,33 +78,6 @@ export function ImprovementSuggestion({
     return null;
   };
 
-  // Format suggestion text into a structured format
-  const formatSuggestion = (text: string) => {
-    // Split by common separators (newlines, bullet points, numbers)
-    const lines = text.split(/\n+/);
-    
-    // Process each line and create an array of items
-    const items = lines
-      .map(line => line.trim()
-        .replace(/^[•\-*]\s*/, '')  // Remove bullet points
-        .replace(/^\d+[.):]\s*/, '') // Remove numbering
-        .trim())
-      .filter(line => line.length > 0); // Remove empty lines
-    
-    // Return a formatted list
-    if (items.length === 0) {
-      return <div className="text-gray-400 italic">No suggestions provided</div>;
-    }
-    
-    return (
-      <ul className="list-disc pl-5 space-y-2">
-        {items.map((item, i) => (
-          <li key={i} className="mb-2">{item}</li>
-        ))}
-      </ul>
-    );
-  };
-
   return (
     <Card className={`${isApproved ? 'border-green-200' : isRejected ? 'border-gray-200 opacity-75' : 'border-amber-200'} shadow-md`}>
       <CardHeader className="pb-2">
@@ -140,9 +113,10 @@ export function ImprovementSuggestion({
             
             <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
               <h4 className="text-sm font-medium text-amber-800 mb-1">Suggested Activities:</h4>
-              <div className="text-sm text-amber-700">
-                {formatSuggestion(improvement.suggestion)}
-              </div>
+              <div 
+                className="text-sm text-amber-700"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(improvement.suggestion) }}
+              ></div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { improveLessonSection } from '@/lib/aiService';
 import { Loader2, CheckCircle, XCircle, Edit, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { ImprovementArea } from '@/types/lessonTypes';
+import { sanitizeHtml } from '@/lib/utils';
 
 interface SectionImproverProps {
   improvement: ImprovementArea;
@@ -208,7 +209,7 @@ export function SectionImprover({
                   <ul className="list-disc pl-5 space-y-2">
                     {activities.length > 0 ? (
                       activities.map((item, i) => (
-                        <li key={i} className="text-blue-700">{item}</li>
+                        <li key={i} className="text-blue-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }}></li>
                       ))
                     ) : (
                       <li className="text-blue-400 italic">No activities defined yet</li>
