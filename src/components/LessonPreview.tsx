@@ -93,7 +93,7 @@ export function LessonPreview({ lesson }: LessonPreviewProps) {
                 <h5 className="font-medium text-gray-900 mb-2">Activities</h5>
                 <ul className="list-disc list-inside text-gray-700">
                   {section.activities.map((activity, index) => (
-                    <li key={index}>{activity}</li>
+                    <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></li>
                   ))}
                 </ul>
               </div>

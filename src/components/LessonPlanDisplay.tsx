@@ -43,7 +43,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
         <div className="space-y-4">
           <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
             {lesson.objectives.map((objective, index) => (
-              <li key={index}>{objective}</li>
+              <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(objective) }}></li>
             ))}
           </ul>
           
@@ -55,7 +55,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
               </h4>
               <ul className="list-disc list-inside space-y-2 text-gray-700 ml-4">
                 {lesson.success_criteria.map((criteria, index) => (
-                  <li key={index}>{criteria}</li>
+                  <li key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(criteria) }}></li>
                 ))}
               </ul>
             </div>
@@ -184,7 +184,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                   <ul className="list-disc list-inside space-y-1 text-gray-600">
                     {section.activities.map((activity, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <span>{activity}</span>
+                        <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(activity) }}></span>
                         {onAddToTeaching && (
                           <Button
                             variant="ghost"
