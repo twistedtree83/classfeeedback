@@ -110,38 +110,74 @@ export function sanitizeHtml(content: any): string {
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>');
   
-  // Replace markdown lists
-  formatted = formatted
-    .replace(/^\s*- (.*$)/gim, '<li>$1</li>')
-    .replace(/^\s*\* (.*$)/gim, '<li>$1</li>')
-    .replace(/^\s*\+ (.*$)/gim, '<li>$1</li>');
+  // Fix URL rendering - first process any existing HTML links to ensure they're preserved
+  // This regex captures HTML <a> tags with their attributes
+  const linkRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi;
+  const links: { fullMatch: string; url: string; text: string }[] = [];
   
-  // Wrap adjacent list items in ul tags
+  // Store existing links to preserve them
+  let match;
+  while ((match = linkRegex.exec(formatted)) !== null) {
+    links.push({
+      fullMatch: match[0],
+      url: match[1],
+      text: match[2]
+    });
+  }
+  
+  // Replace links with placeholders to protect them
+  let counter = 0;
+  links.forEach(link => {
+    formatted = formatted.replace(link.fullMatch, `__LINK_PLACEHOLDER_${counter++}__`);
+  });
+  
+  // Process URLs not already in links
+  formatted = convertUrlsToHyperlinks(formatted);
+  
+  // Put the original links back
+  counter = 0;
+  links.forEach(link => {
+    formatted = formatted.replace(
+      `__LINK_PLACEHOLDER_${counter++}__`, 
+      `<a href="${link.url}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline">${link.text}</a>`
+    );
+  });
+  
+  // Replace markdown lists - Improved to handle empty list items
   const lines = formatted.split(/\n/);
   let inList = false;
   
   formatted = lines.map(line => {
-    if (line.trim().startsWith('<li>')) {
-      if (!inList) {
-        inList = true;
-        return '<ul class="list-disc pl-5 my-2">' + line;
+    const listItemMatch = line.match(/^\s*[-*•]\s*(.*)/);
+    
+    if (listItemMatch) {
+      // Only create a list item if there's actual content after the bullet
+      const content = listItemMatch[1].trim();
+      if (content) {
+        if (!inList) {
+          inList = true;
+          return '<ul class="list-disc pl-5 my-2"><li>' + content + '</li>';
+        }
+        return '<li>' + content + '</li>';
+      } else {
+        // Skip empty list items
+        return '';
       }
-      return line;
     } else if (inList) {
       inList = false;
       return '</ul>' + line;
     }
     return line;
-  }).join('\n');
+  }).filter(line => line !== '').join('\n');
   
   if (inList) {
     formatted += '</ul>';
   }
   
-  // Process URLs and convert newlines
-  formatted = processContentWithUrls(formatted);
+  // Replace newlines with <br> tags for those not already handled
+  formatted = formatted.replace(/\n/g, '<br>');
   
-  // Remove potentially dangerous tags while preserving links
+  // Remove potentially dangerous tags while preserving links and other safe elements
   return formatted
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+="[^"]*"/g, '')

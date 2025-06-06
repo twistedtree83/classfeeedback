@@ -33,12 +33,14 @@ export function ImprovementSuggestion({
       return (
         <ul className="list-disc pl-5 space-y-1">
           {value.map((item, i) => (
-            <li key={i}>{item}</li>
+            <li key={i} dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }}></li>
           ))}
         </ul>
       );
     }
-    return value || <div className="text-gray-400 italic">No content</div>;
+    return value ? 
+      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(value) }}></div> : 
+      <div className="text-gray-400 italic">No content</div>;
   };
 
   // Get color for priority badge
