@@ -4,7 +4,7 @@ import {
   Droppable,
   Draggable,
   DropResult,
-} from "react-beautiful-dnd";
+} from "@hello-pangea/dnd";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import type { LessonCard, ProcessedLesson, CardAttachment } from "../lib/types";
@@ -328,8 +328,14 @@ export function TeachingCardsManager({
           >
             {/* Always render the header with drag handle */}
             <div className="flex items-center p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-              <div {...provided.dragHandleProps} className="mr-2 cursor-move">
-                <GripVertical className="h-5 w-5 text-gray-400" />
+              <div
+                {...provided.dragHandleProps}
+                className="mr-2 cursor-move hover:text-teal-600 transition-colors"
+                style={{ cursor: "grab" }}
+                onMouseDown={(e) => (e.currentTarget.style.cursor = "grabbing")}
+                onMouseUp={(e) => (e.currentTarget.style.cursor = "grab")}
+              >
+                <GripVertical className="h-5 w-5 text-gray-400 hover:text-teal-600" />
               </div>
 
               <div className="flex-grow">
