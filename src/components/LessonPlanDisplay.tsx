@@ -92,53 +92,76 @@ export function LessonPlanDisplay({
                     ></li>
                   ))}
               </ul>
-              {onAddToTeaching && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    onAddToTeaching("objective", {
-                      title: "Success Criteria",
-                      content: (lesson.success_criteria || [])
-                        .map((sc) => `• ${sc}`)
-                        .join("\n"),
-                    })
-                  }
-                  className="flex items-center gap-2 mt-3"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add to Teaching
-                </Button>
-              )}
             </div>
           )}
 
           {onAddToTeaching && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const content =
-                  lesson.success_criteria && lesson.success_criteria.length > 0
-                    ? `${lesson.objectives
-                        .map((obj) => `• ${obj}`)
-                        .join(
-                          "\n"
-                        )}\n\n**Success Criteria:**\n${lesson.success_criteria
-                        .map((sc) => `• ${sc}`)
-                        .join("\n")}`
-                    : lesson.objectives.map((obj) => `• ${obj}`).join("\n");
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const content = lesson.objectives
+                    .map((obj) => `• ${obj}`)
+                    .join("\n");
+                  onAddToTeaching("objective", {
+                    title: "Learning Intentions",
+                    content,
+                  });
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Learning Intentions
+              </Button>
 
-                onAddToTeaching("objective", {
-                  title: "Learning Intentions and Success Criteria",
-                  content,
-                });
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add to Teaching
-            </Button>
+              {lesson.success_criteria &&
+                lesson.success_criteria.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      onAddToTeaching("objective", {
+                        title: "Success Criteria",
+                        content: (lesson.success_criteria || [])
+                          .map((sc) => `• ${sc}`)
+                          .join("\n"),
+                      })
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Success Criteria
+                  </Button>
+                )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const content =
+                    lesson.success_criteria &&
+                    lesson.success_criteria.length > 0
+                      ? `${lesson.objectives
+                          .map((obj) => `• ${obj}`)
+                          .join(
+                            "\n"
+                          )}\n\n**Success Criteria:**\n${lesson.success_criteria
+                          .map((sc) => `• ${sc}`)
+                          .join("\n")}`
+                      : lesson.objectives.map((obj) => `• ${obj}`).join("\n");
+
+                  onAddToTeaching("objective", {
+                    title: "Learning Intentions and Success Criteria",
+                    content,
+                  });
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Both
+              </Button>
+            </div>
           )}
         </div>
       </div>
