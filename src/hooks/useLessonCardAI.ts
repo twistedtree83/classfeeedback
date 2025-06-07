@@ -6,6 +6,7 @@ import {
   improveLearningIntentions,
 } from "../lib/aiService";
 import type { LessonCard } from "../lib/types";
+import { supabase } from "../lib/supabase/client";
 
 export function useLessonCardAI(
   selectedCards: LessonCard[],
@@ -32,6 +33,38 @@ export function useLessonCardAI(
     text: string;
     type: "success" | "error";
   } | null>(null);
+
+  // Function to save lesson to database
+  const saveLessonToDatabase = async (updatedLesson: any) => {
+    try {
+      // Get the lesson ID from URL or lesson object
+      const currentPath = window.location.pathname;
+      const lessonIdMatch = currentPath.match(/\/planner\/([^\/]+)/);
+      const lessonId = lessonIdMatch ? lessonIdMatch[1] : lesson.id;
+
+      if (!lessonId) {
+        console.error("No lesson ID found for saving");
+        return false;
+      }
+
+      const { error } = await supabase
+        .from("lesson_plans")
+        .update({
+          processed_content: updatedLesson,
+        })
+        .eq("id", lessonId);
+
+      if (error) {
+        console.error("Error saving lesson to database:", error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Exception saving lesson to database:", error);
+      return false;
+    }
+  };
 
   // Make a single card student-friendly
   const makeCardStudentFriendly = async (cardId: string) => {
@@ -134,6 +167,17 @@ export function useLessonCardAI(
 
       if (criteria && criteria.length > 0) {
         setSuccessCriteria(criteria);
+        // Also update the lesson object with the new success criteria
+        lesson.success_criteria = criteria;
+
+        // Save the updated lesson to the database
+        const saveSuccess = await saveLessonToDatabase(lesson);
+        if (!saveSuccess) {
+          console.warn(
+            "Failed to save success criteria to database, but they are available in this session"
+          );
+        }
+
         setCriteriaMessage({
           text: "Success criteria generated successfully",
           type: "success",
@@ -201,6 +245,14 @@ export function useLessonCardAI(
       if (improvedObjectives && improvedObjectives.length > 0) {
         // Update the lesson objectives directly
         lesson.objectives = improvedObjectives;
+
+        // Save the updated lesson to the database
+        const saveSuccess = await saveLessonToDatabase(lesson);
+        if (!saveSuccess) {
+          console.warn(
+            "Failed to save improved learning intentions to database, but they are available in this session"
+          );
+        }
 
         setIntentionsMessage({
           text: "Learning intentions improved successfully",
