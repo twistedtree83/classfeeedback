@@ -74,6 +74,26 @@ export function LessonPlanDisplay({
               ))}
           </ul>
 
+          {onAddToTeaching && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const content = lesson.objectives
+                  .map((obj) => `• ${obj}`)
+                  .join("\n");
+                onAddToTeaching("objective", {
+                  title: "Learning Intentions",
+                  content,
+                });
+              }}
+              className="flex items-center gap-2 mt-4"
+            >
+              <Plus className="h-4 w-4" />
+              Add to Teaching
+            </Button>
+          )}
+
           {lesson.success_criteria && lesson.success_criteria.length > 0 && (
             <div className="mt-4">
               <h4 className="font-medium text-gray-800 flex items-center mb-2">
@@ -111,26 +131,6 @@ export function LessonPlanDisplay({
                 </Button>
               )}
             </div>
-          )}
-
-          {onAddToTeaching && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const content = lesson.objectives
-                  .map((obj) => `• ${obj}`)
-                  .join("\n");
-                onAddToTeaching("objective", {
-                  title: "Learning Intentions",
-                  content,
-                });
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add to Teaching
-            </Button>
           )}
         </div>
       </div>
