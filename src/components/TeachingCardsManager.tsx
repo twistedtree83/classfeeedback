@@ -81,18 +81,22 @@ export function TeachingCardsManager({
     createDifferentiatedCards,
   } = useLessonCardAI(selectedCards, lesson, onSave);
 
-  // Handle drag end event
+  // Handle drag end event with error handling
   const handleDragEnd = (result: DropResult) => {
-    // Dropped outside the list
-    if (!result.destination) {
-      return;
+    try {
+      // Dropped outside the list
+      if (!result.destination) {
+        return;
+      }
+
+      const reorderedCards = Array.from(selectedCards);
+      const [removed] = reorderedCards.splice(result.source.index, 1);
+      reorderedCards.splice(result.destination.index, 0, removed);
+
+      onSave(reorderedCards);
+    } catch (error) {
+      console.error("Error handling drag end:", error);
     }
-
-    const reorderedCards = Array.from(selectedCards);
-    const [removed] = reorderedCards.splice(result.source.index, 1);
-    reorderedCards.splice(result.destination.index, 0, removed);
-
-    onSave(reorderedCards);
   };
 
   // Add a new custom card
@@ -724,27 +728,30 @@ export function TeachingCardsManager({
             </Button>
           </div>
         </div>
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="cards">
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-2"
-              >
-                {selectedCards.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
-                    No cards added yet. Add cards from the lesson plan or create
-                    custom cards.
-                  </div>
-                ) : (
-                  selectedCards.map((card, index) => renderCard(card, index))
-                )}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+        {selectedCards.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
+            No cards added yet. Add cards from the lesson plan or create custom
+            cards.
+          </div>
+        ) : (
+          <DragDropContext
+            onDragEnd={handleDragEnd}
+            key={`dnd-${selectedCards.length}`}
+          >
+            <Droppable droppableId="cards">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-2"
+                >
+                  {selectedCards.map((card, index) => renderCard(card, index))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
       </div>
 
       {/* File upload modal */}
