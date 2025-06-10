@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { improveLessonSection } from '@/lib/aiService';
-import { Loader2, CheckCircle, XCircle, Edit, Sparkles, Plus, Trash2 } from 'lucide-react';
-import { ImprovementArea } from '@/types/lessonTypes';
-import { sanitizeHtml } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { Button } from "../ui/Button";
+import { improveLessonSection } from "@/lib/aiService";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Edit,
+  Sparkles,
+  Plus,
+  Trash2,
+  Edit2,
+  Clock,
+  Users,
+  Package,
+} from "lucide-react";
+import { ImprovementArea } from "@/types/lessonTypes";
+import { sanitizeHtml } from "@/lib/utils";
 
 interface SectionImproverProps {
   improvement: ImprovementArea;
@@ -12,63 +24,113 @@ interface SectionImproverProps {
   onCancel: () => void;
 }
 
+interface ActivitySuggestion {
+  title: string;
+  description: string;
+  duration?: string;
+  materials?: string;
+  grouping?: string;
+}
+
 export function SectionImprover({
   improvement,
   currentValue,
   onApprove,
-  onCancel
+  onCancel,
 }: SectionImproverProps) {
   const [editMode, setEditMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activities, setActivities] = useState<string[]>(Array.isArray(currentValue) ? 
-    [...currentValue] : 
-    currentValue ? [currentValue as string] : []);
-  const [error, setError] = useState('');
+  const [activitySuggestions, setActivitySuggestions] = useState<
+    ActivitySuggestion[]
+  >([]);
+  const [selectedActivities, setSelectedActivities] = useState<boolean[]>([]);
+  const [existingActivities, setExistingActivities] = useState<string[]>(
+    Array.isArray(currentValue)
+      ? [...currentValue]
+      : currentValue
+      ? [currentValue as string]
+      : []
+  );
+  const [error, setError] = useState("");
 
   // Function to generate improved content from AI
   const generateImprovement = async () => {
     setIsGenerating(true);
-    setError('');
-    
+    setError("");
+
     try {
       // For arrays (like activities), join with newlines
-      const currentText = (Array.isArray(currentValue) ? 
-        currentValue : 
-        currentValue ? [currentValue as string] : []).join('\n');
-      
+      const currentText = (
+        Array.isArray(currentValue)
+          ? currentValue
+          : currentValue
+          ? [currentValue as string]
+          : []
+      ).join("\n");
+
       const result = await improveLessonSection(
         improvement.section,
         currentText,
         improvement.issue
       );
-      
-      // Process the result into a clean array of activities
-      const processedActivities = cleanAndParseActivities(result);
-      setActivities(processedActivities);
-      
+
+      // Try to parse JSON response
+      try {
+        const parsedResult = JSON.parse(result);
+        if (parsedResult.activities && Array.isArray(parsedResult.activities)) {
+          setActivitySuggestions(parsedResult.activities);
+          setSelectedActivities(
+            new Array(parsedResult.activities.length).fill(false)
+          );
+        } else {
+          throw new Error("Invalid JSON structure");
+        }
+      } catch (parseError) {
+        console.warn(
+          "Failed to parse JSON, falling back to text parsing:",
+          parseError
+        );
+        // Fallback to old text parsing method
+        const processedActivities = cleanAndParseActivities(result);
+        const fallbackSuggestions = processedActivities.map((activity) => ({
+          title:
+            activity.substring(0, 50) + (activity.length > 50 ? "..." : ""),
+          description: activity,
+          duration: "10-15 minutes",
+          materials: "Standard classroom materials",
+          grouping: "Varies",
+        }));
+        setActivitySuggestions(fallbackSuggestions);
+        setSelectedActivities(
+          new Array(fallbackSuggestions.length).fill(false)
+        );
+      }
     } catch (err) {
-      console.error('Error improving section:', err);
-      setError('Failed to generate improvement. Please try again or edit manually.');
+      console.error("Error improving section:", err);
+      setError(
+        "Failed to generate improvement. Please try again or edit manually."
+      );
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Clean and parse activities from AI response
+  // Clean and parse activities from AI response (fallback method)
   const cleanAndParseActivities = (aiResponse: string): string[] => {
     // Split by common separators (newlines, bullet points, numbers)
     const lines = aiResponse.split(/\n+/);
-    
+
     // Process each line to remove bullet points, numbering, etc.
     return lines
-      .map(line => {
+      .map((line) => {
         // Remove bullet points, numbers, and extra whitespace
-        return line.trim()
-          .replace(/^[•\-*]\s*/, '')  // Bullet points
-          .replace(/^\d+[.):]\s*/, '') // Numbering
+        return line
+          .trim()
+          .replace(/^[•\-*]\s*/, "") // Bullet points
+          .replace(/^\d+[.):]\s*/, "") // Numbering
           .trim();
       })
-      .filter(line => line.length > 0); // Remove empty lines
+      .filter((line) => line.length > 0); // Remove empty lines
   };
 
   // Generate improvement when component mounts
@@ -76,168 +138,252 @@ export function SectionImprover({
     generateImprovement();
   }, []);
 
-  // Handle editing for array fields (like activities)
-  const handleActivityChange = (index: number, value: string) => {
-    const newActivities = [...activities];
+  // Handle selecting/deselecting activities
+  const toggleActivitySelection = (index: number) => {
+    const newSelection = [...selectedActivities];
+    newSelection[index] = !newSelection[index];
+    setSelectedActivities(newSelection);
+  };
+
+  // Handle editing existing activities
+  const handleExistingActivityChange = (index: number, value: string) => {
+    const newActivities = [...existingActivities];
     newActivities[index] = value;
-    setActivities(newActivities);
+    setExistingActivities(newActivities);
   };
 
-  // Handle adding a new array item
-  const handleAddActivity = () => {
-    setActivities([...activities, '']);
+  // Handle adding a new existing activity
+  const handleAddExistingActivity = () => {
+    setExistingActivities([...existingActivities, ""]);
   };
 
-  // Handle removing an array item
-  const handleRemoveActivity = (index: number) => {
-    const newActivities = [...activities];
+  // Handle removing an existing activity
+  const handleRemoveExistingActivity = (index: number) => {
+    const newActivities = [...existingActivities];
     newActivities.splice(index, 1);
-    setActivities(newActivities);
+    setExistingActivities(newActivities);
   };
 
   // Handle approving the changes
   const handleApprove = () => {
-    onApprove(improvement.id, activities);
+    const selectedSuggestions = activitySuggestions
+      .filter((_, index) => selectedActivities[index])
+      .map((suggestion) => suggestion.description);
+
+    const finalActivities = [
+      ...existingActivities.filter((act) => act.trim()),
+      ...selectedSuggestions,
+    ];
+    onApprove(improvement.id, finalActivities);
   };
 
+  const hasSelectedActivities = selectedActivities.some((selected) => selected);
+  const hasValidExistingActivities = existingActivities.some((act) =>
+    act.trim()
+  );
+
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-blue-200 p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">
-          Improve Activities for {improvement.section}
+    <div className="border border-blue-200 rounded-lg p-6 bg-blue-50">
+      {/* Issue and Suggestion */}
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">
+          {improvement.section}
         </h3>
-        <div className="flex items-center space-x-2">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+          <p className="text-amber-800">
+            <strong>Issue:</strong> {improvement.issue}
+          </p>
+          <p className="text-amber-700 mt-1">
+            <strong>Suggestion:</strong> {improvement.suggestion}
+          </p>
+        </div>
+      </div>
+
+      {/* Current Activities Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-gray-700">
+            Current Activities:
+          </h4>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className={`${editMode ? 'bg-blue-50 text-blue-600' : ''}`}
             onClick={() => setEditMode(!editMode)}
+            className="text-blue-600 hover:text-blue-800"
           >
-            <Edit className="h-4 w-4 mr-1" />
-            {editMode ? 'Exit Edit' : 'Edit'}
+            <Edit2 className="h-4 w-4 mr-1" />
+            {editMode ? "Done Editing" : "Edit Current"}
           </Button>
-          
-          {!isGenerating && (
+        </div>
+
+        {editMode ? (
+          <div className="space-y-3">
+            {existingActivities.map((activity, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <textarea
+                  value={activity}
+                  onChange={(e) =>
+                    handleExistingActivityChange(index, e.target.value)
+                  }
+                  className="flex-1 p-3 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                  rows={3}
+                  placeholder={`Activity ${index + 1} description...`}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-500"
+                  onClick={() => handleRemoveExistingActivity(index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
             <Button
               variant="outline"
               size="sm"
-              onClick={generateImprovement}
-              disabled={isGenerating}
+              onClick={handleAddExistingActivity}
+              className="mt-2"
             >
-              <Sparkles className="h-4 w-4 mr-1" />
-              Regenerate
+              <Plus className="h-4 w-4 mr-1" />
+              Add Activity
             </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <div className="text-sm text-gray-600 mb-2">
-          <strong>Issue:</strong> {improvement.issue}
-        </div>
-      </div>
-
-      <div className="space-y-4 mb-6">
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Current Activities:</h4>
+          </div>
+        ) : (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {Array.isArray(currentValue) ? (
+            {hasValidExistingActivities ? (
               <ul className="list-disc pl-5 space-y-2">
-                {currentValue.length > 0 ? (
-                  currentValue.map((item, i) => (
-                    <li key={i} className="text-gray-700">{item}</li>
-                  ))
-                ) : (
-                  <li className="text-gray-400 italic">No activities defined</li>
-                )}
+                {existingActivities
+                  .filter((act) => act.trim())
+                  .map((item, i) => (
+                    <li
+                      key={i}
+                      className="text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }}
+                    ></li>
+                  ))}
               </ul>
             ) : (
-              <p className="text-gray-700 whitespace-pre-wrap">{currentValue as string || <span className="text-gray-400 italic">No content</span>}</p>
+              <p className="text-gray-400 italic">
+                No current activities defined
+              </p>
             )}
           </div>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Improved Activities:</h4>
-          
-          {isGenerating ? (
-            <div className="flex justify-center items-center p-6">
-              <Loader2 className="h-6 w-6 text-blue-500 animate-spin mr-2" />
-              <span>Generating improved activities...</span>
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200 text-red-700">
-              {error}
-            </div>
-          ) : (
-            <>
-              {editMode ? (
-                <div>
-                  <div className="space-y-3">
-                    {activities.map((activity, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <textarea
-                          value={activity}
-                          onChange={(e) => handleActivityChange(index, e.target.value)}
-                          className="flex-1 p-3 border border-blue-200 rounded focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-                          rows={3}
-                          placeholder={`Activity ${index + 1} description...`}
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500"
-                          onClick={() => handleRemoveActivity(index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleAddActivity}
-                      className="mt-2"
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> 
-                      Add Activity
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <ul className="list-disc pl-5 space-y-2">
-                    {activities.length > 0 ? (
-                      activities.map((item, i) => (
-                        <li key={i} className="text-blue-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(item) }}></li>
-                      ))
-                    ) : (
-                      <li className="text-blue-400 italic">No activities defined yet</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        )}
       </div>
 
-      <div className="flex justify-end space-x-3">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-        >
-          <XCircle className="h-4 w-4 mr-1" />
-          Cancel
-        </Button>
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white"
-          onClick={handleApprove}
-          disabled={isGenerating || activities.length === 0}
-        >
-          <CheckCircle className="h-4 w-4 mr-1" />
-          Apply These Activities
-        </Button>
+      {/* AI Generated Activities Section */}
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          AI-Generated Activity Suggestions:
+          <span className="text-xs text-gray-500 ml-2">
+            (Select the ones you want to add)
+          </span>
+        </h4>
+
+        {isGenerating ? (
+          <div className="flex justify-center items-center p-6">
+            <Loader2 className="h-6 w-6 text-blue-500 animate-spin mr-2" />
+            <span>Generating improved activities...</span>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200 text-red-700">
+            {error}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activitySuggestions.map((activity, index) => (
+              <div
+                key={index}
+                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  selectedActivities[index]
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white hover:border-blue-300"
+                }`}
+                onClick={() => toggleActivitySelection(index)}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedActivities[index]}
+                    onChange={() => toggleActivitySelection(index)}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h5 className="font-medium text-gray-900">
+                        {activity.title}
+                      </h5>
+                    </div>
+
+                    <div
+                      className="text-gray-700 mb-3"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(activity.description),
+                      }}
+                    />
+
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      {activity.duration && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{activity.duration}</span>
+                        </div>
+                      )}
+                      {activity.grouping && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{activity.grouping}</span>
+                        </div>
+                      )}
+                      {activity.materials && (
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          <span>{activity.materials}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {activitySuggestions.length === 0 && (
+              <div className="text-gray-400 italic p-4 bg-gray-50 rounded-lg">
+                No activities generated yet
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-between items-center mt-6 pt-4 border-t border-blue-200">
+        <div className="text-sm text-gray-600">
+          {hasSelectedActivities && (
+            <span className="text-blue-600">
+              {selectedActivities.filter((s) => s).length} activity(ies)
+              selected
+            </span>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onCancel}>
+            <XCircle className="h-4 w-4 mr-1" />
+            Cancel
+          </Button>
+          <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleApprove}
+            disabled={
+              isGenerating ||
+              (!hasSelectedActivities && !hasValidExistingActivities)
+            }
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Apply Selected Activities
+          </Button>
+        </div>
       </div>
     </div>
   );

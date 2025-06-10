@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BarChart3, Users, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HeroCardProps {
@@ -66,91 +66,111 @@ export function HeroCard({
     <div
       ref={cardRef}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-white shadow-2xl border border-teal/20",
-        "max-w-6xl w-full mx-auto h-[80vh] min-h-[600px] max-h-[800px]",
-        "transition-all duration-500 hover:shadow-[0_20px_50px_rgba(48,152,152,0.3)]",
+        "relative overflow-hidden rounded-3xl bg-gradient-to-br from-white via-white to-slate-50",
+        "max-w-7xl w-full mx-auto h-[85vh] min-h-[700px] max-h-[900px]",
+        "shadow-large border border-border/50",
+        "transition-all duration-700 hover:shadow-2xl hover:shadow-dark-purple/20",
+        "hover:-translate-y-2",
         className
       )}
     >
+      {/* Animated background gradients */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Background blobs */}
         <div
-          className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-teal/30 filter blur-3xl"
+          className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-gradient-to-r from-dark-purple/20 to-deep-sky-blue/20 filter blur-3xl animate-pulse-soft"
           style={{
-            transform: `translate(${(mousePosition.x - 0.5) * -20}px, ${
-              (mousePosition.y - 0.5) * -20
+            transform: `translate(${(mousePosition.x - 0.5) * -30}px, ${
+              (mousePosition.y - 0.5) * -30
             }px)`,
           }}
-        ></div>
+        />
         <div
-          className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-orange/30 filter blur-3xl"
+          className="absolute top-1/4 right-0 w-96 h-96 rounded-full bg-gradient-to-l from-harvest-gold/15 to-sea-green/15 filter blur-3xl animate-pulse-soft"
+          style={{
+            transform: `translate(${(mousePosition.x - 0.5) * 25}px, ${
+              (mousePosition.y - 0.5) * 25
+            }px)`,
+            animationDelay: "1s",
+          }}
+        />
+        <div
+          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-gradient-to-r from-bice-blue/20 to-deep-sky-blue/20 filter blur-3xl animate-pulse-soft"
           style={{
             transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${
               (mousePosition.y - 0.5) * 20
             }px)`,
+            animationDelay: "2s",
           }}
-        ></div>
+        />
       </div>
 
       <div className="relative h-full flex flex-col lg:flex-row items-center">
         {/* Content Section */}
-        <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center z-10">
+        <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-20 flex flex-col justify-center z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-            transition={{ duration: 0.6 }}
-            className="text-sm font-medium text-coral mb-3 tracking-wider uppercase"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+            transition={{ duration: 0.8 }}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-deep-sky-blue bg-deep-sky-blue/10 px-4 py-2 rounded-full mb-6 w-fit"
           >
+            <Sparkles className="h-4 w-4" />
             {subtitle}
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-teal mb-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="text-5xl md:text-6xl lg:text-7xl font-bold text-balance mb-8 leading-tight"
           >
-            {title}
+            <span className="text-dark-purple">
+              {title.split(" ").slice(0, 2).join(" ")}
+            </span>
+            <br />
+            <span className="gradient-text">
+              {title.split(" ").slice(2).join(" ")}
+            </span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-gray-700 mb-8 max-w-lg"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-xl text-muted-foreground mb-10 max-w-lg leading-relaxed text-balance"
           >
             {description}
           </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 20 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4"
           >
             <Button
-              size="lg"
-              className="group bg-teal hover:bg-teal/90 text-white border-none"
+              size="xl"
+              variant="default"
+              className="group shadow-glow-blue"
               onClick={onPrimaryButtonClick}
               asChild={!!primaryButtonLink}
             >
               {primaryButtonLink ? (
-                <a href={primaryButtonLink}>
+                <a href={primaryButtonLink} className="flex items-center gap-2">
                   {primaryButtonText}
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </a>
               ) : (
-                <>
+                <div className="flex items-center gap-2">
                   {primaryButtonText}
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </>
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </div>
               )}
             </Button>
 
             <Button
-              variant="outline"
-              size="lg"
-              className="border-coral text-coral hover:bg-coral/10"
+              variant="glass"
+              size="xl"
+              className="border-dark-purple/20 text-dark-purple hover:bg-dark-purple/5"
               onClick={onSecondaryButtonClick}
               asChild={!!secondaryButtonLink}
             >
@@ -161,6 +181,23 @@ export function HeroCard({
               )}
             </Button>
           </motion.div>
+
+          {/* Trust indicators */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 30 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-12 flex items-center gap-8"
+          >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4 text-sea-green" />
+              <span>1000+ teachers</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BarChart3 className="h-4 w-4 text-harvest-gold" />
+              <span>Real-time analytics</span>
+            </div>
+          </motion.div>
         </div>
 
         {/* Image Section */}
@@ -168,11 +205,11 @@ export function HeroCard({
           <motion.div
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 1.1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 1, delay: 0.2 }}
             className="absolute inset-0 z-0"
             style={parallaxStyle}
           >
-            <div className="absolute inset-0 bg-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white/20 via-transparent to-transparent z-10" />
             <img
               src={image}
               alt={imageAlt}
@@ -180,25 +217,63 @@ export function HeroCard({
             />
           </motion.div>
 
-          {/* Floating cards */}
+          {/* Floating glass cards */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: isVisible ? 1 : 0, y: isVisible ? 0 : 40 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="absolute bottom-12 left-12 bg-white p-4 rounded-lg shadow-xl z-20 max-w-xs"
+            initial={{ opacity: 0, y: 50, rotate: -5 }}
+            animate={{
+              opacity: isVisible ? 1 : 0,
+              y: isVisible ? 0 : 50,
+              rotate: isVisible ? 0 : -5,
+            }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="absolute bottom-16 left-8 glass backdrop-blur-md p-6 rounded-2xl shadow-large z-20 max-w-xs border border-white/30"
             style={{
-              transform: `translate(${(mousePosition.x - 0.5) * -10}px, ${
-                (mousePosition.y - 0.5) * -10
+              transform: `translate(${(mousePosition.x - 0.5) * -15}px, ${
+                (mousePosition.y - 0.5) * -15
               }px)`,
             }}
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-orange/20 p-2 rounded-full">
-                <BarChart3 className="h-6 w-6 text-teal" />
+            <div className="flex items-center gap-4">
+              <div className="bg-harvest-gold/20 p-3 rounded-xl">
+                <BarChart3 className="h-6 w-6 text-harvest-gold" />
               </div>
               <div>
-                <p className="font-medium text-teal">Live Feedback</p>
-                <p className="text-sm text-coral">10 students participating</p>
+                <p className="font-semibold text-dark-purple text-sm">
+                  Live Analytics
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Real-time insights
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 50, rotate: 5 }}
+            animate={{
+              opacity: isVisible ? 1 : 0,
+              y: isVisible ? 0 : 50,
+              rotate: isVisible ? 0 : 5,
+            }}
+            transition={{ duration: 1, delay: 0.8 }}
+            className="absolute top-20 right-8 glass backdrop-blur-md p-6 rounded-2xl shadow-large z-20 max-w-xs border border-white/30"
+            style={{
+              transform: `translate(${(mousePosition.x - 0.5) * 10}px, ${
+                (mousePosition.y - 0.5) * 10
+              }px)`,
+            }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-sea-green/20 p-3 rounded-xl">
+                <Users className="h-6 w-6 text-sea-green" />
+              </div>
+              <div>
+                <p className="font-semibold text-dark-purple text-sm">
+                  Student Engagement
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Active participation
+                </p>
               </div>
             </div>
           </motion.div>
@@ -207,5 +282,3 @@ export function HeroCard({
     </div>
   );
 }
-
-import { BarChart3 } from "lucide-react";

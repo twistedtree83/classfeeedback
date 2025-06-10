@@ -41,6 +41,7 @@ import { sanitizeHtml } from "../lib/utils";
 import { useLessonCardAI } from "../hooks/useLessonCardAI";
 import { FileUploadModal } from "./FileUploadModal";
 import { AttachmentDisplay } from "./AttachmentDisplay";
+import { DifferentiatedCardsSelector } from "./DifferentiatedCardsSelector";
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -61,6 +62,8 @@ export function TeachingCardsManager({
   const [currentCardForAttachment, setCurrentCardForAttachment] = useState<
     string | null
   >(null);
+  const [showDifferentiatedSelector, setShowDifferentiatedSelector] =
+    useState(false);
 
   // Use our custom AI hook with the direct onSave callback
   const {
@@ -716,21 +719,12 @@ export function TeachingCardsManager({
             <Button
               variant="outline"
               size="sm"
-              onClick={createDifferentiatedCards}
-              disabled={generatingDifferentiated || selectedCards.length === 0}
+              onClick={() => setShowDifferentiatedSelector(true)}
+              disabled={selectedCards.length === 0}
               className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
             >
-              {generatingDifferentiated ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <BookMarked className="h-4 w-4" />
-                  Generate Differentiated Cards
-                </>
-              )}
+              <BookMarked className="h-4 w-4" />
+              Choose Cards to Differentiate
             </Button>
           </div>
         </div>
@@ -766,6 +760,19 @@ export function TeachingCardsManager({
         onClose={() => setShowUploadModal(false)}
         onAttachmentAdded={handleAttachmentAdded}
       />
+
+      {/* Differentiated cards selector modal */}
+      {showDifferentiatedSelector && (
+        <DifferentiatedCardsSelector
+          cards={selectedCards}
+          lesson={lesson}
+          onApply={(updatedCards) => {
+            onSave(updatedCards);
+            setShowDifferentiatedSelector(false);
+          }}
+          onCancel={() => setShowDifferentiatedSelector(false)}
+        />
+      )}
     </div>
   );
 }

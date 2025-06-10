@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
-import { supabase } from '../lib/supabase/client';
-import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
-import { TeachingCardsManager } from '../components/TeachingCardsManager';
-import { Button } from '../components/ui/Button';
-import type { LessonCard } from '../lib/types';
-import { createLessonPresentation } from '../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
+import { supabase } from "../lib/supabase/client";
+import { LessonPlanDisplay } from "../components/LessonPlanDisplay";
+import { TeachingCardsManager } from "../components/TeachingCardsManager";
+import { Button } from "../components/ui/Button";
+import type { LessonCard } from "../lib/types";
+import { createLessonPresentation } from "../lib/supabase";
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -27,18 +27,18 @@ export function LessonDetails() {
 
       try {
         const { data, error: fetchError } = await supabase
-          .from('lesson_plans')
-          .select('*')
-          .eq('id', id)
+          .from("lesson_plans")
+          .select("*")
+          .eq("id", id)
           .single();
 
         if (fetchError) throw fetchError;
-        if (!data) throw new Error('Lesson not found');
+        if (!data) throw new Error("Lesson not found");
 
         setLesson(data);
       } catch (err) {
-        console.error('Error fetching lesson:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load lesson');
+        console.error("Error fetching lesson:", err);
+        setError(err instanceof Error ? err.message : "Failed to load lesson");
       } finally {
         setLoading(false);
       }
@@ -48,22 +48,25 @@ export function LessonDetails() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !window.confirm('Are you sure you want to delete this lesson plan?')) {
+    if (
+      !id ||
+      !window.confirm("Are you sure you want to delete this lesson plan?")
+    ) {
       return;
     }
 
     setIsDeleting(true);
     try {
       const { error: deleteError } = await supabase
-        .from('lesson_plans')
+        .from("lesson_plans")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (deleteError) throw deleteError;
-      navigate('/planner');
+      navigate("/planner");
     } catch (err) {
-      console.error('Error deleting lesson:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete lesson');
+      console.error("Error deleting lesson:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete lesson");
       setIsDeleting(false);
     }
   };
@@ -74,25 +77,29 @@ export function LessonDetails() {
 
   const startTeaching = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
+
     if (!lesson?.processed_content) return;
-    
+
     if (!user?.user_metadata?.title || !user?.user_metadata?.full_name) {
-      setError('Please set your title and name in your profile first');
+      setError("Please set your title and name in your profile first");
       return;
     }
-    
+
     setIsStartingTeaching(true);
     setError(null);
 
-    const teacherName = `${user.user_metadata.title} ${user.user_metadata.full_name.split(' ').pop()}`;
+    const teacherName = `${
+      user.user_metadata.title
+    } ${user.user_metadata.full_name.split(" ").pop()}`;
 
     try {
       // Use the selected cards from the teaching cards manager
       if (selectedCards.length === 0) {
-        throw new Error('Please add at least one card to the teaching sequence');
+        throw new Error(
+          "Please add at least one card to the teaching sequence"
+        );
       }
-      
+
       const presentation = await createLessonPresentation(
         lesson.id,
         selectedCards,
@@ -100,18 +107,28 @@ export function LessonDetails() {
       );
 
       if (!presentation) {
-        throw new Error('Failed to create teaching session');
+        throw new Error("Failed to create teaching session");
       }
 
       navigate(`/teach/${presentation.session_code}`);
     } catch (err: any) {
-      console.error('Error starting teaching session:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start teaching session');
+      console.error("Error starting teaching session:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to start teaching session"
+      );
       setIsStartingTeaching(false);
     }
   };
 
-  const handleAddToTeaching = (type: 'objective' | 'material' | 'section' | 'activity', data: any) => {
+  const handleAddToTeaching = (
+    type:
+      | "objective"
+      | "material"
+      | "section"
+      | "activity"
+      | "topic_background",
+    data: any
+  ) => {
     const newCard: LessonCard = {
       id: crypto.randomUUID(),
       type,
@@ -119,49 +136,50 @@ export function LessonDetails() {
       content: data.content,
       duration: data.duration || null,
       sectionId: data.sectionId || null,
-      activityIndex: typeof data.activityIndex === 'number' ? data.activityIndex : null
+      activityIndex:
+        typeof data.activityIndex === "number" ? data.activityIndex : null,
     };
-    
-    setSelectedCards(prev => [...prev, newCard]);
+
+    setSelectedCards((prev) => [...prev, newCard]);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-deep-sky-blue/5 to-harvest-gold/5 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-8">
           <Link
             to="/planner"
-            className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
+            className="inline-flex items-center text-brand-primary hover:text-dark-purple-400 transition-colors duration-200 font-medium"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
+            <ArrowLeft className="h-5 w-5 mr-2" />
             Back to Lessons
           </Link>
           {lesson && (
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 onClick={handleBeginTeaching}
-                variant="outline"
-                className="flex items-center gap-2 text-green-600 hover:text-green-700 border-green-200 hover:bg-green-50"
+                variant="success"
+                className="shadow-soft hover:shadow-medium"
                 disabled={isStartingTeaching || selectedCards.length === 0}
               >
-                {isStartingTeaching ? 'Starting...' : 'Begin Teaching'}
+                {isStartingTeaching ? "Starting..." : "Begin Teaching"}
               </Button>
               <Button
                 onClick={() => navigate(`/planner/${id}/edit`)}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="shadow-soft hover:shadow-medium"
               >
-                <Edit2 className="h-4 w-4" />
+                <Edit2 className="h-4 w-4 mr-2" />
                 Edit
               </Button>
               <Button
                 onClick={handleDelete}
-                variant="outline"
-                className="flex items-center gap-2 text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                variant="destructive"
+                className="shadow-soft hover:shadow-medium"
                 disabled={isDeleting}
               >
-                <Trash2 className="h-4 w-4" />
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? "Deleting..." : "Delete"}
               </Button>
             </div>
           )}
@@ -169,16 +187,16 @@ export function LessonDetails() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-3 border-brand-primary border-t-transparent"></div>
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+          <div className="glass backdrop-blur-sm border border-red-200 bg-red-50/80 text-red-700 p-6 rounded-2xl shadow-soft">
             {error}
           </div>
         ) : lesson?.processed_content ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
-              <LessonPlanDisplay 
+              <LessonPlanDisplay
                 lesson={lesson.processed_content}
                 onAddToTeaching={handleAddToTeaching}
               />
@@ -192,13 +210,15 @@ export function LessonDetails() {
             </div>
           </div>
         ) : (
-          <div className="bg-yellow-50 text-yellow-800 p-4 rounded-lg">
+          <div className="glass backdrop-blur-sm border border-harvest-gold-200 bg-harvest-gold-50/80 text-harvest-gold-800 p-6 rounded-2xl shadow-soft">
             This lesson plan has no content.
           </div>
         )}
-        
+
         {error && (
-          <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
+          <div className="mt-6 p-6 glass backdrop-blur-sm border border-red-200 bg-red-50/80 text-red-700 rounded-2xl shadow-soft">
+            {error}
+          </div>
         )}
       </div>
     </div>

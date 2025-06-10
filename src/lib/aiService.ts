@@ -896,7 +896,7 @@ export async function improveLessonSection(
       return currentContent;
     }
 
-    // Specialized prompt focusing on activities
+    // Specialized prompt focusing on activities with JSON output
     const systemPrompt = `You are an expert at designing engaging educational activities for students. 
     You will be given:
     1. The type of section being improved
@@ -912,9 +912,20 @@ export async function improveLessonSection(
     - Promote critical thinking, collaboration, or creativity
     - Can be realistically implemented in a classroom setting
     
-    FORMAT YOUR RESPONSE AS A NUMBERED LIST OF DISTINCT ACTIVITIES.
-    Each activity should be detailed and specific, not just a general concept.
+    IMPORTANT: Format your response as a JSON object with this structure:
+    {
+      "activities": [
+        {
+          "title": "Short descriptive title",
+          "description": "Detailed description with step-by-step instructions",
+          "duration": "Estimated time needed",
+          "materials": "Materials needed (if any)",
+          "grouping": "Individual/Pairs/Small Groups/Whole Class"
+        }
+      ]
+    }
     
+    Provide 4-6 distinct, well-designed activities. Make each activity detailed and specific, not just a general concept.
     Focus ONLY on improving student activities, not other aspects of the lesson plan.`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -937,11 +948,12 @@ export async function improveLessonSection(
             Current Activities:
             ${currentContent}
             
-            Please provide improved activities that address the issue described. Format each activity as a separate numbered item in a list.
+            Please provide improved activities in the JSON format specified. Generate 4-6 engaging activities that address the issue described.
           `,
           },
         ],
         temperature: 0.7,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -958,7 +970,8 @@ export async function improveLessonSection(
       return currentContent;
     }
 
-    return processContentWithUrls(data.choices[0].message.content.trim());
+    // Return the raw JSON string - it will be parsed by the component
+    return data.choices[0].message.content.trim();
   } catch (error) {
     console.error("Error improving activities:", error);
     return currentContent;
