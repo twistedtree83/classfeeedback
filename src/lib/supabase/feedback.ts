@@ -1,52 +1,59 @@
-import { supabase } from './client';
-import type { Feedback } from './types';
+import { supabase } from "./client";
+
+export interface Feedback {
+  id: string;
+  session_code: string;
+  student_name: string;
+  value: string;
+  created_at: string;
+}
 
 export const submitFeedback = async (
-  sessionCode: string, 
-  studentName: string, 
+  sessionCode: string,
+  studentName: string,
   value: string
 ): Promise<Feedback | null> => {
   try {
     const { data, error } = await supabase
-      .from('feedback')
-      .insert([
-        { 
-          session_code: sessionCode,
-          student_name: studentName,
-          value 
-        }
-      ])
+      .from("feedback")
+      .insert({
+        session_code: sessionCode,
+        student_name: studentName,
+        value,
+      })
       .select()
       .single();
-    
+
     if (error) {
-      console.error('Error submitting feedback:', error);
+      console.error("Error submitting feedback:", error);
       return null;
     }
-    
+
     return data;
   } catch (err) {
-    console.error('Exception submitting feedback:', err);
+    console.error("Exception submitting feedback:", err);
     return null;
   }
 };
 
-export const getFeedbackForSession = async (sessionCode: string): Promise<Feedback[]> => {
+export const getFeedbackForSession = async (
+  sessionCode: string
+): Promise<Feedback[]> => {
   try {
     const { data, error } = await supabase
-      .from('feedback')
-      .select('*')
-      .eq('session_code', sessionCode)
-      .order('created_at', { ascending: false });
-    
+      .from("feedback")
+      .select("*")
+      .eq("session_code", sessionCode)
+      .order("created_at", { ascending: false });
+
     if (error) {
-      console.error('Error fetching feedback:', error);
+      console.error("Error fetching feedback:", error);
       return [];
     }
-    
+
     return data || [];
   } catch (err) {
-    console.error('Exception fetching feedback:', err);
+    console.error("Exception fetching feedback:", err);
     return [];
   }
 };
@@ -56,16 +63,19 @@ export const subscribeToSessionFeedback = (
   callback: (payload: Feedback) => void
 ) => {
   return supabase
-    .channel('public:feedback')
+    .channel(`feedback:${sessionCode}`)
     .on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'feedback',
+        event: "INSERT",
+        schema: "public",
+        table: "feedback",
         filter: `session_code=eq.${sessionCode}`,
       },
-      (payload) => callback(payload.new as Feedback)
+      (payload) => {
+        console.log("New feedback:", payload);
+        callback(payload.new as Feedback);
+      }
     )
     .subscribe();
 };
@@ -79,55 +89,43 @@ export const submitTeachingFeedback = async (
   content?: string
 ): Promise<boolean> => {
   try {
-    // Check if the student has already submitted feedback for this card
+    // Check if this student has already submitted feedback for this card
     if (cardIndex !== undefined) {
       const { data: existingFeedback, error: checkError } = await supabase
-        .from('teaching_feedback')
-        .select('id')
-        .eq('presentation_id', presentationId)
-        .eq('student_name', studentName)
-        .eq('card_index', cardIndex)
-        .maybeSingle();
-        
-      if (checkError) {
-        console.error('Error checking existing feedback:', checkError);
+        .from("teaching_feedback")
+        .select("id")
+        .eq("presentation_id", presentationId)
+        .eq("student_name", studentName)
+        .eq("card_index", cardIndex)
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking existing feedback:", checkError);
+        return false;
       }
-      
-      // If student already provided feedback for this card, update instead of insert
+
       if (existingFeedback) {
-        const { error: updateError } = await supabase
-          .from('teaching_feedback')
-          .update({ 
-            feedback_type: feedbackType,
-            content,
-            created_at: new Date().toISOString() 
-          })
-          .eq('id', existingFeedback.id);
-          
-        if (updateError) {
-          console.error('Error updating existing feedback:', updateError);
-          return false;
-        }
-        
-        return true;
+        console.log("Feedback already submitted for this card");
+        return false;
       }
     }
-    
-    // No existing feedback found or card index not provided, insert new feedback
-    const { error } = await supabase
-      .from('teaching_feedback')
-      .insert([{
-        presentation_id: presentationId,
-        student_name: studentName,
-        feedback_type: feedbackType,
-        card_index: cardIndex,
-        content
-      }]);
-    
-    if (error) throw error;
+
+    const { error } = await supabase.from("teaching_feedback").insert({
+      presentation_id: presentationId,
+      student_name: studentName,
+      feedback_type: feedbackType,
+      card_index: cardIndex ?? null,
+      content: content ?? null,
+    });
+
+    if (error) {
+      console.error("Error submitting teaching feedback:", error);
+      return false;
+    }
+
     return true;
   } catch (err) {
-    console.error('Error submitting teaching feedback:', err);
+    console.error("Exception submitting teaching feedback:", err);
     return false;
   }
 };
@@ -139,32 +137,34 @@ export const submitTeachingQuestion = async (
   cardIndex?: number
 ): Promise<boolean> => {
   try {
-    console.log('Submitting question:', {
+    console.log("Submitting question:", {
       presentation_id: presentationId,
       student_name: studentName,
       question: question,
-      card_index: cardIndex
+      card_index: cardIndex,
     });
-    
+
     const { data, error } = await supabase
-      .from('teaching_questions')
-      .insert([{
-        presentation_id: presentationId,
-        student_name: studentName,
-        question,
-        card_index: cardIndex
-      }])
+      .from("teaching_questions")
+      .insert([
+        {
+          presentation_id: presentationId,
+          student_name: studentName,
+          question,
+          card_index: cardIndex,
+        },
+      ])
       .select();
-    
+
     if (error) {
-      console.error('Database error submitting question:', error);
+      console.error("Database error submitting question:", error);
       throw error;
     }
-    
-    console.log('Question submitted successfully, response:', data);
+
+    console.log("Question submitted successfully, response:", data);
     return true;
   } catch (err) {
-    console.error('Error submitting question:', err);
+    console.error("Error submitting question:", err);
     return false;
   }
 };
@@ -176,21 +176,21 @@ export const getStudentFeedbackForCard = async (
 ): Promise<any | null> => {
   try {
     const { data, error } = await supabase
-      .from('teaching_feedback')
-      .select('*')
-      .eq('presentation_id', presentationId)
-      .eq('student_name', studentName)
-      .eq('card_index', cardIndex)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching student feedback for card:', error);
+      .from("teaching_feedback")
+      .select("*")
+      .eq("presentation_id", presentationId)
+      .eq("student_name", studentName)
+      .eq("card_index", cardIndex)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Error fetching student feedback:", error);
       return null;
     }
-    
+
     return data;
   } catch (err) {
-    console.error('Exception fetching student feedback for card:', err);
+    console.error("Exception fetching student feedback:", err);
     return null;
   }
 };
@@ -200,14 +200,14 @@ export const markQuestionAsAnswered = async (
 ): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('teaching_questions')
+      .from("teaching_questions")
       .update({ answered: true })
-      .eq('id', questionId);
-    
+      .eq("id", questionId);
+
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error('Error marking question as answered:', err);
+    console.error("Error marking question as answered:", err);
     return false;
   }
 };
@@ -217,19 +217,19 @@ export const getTeachingQuestionsForPresentation = async (
 ): Promise<any[]> => {
   try {
     const { data, error } = await supabase
-      .from('teaching_questions')
-      .select('*')
-      .eq('presentation_id', presentationId)
-      .order('created_at', { ascending: false });
-    
+      .from("teaching_questions")
+      .select("*")
+      .eq("presentation_id", presentationId)
+      .order("created_at", { ascending: false });
+
     if (error) {
-      console.error('Error fetching teaching questions:', error);
+      console.error("Error fetching teaching questions:", error);
       return [];
     }
-    
+
     return data || [];
   } catch (err) {
-    console.error('Exception fetching teaching questions:', err);
+    console.error("Exception fetching teaching questions:", err);
     return [];
   }
 };
@@ -240,25 +240,25 @@ export const getTeachingFeedbackForPresentation = async (
 ): Promise<any[]> => {
   try {
     let query = supabase
-      .from('teaching_feedback')
-      .select('*')
-      .eq('presentation_id', presentationId);
-      
-    // Filter by card index if provided
+      .from("teaching_feedback")
+      .select("*")
+      .eq("presentation_id", presentationId)
+      .order("created_at", { ascending: false });
+
     if (cardIndex !== undefined) {
-      query = query.eq('card_index', cardIndex);
+      query = query.eq("card_index", cardIndex);
     }
-    
-    const { data, error } = await query.order('created_at', { ascending: false });
-    
+
+    const { data, error } = await query;
+
     if (error) {
-      console.error('Error fetching teaching feedback:', error);
+      console.error("Error fetching teaching feedback:", error);
       return [];
     }
-    
+
     return data || [];
   } catch (err) {
-    console.error('Exception fetching teaching feedback:', err);
+    console.error("Exception fetching teaching feedback:", err);
     return [];
   }
 };
@@ -268,32 +268,30 @@ export const subscribeToTeachingFeedback = (
   callback: (feedback: any) => void,
   cardIndex?: number
 ) => {
-  // Create a filter including the card index if provided
-  const filter = cardIndex !== undefined 
-    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
-    : `presentation_id=eq.${presentationId}`;
-    
+  let channel = `teaching_feedback:${presentationId}`;
+  if (cardIndex !== undefined) {
+    channel += `:${cardIndex}`;
+  }
+
+  let filter = `presentation_id=eq.${presentationId}`;
+  if (cardIndex !== undefined) {
+    filter += `,card_index=eq.${cardIndex}`;
+  }
+
   return supabase
-    .channel('teaching_feedback')
+    .channel(channel)
     .on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'teaching_feedback',
+        event: "INSERT",
+        schema: "public",
+        table: "teaching_feedback",
         filter,
       },
-      (payload) => callback(payload.new)
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'teaching_feedback',
-        filter,
-      },
-      (payload) => callback(payload.new)
+      (payload) => {
+        console.log("New teaching feedback:", payload);
+        callback(payload.new);
+      }
     )
     .subscribe();
 };
@@ -304,18 +302,19 @@ export const subscribeToTeachingQuestions = (
   cardIndex?: number
 ) => {
   // Create a filter including the card index if provided
-  const filter = cardIndex !== undefined 
-    ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
-    : `presentation_id=eq.${presentationId}`;
-    
+  const filter =
+    cardIndex !== undefined
+      ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
+      : `presentation_id=eq.${presentationId}`;
+
   return supabase
-    .channel('teaching_questions')
+    .channel("teaching_questions")
     .on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'teaching_questions',
+        event: "INSERT",
+        schema: "public",
+        table: "teaching_questions",
         filter,
       },
       (payload) => callback(payload.new)
@@ -330,19 +329,28 @@ export const getCardFeedbackByStudent = async (
 ): Promise<any[]> => {
   try {
     const { data, error } = await supabase
-      .from('teaching_feedback')
-      .select('*')
-      .eq('presentation_id', presentationId)
-      .eq('card_index', cardIndex);
-      
+      .from("teaching_feedback")
+      .select("*")
+      .eq("presentation_id", presentationId)
+      .eq("card_index", cardIndex)
+      .order("created_at", { ascending: false });
+
     if (error) {
-      console.error('Error fetching card feedback by student:', error);
+      console.error("Error fetching card feedback by student:", error);
       return [];
     }
-    
+
     return data || [];
   } catch (err) {
-    console.error('Exception fetching card feedback by student:', err);
+    console.error("Exception fetching card feedback by student:", err);
     return [];
   }
+};
+
+export const groupFeedbackByType = (feedback: Array<{ value: string }>) => {
+  return feedback.reduce((acc, item) => {
+    const type = item.value;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 };
