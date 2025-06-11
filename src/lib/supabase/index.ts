@@ -27,6 +27,7 @@ export {
   subscribeToSessionParticipants,
   checkParticipantStatus,
   approveParticipant,
+  rejectParticipant,
   subscribeToParticipantStatus,
 } from "./sessions";
 
