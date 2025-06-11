@@ -1,47 +1,18 @@
-import React, { useState } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "@hello-pangea/dnd";
-import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
-import type { LessonCard, ProcessedLesson, CardAttachment } from "../lib/types";
-import {
-  Plus,
-  X,
-  GripVertical,
-  Edit,
-  Save,
-  BookOpen,
-  Sparkles,
-  Target,
-  Loader2,
-  CheckSquare,
-  Split,
-  UserCircle,
-  GraduationCap,
-  PencilRuler,
-  Lightbulb,
-  BookMarked,
-  Wand2,
-  FileEdit,
-  ListChecks,
-  Paperclip,
-  Image as ImageIcon,
-  Link,
-  File,
-  Trash2,
-  Users,
-  Upload,
-  RefreshCw,
-} from "lucide-react";
-import { sanitizeHtml } from "../lib/utils";
+import React from "react";
+import { useTeachingCardsManager } from "../hooks/useTeachingCardsManager";
 import { useLessonCardAI } from "../hooks/useLessonCardAI";
+import { CardCreationToolbar } from "./cards/CardCreationToolbar";
+import { CardsContainer } from "./cards/CardsContainer";
 import { FileUploadModal } from "./FileUploadModal";
-import { AttachmentDisplay } from "./AttachmentDisplay";
 import { DifferentiatedCardsSelector } from "./DifferentiatedCardsSelector";
+import {
+  createObjectiveCard,
+  createMaterialsCard,
+  createTopicBackgroundCard,
+  createSectionCard,
+  createActivityCard,
+} from "../lib/cardFactory";
+import type { LessonCard, ProcessedLesson } from "../lib/types";
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -54,723 +25,110 @@ export function TeachingCardsManager({
   selectedCards,
   onSave,
 }: TeachingCardsManagerProps) {
-  const [editingCardId, setEditingCardId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [editDuration, setEditDuration] = useState("");
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [currentCardForAttachment, setCurrentCardForAttachment] = useState<
-    string | null
-  >(null);
-  const [showDifferentiatedSelector, setShowDifferentiatedSelector] =
-    useState(false);
+  // Use our custom hooks for state management
+  const cardManager = useTeachingCardsManager(selectedCards, lesson, onSave);
 
   // Use our custom AI hook with the direct onSave callback
-  const {
-    processingCardId,
-    processingAllCards,
-    generatingCriteria,
-    generatingDifferentiated,
-    differentiatingCardId,
-    improvingIntentions,
-    successCriteria,
-    criteriaMessage,
-    intentionsMessage,
-    makeCardStudentFriendly,
-    makeAllCardsStudentFriendly,
-    handleGenerateSuccessCriteria,
-    handleImproveLearningIntentions,
-    createDifferentiatedCard,
-    createDifferentiatedCards,
-  } = useLessonCardAI(selectedCards, lesson, onSave);
+  const aiTools = useLessonCardAI(selectedCards, lesson, onSave);
 
-  // Handle drag end event with error handling
-  const handleDragEnd = (result: DropResult) => {
-    try {
-      // Dropped outside the list
-      if (!result.destination) {
-        return;
-      }
-
-      const reorderedCards = Array.from(selectedCards);
-      const [removed] = reorderedCards.splice(result.source.index, 1);
-      reorderedCards.splice(result.destination.index, 0, removed);
-
-      onSave(reorderedCards);
-    } catch (error) {
-      console.error("Error handling drag end:", error);
-    }
-  };
-
-  // Add a new custom card
-  const handleAddCustomCard = () => {
-    const newCard: LessonCard = {
-      id: crypto.randomUUID(),
-      type: "custom",
-      title: "Custom Card",
-      content: "Enter content here...",
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: [],
-    };
-
+  // Create card functions using the factory
+  const createObjectiveCardHandler = () => {
+    const newCard = createObjectiveCard(lesson, aiTools.successCriteria);
     onSave([...selectedCards, newCard]);
-
-    // Start editing the new card
-    setEditingCardId(newCard.id);
-    setEditTitle(newCard.title);
-    setEditContent(newCard.content);
-    setEditDuration("");
   };
 
-  // Remove a card
-  const handleRemoveCard = (id: string) => {
-    onSave(selectedCards.filter((card) => card.id !== id));
-
-    // If we're editing this card, stop editing
-    if (editingCardId === id) {
-      setEditingCardId(null);
-    }
+  const createMaterialsCardHandler = () => {
+    const newCard = createMaterialsCard(lesson);
+    onSave([...selectedCards, newCard]);
   };
 
-  // Start editing a card
-  const handleEditCard = (card: LessonCard) => {
-    setEditingCardId(card.id);
-    setEditTitle(card.title);
-    setEditContent(card.content);
-    setEditDuration(card.duration || "");
+  const createTopicBackgroundCardHandler = () => {
+    const newCard = createTopicBackgroundCard(lesson);
+    onSave([...selectedCards, newCard]);
   };
 
-  // Save edited card
-  const handleSaveEdit = (id: string) => {
-    const updatedCards = selectedCards.map((card) => {
-      if (card.id === id) {
-        return {
-          ...card,
-          title: editTitle,
-          content: editContent,
-          duration: editDuration.trim() ? editDuration : null,
-        };
-      }
-      return card;
+  const createSectionCardsHandler = () => {
+    const newCards = lesson.sections.flatMap((section) => {
+      const sectionCard = createSectionCard(section, lesson);
+      const activityCards =
+        section.activities?.map((activity, index) =>
+          createActivityCard(activity, index, section.id, section.title)
+        ) || [];
+      return [sectionCard, ...activityCards];
     });
-
-    onSave(updatedCards);
-    setEditingCardId(null);
-  };
-
-  // Create an objective card from lesson
-  const createObjectiveCard = () => {
-    const objectives = lesson.objectives.map((obj) => `• ${obj}`).join("\n");
-
-    // Add success criteria if available
-    const content =
-      successCriteria.length > 0
-        ? `${objectives}\n\n**Success Criteria:**\n${successCriteria
-            .map((sc) => `• ${sc}`)
-            .join("\n")}`
-        : objectives;
-
-    const newCard: LessonCard = {
-      id: crypto.randomUUID(),
-      type: "objective",
-      title: "Learning Intentions and Success Criteria",
-      content: content,
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: [],
-    };
-
-    onSave([...selectedCards, newCard]);
-  };
-
-  // Create a materials card from lesson
-  const createMaterialsCard = () => {
-    const newCard: LessonCard = {
-      id: crypto.randomUUID(),
-      type: "material",
-      title: "Required Materials",
-      content: lesson.materials
-        .filter((m) => m.trim())
-        .map((mat) => `• ${mat}`)
-        .join("\n"),
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: [],
-    };
-
-    onSave([...selectedCards, newCard]);
-  };
-
-  // Create a topic background card from lesson
-  const createTopicBackgroundCard = () => {
-    if (!lesson.topic_background) return;
-
-    const newCard: LessonCard = {
-      id: crypto.randomUUID(),
-      type: "topic_background",
-      title: "Topic Background",
-      content: lesson.topic_background,
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: [],
-    };
-
-    onSave([...selectedCards, newCard]);
-  };
-
-  // Toggle a card between teacher and student versions
-  const toggleCardMode = (cardId: string) => {
-    const cardIndex = selectedCards.findIndex((card) => card.id === cardId);
-    if (cardIndex === -1) return;
-
-    const card = selectedCards[cardIndex];
-
-    // Only toggle if we have both versions
-    if (!card.studentFriendly || !card.originalContent) return;
-
-    const updatedCards = [...selectedCards];
-    updatedCards[cardIndex] = {
-      ...card,
-      content: card.studentFriendly ? card.originalContent : card.content,
-      studentFriendly: !card.studentFriendly,
-      isDifferentiated: false, // Reset differentiated state when toggling
-    };
-
-    onSave(updatedCards);
-  };
-
-  // Toggle a card between standard and differentiated versions
-  const toggleDifferentiated = (cardId: string) => {
-    const cardIndex = selectedCards.findIndex((card) => card.id === cardId);
-    if (cardIndex === -1) return;
-
-    const card = selectedCards[cardIndex];
-
-    // Only toggle if differentiated content exists
-    if (!card.differentiatedContent) return;
-
-    // Keep track of which content we should revert to
-    const regularContent = card.isDifferentiated
-      ? card.studentFriendly
-        ? card.content
-        : card.originalContent || card.content
-      : card.content;
-
-    const updatedCards = [...selectedCards];
-    updatedCards[cardIndex] = {
-      ...card,
-      content: card.isDifferentiated
-        ? regularContent
-        : card.differentiatedContent,
-      isDifferentiated: !card.isDifferentiated,
-    };
-
-    onSave(updatedCards);
-  };
-
-  // Show file upload modal for a specific card
-  const handleAddAttachment = (cardId: string) => {
-    setCurrentCardForAttachment(cardId);
-    setShowUploadModal(true);
-  };
-
-  // Handle attachment added from the upload modal
-  const handleAttachmentAdded = (attachment: CardAttachment) => {
-    if (!currentCardForAttachment) return;
-
-    const updatedCards = selectedCards.map((card) => {
-      if (card.id === currentCardForAttachment) {
-        return {
-          ...card,
-          attachments: [...(card.attachments || []), attachment],
-        };
-      }
-      return card;
-    });
-
-    onSave(updatedCards);
-    setShowUploadModal(false);
-    setCurrentCardForAttachment(null);
-  };
-
-  // Handle attachment deletion
-  const handleDeleteAttachment = (cardId: string, attachmentId: string) => {
-    const updatedCards = selectedCards.map((card) => {
-      if (card.id === cardId) {
-        return {
-          ...card,
-          attachments: (card.attachments || []).filter(
-            (a) => a.id !== attachmentId
-          ),
-        };
-      }
-      return card;
-    });
-
-    onSave(updatedCards);
-  };
-
-  // Render a card based on its state (normal or editing)
-  const renderCard = (card: LessonCard, index: number) => {
-    const isEditing = editingCardId === card.id;
-    const isProcessing = processingCardId === card.id;
-    const isDifferentiating = differentiatingCardId === card.id;
-
-    return (
-      <Draggable key={card.id} draggableId={card.id} index={index}>
-        {(provided) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            className="mb-4 rounded-xl bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200"
-          >
-            {/* Always render the header with drag handle */}
-            <div className="flex items-center p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-              <div
-                {...provided.dragHandleProps}
-                className="mr-2 cursor-move hover:text-teal-600 transition-colors"
-                style={{ cursor: "grab" }}
-                onMouseDown={(e) => (e.currentTarget.style.cursor = "grabbing")}
-                onMouseUp={(e) => (e.currentTarget.style.cursor = "grab")}
-              >
-                <GripVertical className="h-5 w-5 text-gray-400 hover:text-teal-600" />
-              </div>
-
-              <div className="flex-grow">
-                {isEditing ? (
-                  <Input
-                    label="Title"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                  />
-                ) : (
-                  <>
-                    <h3 className="font-medium text-gray-900">{card.title}</h3>
-                    {card.duration && (
-                      <div className="text-sm text-gray-500">
-                        {card.duration}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-              <div className="flex gap-1">
-                {!isEditing && card.studentFriendly && (
-                  <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-md mr-2">
-                    Student-Friendly
-                  </span>
-                )}
-                {!isEditing && card.isDifferentiated && (
-                  <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-md mr-2">
-                    Differentiated
-                  </span>
-                )}
-                {!isEditing && (
-                  <>
-                    <button
-                      onClick={() =>
-                        isProcessing ? null : makeCardStudentFriendly(card.id)
-                      }
-                      className={`p-1 text-gray-500 hover:text-indigo-600 rounded-full ${
-                        isProcessing ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                      title="Make student-friendly"
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Wand2 className="h-4 w-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() =>
-                        isDifferentiating
-                          ? null
-                          : createDifferentiatedCard(card.id)
-                      }
-                      className={`p-1 text-gray-500 hover:text-purple-600 rounded-full ${
-                        isDifferentiating ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                      title="Create differentiated version"
-                      disabled={isDifferentiating}
-                    >
-                      {isDifferentiating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Split className="h-4 w-4" />
-                      )}
-                    </button>
-                    {card.studentFriendly && card.originalContent && (
-                      <button
-                        onClick={() => toggleCardMode(card.id)}
-                        className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
-                        title={
-                          card.studentFriendly
-                            ? "Show teacher version"
-                            : "Show student version"
-                        }
-                      >
-                        {card.studentFriendly ? (
-                          <GraduationCap className="h-4 w-4" />
-                        ) : (
-                          <UserCircle className="h-4 w-4" />
-                        )}
-                      </button>
-                    )}
-                    {card.differentiatedContent && (
-                      <button
-                        onClick={() => toggleDifferentiated(card.id)}
-                        className="p-1 text-gray-500 hover:text-purple-600 rounded-full"
-                        title={
-                          card.isDifferentiated
-                            ? "Show standard version"
-                            : "Show differentiated version"
-                        }
-                      >
-                        {card.isDifferentiated ? (
-                          <BookOpen className="h-4 w-4" />
-                        ) : (
-                          <BookMarked className="h-4 w-4" />
-                        )}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleEditCard(card)}
-                      className="p-1 text-gray-500 hover:text-indigo-600 rounded-full"
-                      title="Edit card"
-                    >
-                      <PencilRuler className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleRemoveCard(card.id)}
-                      className="p-1 text-gray-500 hover:text-red-600 rounded-full"
-                      title="Remove card"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Card content */}
-            {isEditing ? (
-              <div className="p-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Content
-                  </label>
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal focus:border-teal"
-                    rows={6}
-                    placeholder="Enter card content... You can use markdown formatting."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    <p>
-                      Supports Markdown: **bold**, *italic*, # Heading, etc.
-                    </p>
-                    <p>URLs will be automatically converted to links</p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <Input
-                    label="Duration (optional)"
-                    value={editDuration}
-                    onChange={(e) => setEditDuration(e.target.value)}
-                    placeholder="e.g., 10 minutes"
-                  />
-                </div>
-
-                {/* Attachments section */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Attachments
-                  </label>
-
-                  <div className="space-y-2">
-                    {(card.attachments || []).map((attachment) => (
-                      <AttachmentDisplay
-                        key={attachment.id}
-                        attachment={attachment}
-                        isEditing={true}
-                        onDelete={(attachmentId) =>
-                          handleDeleteAttachment(card.id, attachmentId)
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddAttachment(card.id)}
-                      className="border-teal text-teal hover:bg-teal/10"
-                    >
-                      <File className="h-4 w-4 mr-1.5" />
-                      Add File
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddAttachment(card.id)}
-                      className="border-teal text-teal hover:bg-teal/10"
-                    >
-                      <ImageIcon className="h-4 w-4 mr-1.5" />
-                      Add Image
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddAttachment(card.id)}
-                      className="border-teal text-teal hover:bg-teal/10"
-                    >
-                      <Link className="h-4 w-4 mr-1.5" />
-                      Add Link
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingCardId(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => handleSaveEdit(card.id)}
-                    className="bg-teal hover:bg-teal/90 text-white"
-                  >
-                    <Save className="h-4 w-4 mr-1" />
-                    Save
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4">
-                <div className="text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-64">
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeHtml(card.content),
-                    }}
-                  ></div>
-                </div>
-
-                {/* Render attachments if any */}
-                {card.attachments && card.attachments.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-medium text-gray-700 flex items-center mb-2">
-                      <Paperclip className="h-4 w-4 mr-1.5 text-teal" />
-                      Attachments ({card.attachments.length})
-                    </h4>
-                    <div className="space-y-3">
-                      {card.attachments.map((attachment) => (
-                        <AttachmentDisplay
-                          key={attachment.id}
-                          attachment={attachment}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </Draggable>
-    );
+    onSave([...selectedCards, ...newCards]);
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6 border border-teal/20">
-      <div className="flex justify-between items-center flex-wrap">
-        <h2 className="text-lg font-semibold text-teal">Teaching Cards</h2>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleImproveLearningIntentions}
-            disabled={improvingIntentions || lesson.objectives.length === 0}
-            className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
-          >
-            {improvingIntentions ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Focus Learning Intentions
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateSuccessCriteria}
-            disabled={generatingCriteria}
-            className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
-          >
-            {generatingCriteria ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ListChecks className="h-4 w-4" />
-            )}
-            Generate Success Criteria
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={createObjectiveCard}
-            className="border-teal text-teal hover:bg-teal/10"
-          >
-            <Target className="h-4 w-4 mr-1" />
-            Add Learning Intentions
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={createMaterialsCard}
-            className="border-teal text-teal hover:bg-teal/10"
-          >
-            <Lightbulb className="h-4 w-4 mr-1" />
-            Add Materials
-          </Button>
-          {lesson.topic_background && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={createTopicBackgroundCard}
-              className="border-teal text-teal hover:bg-teal/10"
-            >
-              <BookOpen className="h-4 w-4 mr-1" />
-              Add Background
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddCustomCard}
-            className="border-teal text-teal hover:bg-teal/10"
-          >
-            <FileEdit className="h-4 w-4 mr-1" />
-            Add Custom Card
-          </Button>
-        </div>
-      </div>
-
-      {criteriaMessage && (
-        <div
-          className={`p-3 rounded-lg ${
-            criteriaMessage.type === "success"
-              ? "bg-green-50 text-green-700"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
-          {criteriaMessage.text}
-        </div>
-      )}
-
-      {intentionsMessage && (
-        <div
-          className={`p-3 rounded-lg ${
-            intentionsMessage.type === "success"
-              ? "bg-green-50 text-green-700"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
-          {intentionsMessage.text}
-        </div>
-      )}
-
-      <div className="border-t pt-4">
-        <div className="flex justify-between items-center mb-4 flex-wrap">
-          <h3 className="font-medium">
-            Card Sequence ({selectedCards.length} cards)
-          </h3>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={makeAllCardsStudentFriendly}
-              disabled={processingAllCards || selectedCards.length === 0}
-              className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
-            >
-              {processingAllCards ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <UserCircle className="h-4 w-4" />
-                  Make Accessible for Students
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDifferentiatedSelector(true)}
-              disabled={selectedCards.length === 0}
-              className="flex items-center gap-1 border-teal text-teal hover:bg-teal/10"
-            >
-              <BookMarked className="h-4 w-4" />
-              Choose Cards to Differentiate
-            </Button>
-          </div>
-        </div>
-        {selectedCards.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
-            No cards added yet. Add cards from the lesson plan or create custom
-            cards.
-          </div>
-        ) : (
-          <DragDropContext
-            onDragEnd={handleDragEnd}
-            key={`dnd-${selectedCards.length}`}
-          >
-            <Droppable droppableId="cards">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-2"
-                >
-                  {selectedCards.map((card, index) => renderCard(card, index))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-        )}
-      </div>
-
-      {/* File upload modal */}
-      <FileUploadModal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onAttachmentAdded={handleAttachmentAdded}
+    <div className="space-y-8">
+      {/* Card Creation Toolbar */}
+      <CardCreationToolbar
+        lesson={lesson}
+        successCriteria={aiTools.successCriteria}
+        criteriaMessage={aiTools.criteriaMessage?.text || ""}
+        intentionsMessage={aiTools.intentionsMessage?.text || ""}
+        generatingCriteria={aiTools.generatingCriteria}
+        improvingIntentions={aiTools.improvingIntentions}
+        processingAllCards={aiTools.processingAllCards}
+        onCreateObjectiveCard={createObjectiveCardHandler}
+        onCreateMaterialsCard={createMaterialsCardHandler}
+        onCreateTopicBackgroundCard={createTopicBackgroundCardHandler}
+        onCreateSectionCards={createSectionCardsHandler}
+        onAddCustomCard={cardManager.handleAddCustomCard}
+        onGenerateSuccessCriteria={aiTools.handleGenerateSuccessCriteria}
+        onImproveLearningIntentions={aiTools.handleImproveLearningIntentions}
+        onMakeAllStudentFriendly={aiTools.makeAllCardsStudentFriendly}
+        onCreateDifferentiatedCards={aiTools.createDifferentiatedCards}
+        onToggleDifferentiatedSelector={() =>
+          cardManager.setShowDifferentiatedSelector(
+            !cardManager.showDifferentiatedSelector
+          )
+        }
       />
 
-      {/* Differentiated cards selector modal */}
-      {showDifferentiatedSelector && (
+      {/* Cards Container */}
+      <CardsContainer
+        cards={selectedCards}
+        editingCardId={cardManager.editingCardId}
+        editTitle={cardManager.editTitle}
+        editContent={cardManager.editContent}
+        editDuration={cardManager.editDuration}
+        processingCardId={aiTools.processingCardId}
+        differentiatingCardId={aiTools.differentiatingCardId}
+        onDragEnd={cardManager.handleDragEnd}
+        onEdit={cardManager.handleEditCard}
+        onSave={cardManager.handleSaveEdit}
+        onCancel={cardManager.handleCancelEdit}
+        onRemove={cardManager.handleRemoveCard}
+        onToggleMode={cardManager.toggleCardMode}
+        onToggleDifferentiated={cardManager.toggleDifferentiated}
+        onMakeStudentFriendly={aiTools.makeCardStudentFriendly}
+        onCreateDifferentiated={aiTools.createDifferentiatedCard}
+        onAddAttachment={cardManager.handleAddAttachment}
+        onDeleteAttachment={cardManager.handleDeleteAttachment}
+        onTitleChange={cardManager.setEditTitle}
+        onContentChange={cardManager.setEditContent}
+        onDurationChange={cardManager.setEditDuration}
+      />
+
+      {/* Modals */}
+      {cardManager.showUploadModal && (
+        <FileUploadModal
+          isOpen={cardManager.showUploadModal}
+          onClose={() => cardManager.setShowUploadModal(false)}
+          onAttachmentAdded={cardManager.handleAttachmentAdded}
+        />
+      )}
+
+      {cardManager.showDifferentiatedSelector && (
         <DifferentiatedCardsSelector
           cards={selectedCards}
           lesson={lesson}
           onApply={(updatedCards) => {
             onSave(updatedCards);
-            setShowDifferentiatedSelector(false);
+            cardManager.setShowDifferentiatedSelector(false);
           }}
-          onCancel={() => setShowDifferentiatedSelector(false)}
+          onCancel={() => cardManager.setShowDifferentiatedSelector(false)}
         />
       )}
     </div>
