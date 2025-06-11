@@ -1,4 +1,3 @@
-import React from "react";
 import { ThumbsUp, ThumbsDown, Clock, Users } from "lucide-react";
 import { formatTime } from "../../lib/utils";
 

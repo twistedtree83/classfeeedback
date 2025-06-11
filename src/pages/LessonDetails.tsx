@@ -7,7 +7,7 @@ import { LessonPlanDisplay } from "../components/LessonPlanDisplay";
 import { TeachingCardsManager } from "../components/TeachingCardsManager";
 import { Button } from "../components/ui/Button";
 import type { LessonCard } from "../lib/types";
-import { createLessonPresentation } from "../lib/supabase";
+import { createLessonPresentation, createSession } from "../lib/supabase";
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +18,6 @@ export function LessonDetails() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStartingTeaching, setIsStartingTeaching] = useState(false);
-  const [showTeacherPrompt, setShowTeacherPrompt] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -100,14 +99,23 @@ export function LessonDetails() {
         );
       }
 
+      // Create a session first
+      const session = await createSession(teacherName);
+      if (!session) {
+        throw new Error("Failed to create teaching session");
+      }
+
+      // Now create the lesson presentation with all required parameters
       const presentation = await createLessonPresentation(
+        session.id,
+        session.code,
         lesson.id,
         selectedCards,
         teacherName
       );
 
       if (!presentation) {
-        throw new Error("Failed to create teaching session");
+        throw new Error("Failed to create lesson presentation");
       }
 
       navigate(`/teach/${presentation.session_code}`);
