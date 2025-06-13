@@ -72,14 +72,12 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
         const currentStatus = await checkParticipantStatus(state.participantId!);
         console.log("Current participant status:", currentStatus);
         
-        if (currentStatus) {
-          setState(prev => ({ ...prev, status: currentStatus as 'pending' | 'approved' | 'rejected' }));
-          
-          if (currentStatus === 'approved') {
-            processApproval();
-          } else if (currentStatus === 'rejected') {
-            handleRejection();
-          }
+        if (currentStatus === 'approved') {
+          processApproval();
+        } else if (currentStatus === 'rejected') {
+          handleRejection();
+        } else if (currentStatus === 'pending') {
+          setState(prev => ({ ...prev, status: 'pending' }));
         }
       } catch (err) {
         console.error('Error in initial status check:', err);
@@ -98,27 +96,43 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
         
         if (processedApproval.current) return;
         
-        setState(prev => ({ ...prev, status: newStatus as 'pending' | 'approved' | 'rejected' }));
-        
         if (newStatus === 'approved') {
           processApproval();
         } else if (newStatus === 'rejected') {
           handleRejection();
+        } else if (newStatus === 'pending') {
+          setState(prev => ({ ...prev, status: 'pending' }));
         }
       }
     );
     
+    // Set up polling as a fallback
+    const pollingInterval = setInterval(async () => {
+      if (processedApproval.current || state.status !== 'pending') return;
+      
+      try {
+        const currentStatus = await checkParticipantStatus(state.participantId!);
+        if (currentStatus === 'approved') {
+          processApproval();
+        } else if (currentStatus === 'rejected') {
+          handleRejection();
+        }
+      } catch (err) {
+        console.error('Error checking participant status:', err);
+      }
+    }, 5000);
+    
     return () => {
-      console.log("Cleaning up participant status subscription");
+      console.log("Cleaning up participant status subscription and polling");
       subscription.unsubscribe();
+      clearInterval(pollingInterval);
     };
-  }, [state.participantId, sessionCode]);
+  }, [state.participantId, sessionCode, state.status]);
 
   // Handle successful approval
   const processApproval = () => {
     if (processedApproval.current) return;
     
-    console.log("Processing approval...");
     processedApproval.current = true;
     
     setState(prev => ({ 
@@ -182,7 +196,7 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
       const session = await getSessionByCode(sessionCode.trim().toUpperCase());
       
       if (!session) {
-        throw new Error('Session not found or has ended');
+        throw new Error('Invalid class code or expired session');
       }
 
       console.log("Session found:", session);
@@ -194,7 +208,7 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
       );
       
       if (!participant) {
-        throw new Error('Failed to join session');
+        throw new Error('Failed to join session. Please try again.');
       }
       
       console.log("Added as participant:", participant);
@@ -208,7 +222,6 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
       url.searchParams.set('name', studentName.trim());
       window.history.pushState({}, '', url);
       
-      processingJoin.current = false;
     } catch (err) {
       console.error('Error joining session:', err);
       setState(prev => ({ 

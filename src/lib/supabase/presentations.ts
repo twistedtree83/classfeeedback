@@ -12,6 +12,7 @@ export interface LessonPresentation {
   created_at: string;
   realtime_enabled: boolean;
   wordle_word?: string | null;
+  lesson_state: boolean; // Added lesson_state field
 }
 
 export const createLessonPresentation = async (
@@ -36,6 +37,7 @@ export const createLessonPresentation = async (
       lesson_id: lessonId,
       cards: cardsData, // This will be stored as JSONB in Postgres
       current_card_index: -1, // Start in waiting room (-1), lesson begins at index 0
+      lesson_state: false, // Start with lesson not started
       active: true,
       realtime_enabled: true,
       wordle_word: wordleWord
@@ -61,6 +63,7 @@ export const createLessonPresentation = async (
     const parsedData = {
       ...data,
       cards: Array.isArray(data.cards) ? data.cards : [],
+      lesson_state: data.lesson_state || false, // Ensure lesson_state is included
     };
 
     return parsedData;
@@ -100,7 +103,8 @@ export const getLessonPresentationByCode = async (
         ? JSON.parse(data.cards) 
         : Array.isArray(data.cards) 
           ? data.cards 
-          : []
+          : [],
+      lesson_state: data.lesson_state || false, // Ensure lesson_state is included
     };
 
     console.log("Parsed presentation data:", parsedData);
@@ -117,6 +121,7 @@ export const updateLessonPresentationCardIndex = async (
   newIndex: number
 ): Promise<boolean> => {
   try {
+    // Only update the card index, not the lesson state
     const { error } = await supabase
       .from("lesson_presentations")
       .update({ current_card_index: newIndex })
@@ -130,6 +135,34 @@ export const updateLessonPresentationCardIndex = async (
     return true;
   } catch (err) {
     console.error("Exception updating card index:", err);
+    return false;
+  }
+};
+
+// New function to update both lesson state and card index in one operation
+export const updateLessonPresentation = async (
+  presentationId: string,
+  updates: {
+    current_card_index?: number;
+    lesson_state?: boolean;
+    active?: boolean;
+    realtime_enabled?: boolean;
+  }
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("lesson_presentations")
+      .update(updates)
+      .eq("id", presentationId);
+
+    if (error) {
+      console.error("Error updating lesson presentation:", error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Exception updating lesson presentation:", err);
     return false;
   }
 };
@@ -181,7 +214,8 @@ export const subscribeToLessonPresentation = (
               ? JSON.parse(payload.new.cards)
               : Array.isArray(payload.new.cards) 
                 ? payload.new.cards 
-                : []
+                : [],
+            lesson_state: payload.new.lesson_state || false, // Ensure lesson_state is included
           } as LessonPresentation;
           callback(parsedPayload);
         }

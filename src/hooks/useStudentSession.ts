@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   getLessonPresentationByCode,
   subscribeToLessonPresentation,
@@ -30,40 +30,31 @@ export function useStudentSession(code: string, studentName: string) {
   // Function to update the current card based on index
   const updateCurrentCard = useCallback(
     (presentation: LessonPresentation, index: number) => {
-      console.log(`Attempting to update card to index: ${index}, lesson started: ${lessonStarted}`);
-      
-      // Teacher is explicitly keeping students in waiting room state
-      // current_card_index = -1 is the teacher's explicit signal to show waiting room
+      // If index is -1, we're in waiting room state
       if (index === -1) {
-        console.log("Card index is -1, showing waiting room");
         setCurrentCard(null);
         setCurrentCardAttachments([]);
         setLessonStarted(false);
         return;
       }
 
-      // Check if cards exist and index is valid
       if (
         !presentation?.cards ||
         !Array.isArray(presentation.cards) ||
-        presentation.cards.length === 0 ||
         index < 0 ||
         index >= presentation.cards.length
       ) {
-        console.log("Invalid card index or no cards available");
         setCurrentCard(null);
         setCurrentCardAttachments([]);
         return;
       }
 
-      // At this point, we have a valid card index and cards array
-      // So the teacher has actually started the lesson
       const card = presentation.cards[index];
       console.log(`Updating to card ${index}:`, card);
 
       setCurrentCard(card);
       setCurrentCardAttachments(card.attachments || []);
-      
+
       // Lesson has started when we have a valid card index (>= 0)
       setLessonStarted(true);
     },
@@ -97,30 +88,27 @@ export function useStudentSession(code: string, studentName: string) {
         console.log("Setting presentation data:", presentationData);
         setPresentation(presentationData);
 
-        // IMPORTANT: The waiting room state is controlled by the teacher
-        // The student should only see cards when the teacher has moved past the welcome card
-        // In the database, this is represented by current_card_index >= 0
+        // Check if the lesson has started based on lesson_state
+        const hasValidCards = presentationData.cards && 
+                             Array.isArray(presentationData.cards) && 
+                             presentationData.cards.length > 0;
         
-        const hasValidCards = 
-          presentationData.cards && 
-          Array.isArray(presentationData.cards) && 
-          presentationData.cards.length > 0;
+        // FIXED: Use lesson_state as the primary indicator, with current_card_index as fallback
+        const teacherHasStarted = presentationData.lesson_state === true;
         
-        const teacherHasStarted = presentationData.current_card_index >= 0;
-        
-        if (hasValidCards && teacherHasStarted) {
-          // Teacher has started the lesson and there are cards to show
+        // Set lesson started state based on lesson_state
+        setLessonStarted(teacherHasStarted);
+
+        // Set current card based on the current_card_index only if lesson has started
+        if (hasValidCards && teacherHasStarted && presentationData.current_card_index >= 0) {
           updateCurrentCard(
             presentationData,
             presentationData.current_card_index
           );
-          // The updateCurrentCard function will set lessonStarted to true
         } else {
           // We're in waiting room state
-          console.log("Initial state: waiting room");
           setCurrentCard(null);
           setCurrentCardAttachments([]);
-          setLessonStarted(false);
         }
 
         // Load existing messages
@@ -156,36 +144,40 @@ export function useStudentSession(code: string, studentName: string) {
       presentation.session_code,
       (updatedPresentation) => {
         console.log(
-          `Received presentation update: current_card_index=${updatedPresentation.current_card_index}, previous=${presentation.current_card_index}`
+          `Received presentation update: current_card_index=${updatedPresentation.current_card_index}, previous=${presentation.current_card_index}, lesson_state=${updatedPresentation.lesson_state}`
         );
 
-        // When the card index changes, update the presentation and current card immediately
+        // FIXED: Check for changes in both lesson_state and current_card_index
         if (
-          updatedPresentation.current_card_index !==
-          presentation.current_card_index
+          updatedPresentation.lesson_state !== presentation.lesson_state ||
+          updatedPresentation.current_card_index !== presentation.current_card_index
         ) {
           console.log(
-            `Card changed from ${presentation.current_card_index} to ${updatedPresentation.current_card_index}`
+            `State changed: lesson_state from ${presentation.lesson_state} to ${updatedPresentation.lesson_state}, card from ${presentation.current_card_index} to ${updatedPresentation.current_card_index}`
           );
 
           // Update current presentation state
           setPresentation((prev) => {
             if (!prev) return updatedPresentation;
 
-            // Create a copy of the updated presentation with the new card index
+            // Create a copy of the updated presentation with the new state
             const updated = {
               ...prev,
               current_card_index: updatedPresentation.current_card_index,
+              lesson_state: updatedPresentation.lesson_state
             };
 
-            // Update current card immediately
-            updateCurrentCard(updated, updatedPresentation.current_card_index);
+            // Check if the lesson has started based on lesson_state
+            const hasStarted = updatedPresentation.lesson_state === true;
+            setLessonStarted(hasStarted);
 
-            // Check if lesson has started or returned to waiting room
-            if (updatedPresentation.current_card_index >= 0) {
-              setLessonStarted(true);
+            // Update current card only if lesson has started and we have a valid index
+            if (hasStarted && updatedPresentation.current_card_index >= 0) {
+              updateCurrentCard(updated, updatedPresentation.current_card_index);
             } else {
-              setLessonStarted(false);
+              // We're in waiting room state
+              setCurrentCard(null);
+              setCurrentCardAttachments([]);
             }
 
             return updated;

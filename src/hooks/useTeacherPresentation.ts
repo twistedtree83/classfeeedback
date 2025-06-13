@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   getLessonPresentationByCode, 
   updateLessonPresentationCardIndex,
+  updateLessonPresentation,
   getSessionByCode, 
   getLessonPlanById, 
   LessonPresentation, 
@@ -129,7 +130,10 @@ Click "Ready to Go" to begin your lesson presentation.
       // Update database to -1 to indicate we're at the welcome card
       try {
         console.log(`Teacher going to welcome card, setting database to card -1`);
-        const success = await updateLessonPresentationCardIndex(presentation.id, -1);
+        const success = await updateLessonPresentation(presentation.id, {
+          current_card_index: -1,
+          lesson_state: false // Set lesson_state to false when going back to welcome card
+        });
         
         if (!success) {
           console.error('Failed to update card index');
@@ -163,10 +167,26 @@ Click "Ready to Go" to begin your lesson presentation.
     // Always update the database when moving forward, even from welcome card
     try {
       console.log(`Navigating from card ${actualCardIndex} to ${newActualIndex}`);
-      const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
       
-      if (!success) {
-        console.error('Failed to update card index in database');
+      // If moving from welcome card (index 0) to first real card (index 1),
+      // update both lesson_state and current_card_index in a single operation
+      if (displayedCardIndex === 0) {
+        console.log('Starting lesson - updating both lesson_state and card index');
+        const success = await updateLessonPresentation(presentation.id, {
+          current_card_index: newActualIndex,
+          lesson_state: true // Set lesson_state to true when starting the lesson
+        });
+        
+        if (!success) {
+          console.error('Failed to update lesson state and card index');
+        }
+      } else {
+        // For subsequent cards, just update the card index
+        const success = await updateLessonPresentationCardIndex(presentation.id, newActualIndex);
+        
+        if (!success) {
+          console.error('Failed to update card index in database');
+        }
       }
     } catch (err) {
       console.error('Error updating card index:', err);
