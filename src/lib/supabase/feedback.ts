@@ -162,16 +162,21 @@ export const subscribeToTeachingFeedback = (
 export const getCardFeedbackByStudent = async (
   presentationId: string,
   studentName: string,
-  cardIndex: number
+  cardIndex?: number
 ): Promise<TeachingFeedbackRow[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('teaching_feedback')
       .select('*')
       .eq('presentation_id', presentationId)
-      .eq('student_name', studentName)
-      .eq('card_index', cardIndex)
-      .order('created_at', { ascending: false });
+      .eq('student_name', studentName);
+
+    // Only add card_index filter if cardIndex is provided and is a valid number
+    if (cardIndex !== undefined) {
+      query = query.eq('card_index', cardIndex);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching card feedback by student:', error);
@@ -189,21 +194,18 @@ export const getCardFeedbackByStudent = async (
 export const getStudentFeedbackForCard = async (
   presentationId: string,
   studentName: string,
-  cardIndex: number
+  cardIndex?: number
 ): Promise<any | null> => {
   try {
-    // Build query dynamically to handle missing card_index column
     let query = supabase
       .from("teaching_feedback")
       .select("*")
       .eq("presentation_id", presentationId)
       .eq("student_name", studentName);
 
-    // Only add card_index filter if the column exists (this will fail gracefully if not)
-    try {
+    // Only add card_index filter if cardIndex is provided and is a valid number
+    if (cardIndex !== undefined) {
       query = query.eq("card_index", cardIndex);
-    } catch (columnError) {
-      console.warn("card_index column not found, fetching without card filter");
     }
 
     // Use maybeSingle() instead of single() to prevent 406 errors when no records are found
