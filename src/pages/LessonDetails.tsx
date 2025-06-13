@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getLessonPlan } from '../lib/supabase/lessonPlans';
+import { getLessonPlanById } from '../lib/supabase/lessonPlans';
 import { createSession } from '../lib/supabase/sessions';
 import { createLessonPresentation } from '../lib/supabase/presentations';
 import { useTeachingCardsManager } from '../hooks/useTeachingCardsManager';
@@ -26,7 +26,7 @@ export function LessonDetails() {
       if (!id) return;
       
       try {
-        const lessonData = await getLessonPlan(id);
+        const lessonData = await getLessonPlanById(id);
         setLesson(lessonData);
       } catch (err) {
         console.error('Error loading lesson:', err);
