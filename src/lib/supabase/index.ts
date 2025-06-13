@@ -1,74 +1,34 @@
-// Export all Supabase client functionality from a single entry point
+// Re-export all Supabase client functionality from a single entry point
 
 // Export the Supabase client itself
-export { supabase } from "./client";
+export { supabase } from './supabase/client';
 
 // Re-export types
-export * from "./types";
+export * from './supabase/types';
 
-// Re-export auth functions (excluding User type to avoid conflict)
-export {
-  getCurrentUser,
-  signUp,
-  signIn,
-  signOut,
-  resetPassword,
-  updatePassword,
-} from "./auth";
+// Re-export auth functions
+export * from './supabase/auth';
 
-// Re-export sessions functions (excluding types to avoid conflict)
-export {
-  createSession,
-  getSessionByCode,
-  endSession,
-  addSessionParticipant,
-  getParticipantsForSession,
-  getPendingParticipantsForSession,
-  subscribeToSessionParticipants,
-  checkParticipantStatus,
-  approveParticipant,
-  rejectParticipant,
-  subscribeToParticipantStatus,
-} from "./sessions";
+// Re-export sessions functions
+export * from './supabase/sessions';
 
-// Re-export lesson plans functions (excluding types to avoid conflict)
-export { getLessonPlanById } from "./lessonPlans";
+// Re-export lesson plans functions
+export * from './supabase/lessonPlans';
 
-// Re-export presentations functions (excluding types to avoid conflict)
-export {
-  createLessonPresentation,
-  getLessonPresentationByCode,
-  updateLessonPresentationCardIndex,
-  endLessonPresentation,
-  subscribeToLessonPresentation,
-} from "./presentations";
+// Re-export presentations functions
+export * from './supabase/presentations';
 
-// Re-export feedback functions (excluding types to avoid conflict)
-export {
-  submitFeedback,
-  getFeedbackForSession,
-  subscribeToSessionFeedback,
-  submitTeachingFeedback,
-  getStudentFeedbackForCard,
-  getTeachingFeedbackForPresentation,
-  subscribeToTeachingFeedback,
-  getCardFeedbackByStudent,
-} from "./feedback";
+// Re-export feedback functions
+export * from './supabase/feedback';
 
 // Re-export messages functions
-export {
-  sendTeacherMessage,
-  getTeacherMessagesForPresentation,
-  subscribeToTeacherMessages,
-} from "./messages";
+export * from './supabase/messages';
 
 // Re-export questions functions
-export {
-  submitTeachingQuestion,
-  markQuestionAsAnswered,
-  getTeachingQuestionsForPresentation,
-  subscribeToTeachingQuestions,
-} from "./questions";
+export * from './supabase/questions';
 
 // Re-export utility functions
 export { generateRandomName } from "./utils";
+
+// Re-export the groupFeedbackByType from utils
+export { groupFeedbackByType } from "../utils";

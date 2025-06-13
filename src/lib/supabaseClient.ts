@@ -4,3 +4,6 @@
 
 // Re-export everything from the new modular structure for backward compatibility
 export * from "./supabase";
+
+// Ensure compatibility with old imports for the groupFeedbackByType utility
+export { groupFeedbackByType } from "./utils";
