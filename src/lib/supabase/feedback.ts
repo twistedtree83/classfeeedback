@@ -98,7 +98,7 @@ export const submitTeachingFeedback = async (
           .eq("presentation_id", presentationId)
           .eq("student_name", studentName)
           .eq("card_index", cardIndex)
-          .single();
+          .maybeSingle();
 
         if (checkError && checkError.code !== "PGRST116") {
           // If it's a column error (406), continue without checking - column doesn't exist yet
@@ -224,7 +224,7 @@ export const getStudentFeedbackForCard = async (
       console.warn("card_index column not found, fetching without card filter");
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error && error.code !== "PGRST116") {
       console.error("Error fetching student feedback:", error);
