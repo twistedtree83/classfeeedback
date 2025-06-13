@@ -59,7 +59,7 @@ export const getSessionByCode = async (
       query = query.eq("active", true);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       console.error("Error fetching session:", error);
