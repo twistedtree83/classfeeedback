@@ -87,10 +87,16 @@ export const getLessonPresentationByCode = async (
       query = query.eq("active", true);
     }
 
-    const { data, error } = await query.single();
+    const { data, error } = await query.maybeSingle();
 
     if (error) {
       console.error("Error fetching lesson presentation:", error);
+      return null;
+    }
+
+    // If no data found, return null gracefully
+    if (!data) {
+      console.log("No lesson presentation found for code:", code);
       return null;
     }
 
