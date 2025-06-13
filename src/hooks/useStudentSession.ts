@@ -109,6 +109,9 @@ export function useStudentSession(code: string, studentName: string) {
                              
         const teacherHasStarted = presentationData.current_card_index >= 0;
         
+        // CRITICAL FIX: The teacher must explicitly start the lesson (index > -1)
+        // Even if the card index is 0, we need to make sure it wasn't just set
+        // as a default value but rather as an explicit teacher action
         if (hasValidCards && teacherHasStarted) {
           // Teacher has started the lesson and there are cards to show
           updateCurrentCard(
