@@ -23,3 +23,6 @@ export * from './supabase/feedback';
 
 // Re-export messages functions
 export * from './supabase/messages';
+
+// Re-export questions functions
+export * from './supabase/questions';
