@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getLessonPlanById } from '../lib/supabase';
-import { createSession } from '../lib/supabase';
-import { createLessonPresentation } from '../lib/supabase';
+import { getLessonPlanById, createSession, createLessonPresentation } from '../lib/supabase';
 import { generateWordleWord } from '../lib/ai';
 import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
 import { TeachingCardsManager } from '../components/TeachingCardsManager';
-import { Button } from '@/components/ui/Button';
 import type { LessonCard, ProcessedLesson } from '../lib/types';
-import { Sparkles, ExternalLink, FileText, Send, Loader2 } from 'lucide-react';
+import { BookOpen, ExternalLink, Send, Loader2, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from '@/components/ui/card';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { MainNav } from '@/components/MainNav';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -169,134 +187,165 @@ export function LessonDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 text-brand-primary animate-spin" />
-        <span className="ml-2 text-lg">Loading lesson details...</span>
+      <div className="container flex items-center justify-center min-h-screen py-8">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
+          <span className="text-lg text-muted-foreground">Loading lesson details...</span>
+        </div>
       </div>
     );
   }
 
   if (!lesson) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">Lesson not found</div>
+      <div className="container flex items-center justify-center min-h-screen py-8">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Lesson Not Found</CardTitle>
+            <CardDescription>
+              We couldn't find the lesson you're looking for.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <Link to="/planner">Return to Planner</Link>
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <Link to="/planner" className="text-brand-primary hover:text-dark-purple-400 flex items-center">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Back to Lesson Planner
-            </Link>
-            <h1 className="text-3xl font-bold text-dark-purple mt-2">{lesson.title}</h1>
-            <div className="flex items-center text-muted-foreground mt-1">
-              <FileText className="h-4 w-4 mr-1" />
-              <span className="mr-4">{lesson.level || 'No level specified'}</span>
-              <span>{lesson.duration || 'No duration specified'}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={startTeaching}
-              disabled={isStartingTeaching || selectedCards.length === 0}
-              className="bg-harvest-gold hover:bg-harvest-gold/90 text-dark-purple"
-              size="lg"
-            >
-              {isStartingTeaching ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Start Teaching
-                </>
-              )}
+    <div className="container py-8">
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="lg:flex-[2]">
+          <div className="flex items-center gap-2 mb-6">
+            <Button variant="ghost" size="sm" asChild className="h-8 gap-1">
+              <Link to="/planner">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back</span>
+              </Link>
             </Button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="mb-6 p-4 bg-red/10 border border-red/20 text-red rounded-xl">
-            {error}
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Lesson Content Column */}
-          <div className="lg:col-span-2">
-            <div className="glass backdrop-blur-sm border border-white/30 rounded-2xl shadow-large p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-dark-purple flex items-center">
-                  <Sparkles className="h-5 w-5 mr-2 text-harvest-gold" />
-                  Lesson Content
-                </h2>
+            <Separator orientation="vertical" className="h-6" />
+            
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold leading-tight tracking-tight">{lesson.title}</h1>
+              <div className="flex items-center gap-2 mt-1 text-muted-foreground text-sm">
+                <BookOpen className="h-4 w-4" />
+                <span>{lesson.level || 'No level specified'}</span>
+                <span>•</span>
+                <span>{lesson.duration || 'No duration specified'}</span>
               </div>
-              
-              <LessonPlanDisplay 
-                lesson={lesson}
-                onAddToTeaching={handleAddToTeaching}
-              />
             </div>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={startTeaching}
+                    disabled={isStartingTeaching || selectedCards.length === 0}
+                    size="lg"
+                  >
+                    {isStartingTeaching ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Start Teaching
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedCards.length === 0 
+                    ? "Add at least one card to start teaching" 
+                    : "Start a live teaching session with these cards"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
-          {/* Teaching Cards Column */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <div className="glass backdrop-blur-sm border border-white/30 rounded-2xl shadow-large p-6 mb-6">
-                <h2 className="text-2xl font-bold text-dark-purple mb-6">Teaching Cards</h2>
-                
-                <div className="space-y-4 mb-6">
-                  <p className="text-muted-foreground">
-                    Add cards from the lesson content to create your teaching sequence. 
-                    You can reorder them by dragging and customize them as needed.
-                  </p>
-                  
-                  {selectedCards.length === 0 && (
-                    <div className="bg-harvest-gold/10 text-harvest-gold p-4 rounded-lg border border-harvest-gold/30">
-                      No cards added yet. Click "Add to Teaching" in the lesson content to start building your presentation.
-                    </div>
-                  )}
-                </div>
+          {error && (
+            <Card className="mb-6 border-destructive/50 bg-destructive/5">
+              <CardContent className="p-4 text-destructive">
+                {error}
+              </CardContent>
+            </Card>
+          )}
+
+          <LessonPlanDisplay 
+            lesson={lesson}
+            onAddToTeaching={handleAddToTeaching}
+          />
+        </div>
+
+        <div className="lg:flex-1">
+          <div className="lg:sticky lg:top-16 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Teaching Cards</CardTitle>
+                <CardDescription>
+                  {selectedCards.length > 0
+                    ? `${selectedCards.length} cards ready for presentation`
+                    : "Add cards from the lesson to create your presentation"}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                {selectedCards.length === 0 && (
+                  <div className="bg-muted p-6 rounded-lg text-center mb-4">
+                    <div className="text-3xl mb-3">📝</div>
+                    <p className="text-muted-foreground mb-2">No cards selected yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      Use the "Add to Teaching" buttons in the lesson content to build your presentation
+                    </p>
+                  </div>
+                )}
                 
                 <TeachingCardsManager
                   lesson={lesson}
                   selectedCards={selectedCards}
                   onSave={handleSaveCards}
                 />
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="glass backdrop-blur-sm border border-white/30 rounded-2xl shadow-large p-6">
-                <h2 className="text-xl font-bold text-dark-purple mb-4">Teaching Options</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="wordle"
-                      checked={wordleEnabled}
-                      onChange={(e) => setWordleEnabled(e.target.checked)}
-                      className="rounded text-brand-primary focus:ring-brand-primary"
-                    />
-                    <label htmlFor="wordle" className="text-gray-700">Enable Wordle game for waiting students</label>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Teaching Options</CardTitle>
+              </CardHeader>
+              
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="wordle">Waiting Room Wordle Game</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Students can play Wordle while waiting
+                    </p>
                   </div>
-                  
-                  {wordleEnabled && (
-                    <div className="pl-6 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
+                  <Switch 
+                    id="wordle"
+                    checked={wordleEnabled}
+                    onCheckedChange={setWordleEnabled}
+                  />
+                </div>
+                
+                {wordleEnabled && (
+                  <div className="rounded-md border p-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="wordleWord">Wordle Word (5 letters)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="wordleWord"
                           value={wordleWord}
                           onChange={(e) => setWordleWord(e.target.value.toUpperCase())}
                           maxLength={5}
-                          className="border border-gray-300 rounded px-3 py-2 w-32 uppercase"
+                          className="uppercase"
                           placeholder="WORD"
                         />
                         
@@ -304,27 +353,26 @@ export function LessonDetails() {
                           onClick={handleGenerateWordleWord}
                           disabled={isGeneratingWord}
                           variant="outline"
-                          className="text-sm"
+                          size="sm"
                         >
                           {isGeneratingWord ? (
                             <>
                               <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Generating...
+                              <span className="sr-only">Generating</span>
                             </>
                           ) : (
-                            "Generate Word"
+                            "Generate"
                           )}
                         </Button>
                       </div>
-                      
                       <p className="text-xs text-muted-foreground">
-                        Enter a 5-letter word related to the lesson, or click "Generate Word" to create one automatically.
+                        Choose a 5-letter word related to the lesson content
                       </p>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

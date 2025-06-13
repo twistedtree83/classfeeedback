@@ -8,7 +8,7 @@ import { EditLesson } from './pages/EditLesson';
 import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
 import { TeachingModePage } from './pages/TeachingModePage';
-import { Header } from './components/Header';
+import { MainNav } from './components/MainNav';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { ResetPassword } from './pages/ResetPassword';
@@ -24,7 +24,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Header />
+        <MainNav />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />

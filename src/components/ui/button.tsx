@@ -1,44 +1,37 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
-import { Loader2 } from "lucide-react";
+"use client"
 
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
+
+import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 relative overflow-hidden group",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default:
-          "bg-brand-primary text-white shadow-soft hover:shadow-medium hover:bg-dark-purple-400 hover:-translate-y-0.5 active:translate-y-0",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
         destructive:
-          "bg-red text-white shadow-soft hover:shadow-medium hover:bg-red/90 hover:-translate-y-0.5 active:translate-y-0",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border-2 border-border bg-background shadow-soft hover:bg-muted hover:shadow-medium hover:-translate-y-0.5 active:translate-y-0",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-deep-sky-blue text-white shadow-soft hover:shadow-medium hover:bg-deep-sky-blue-600 hover:-translate-y-0.5 active:translate-y-0",
-        accent:
-          "bg-harvest-gold text-dark-purple shadow-soft hover:shadow-medium hover:bg-harvest-gold-600 hover:-translate-y-0.5 active:translate-y-0",
-        success:
-          "bg-sea-green text-white shadow-soft hover:shadow-medium hover:bg-sea-green-600 hover:-translate-y-0.5 active:translate-y-0",
-        info: "bg-bice-blue text-white shadow-soft hover:shadow-medium hover:bg-bice-blue-600 hover:-translate-y-0.5 active:translate-y-0",
-        ghost:
-          "hover:bg-muted hover:text-foreground hover:-translate-y-0.5 active:translate-y-0",
-        link: "text-brand-primary underline-offset-4 hover:underline hover:text-dark-purple-400",
-        gradient:
-          "bg-gradient-to-r from-brand-primary via-deep-sky-blue to-harvest-gold text-white shadow-soft hover:shadow-glow-blue hover:-translate-y-0.5 active:translate-y-0",
-        glass:
-          "glass backdrop-blur-sm border border-white/20 text-foreground shadow-soft hover:shadow-medium hover:-translate-y-0.5 active:translate-y-0",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/90",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+        success: "bg-success text-success-foreground hover:bg-success/90",
+        info: "bg-info text-info-foreground hover:bg-info/90",
+        warning: "bg-warning text-warning-foreground hover:bg-warning/90",
+        accent: "bg-accent text-accent-foreground hover:bg-accent/90",
       },
       size: {
-        default: "h-11 px-6 py-3",
-        sm: "h-9 rounded-lg px-4 text-xs",
-        lg: "h-12 rounded-xl px-8 text-base",
-        xl: "h-14 rounded-2xl px-10 text-lg",
-        icon: "h-11 w-11",
-        "icon-sm": "h-9 w-9 rounded-lg",
-        "icon-lg": "h-12 w-12 rounded-xl",
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        xl: "h-12 rounded-lg px-10 text-base",
+        icon: "h-10 w-10",
       },
     },
     defaultVariants: {
@@ -46,79 +39,39 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-);
+)
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-  isLoading?: boolean;
+  asChild?: boolean
+  isLoading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      className,
-      variant,
-      size,
-      asChild = false,
-      isLoading = false,
-      children,
-      disabled,
-      ...props
-    },
-    ref
-  ) => {
+  ({ className, variant, size, asChild = false, isLoading, children, disabled, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
     const content = isLoading ? (
-      <div className="flex items-center gap-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span>Loading...</span>
-      </div>
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading...
+      </>
     ) : (
       children
-    );
-
-    // When using asChild, we can't add any wrapper elements or multiple children
-    if (asChild) {
-      // Create modified props that include disabled state
-      const childProps = {
-        ...props,
-        disabled: disabled || isLoading,
-        className: cn(
-          buttonVariants({ variant, size, className }),
-          (props as any).className
-        ),
-      };
-
-      return (
-        <Slot ref={ref} {...childProps}>
-          {content}
-        </Slot>
-      );
-    }
-
-    // For regular buttons, we can include the shimmer effect
-    const hasShimmerEffect =
-      variant === "default" ||
-      variant === "secondary" ||
-      variant === "accent" ||
-      variant === "gradient";
-
+    )
+    
     return (
-      <button
+      <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={disabled || isLoading}
         {...props}
       >
-        {hasShimmerEffect && (
-          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-        )}
         {content}
-      </button>
-    );
+      </Comp>
+    )
   }
-);
-Button.displayName = "Button";
+)
+Button.displayName = "Button"
 
-export { Button, buttonVariants };
+export { Button, buttonVariants }
