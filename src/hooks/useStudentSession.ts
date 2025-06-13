@@ -90,11 +90,21 @@ export function useStudentSession(code: string, studentName: string) {
         console.log("Setting presentation data:", presentationData);
         setPresentation(presentationData);
 
-        // Set current card
-        updateCurrentCard(
-          presentationData,
-          presentationData.current_card_index
-        );
+        // Set current card based on the current_card_index
+        // IMPORTANT: Only set lessonStarted to true if current_card_index is >= 0
+        // When current_card_index is -1, we're in waiting room state
+        if (presentationData.current_card_index >= 0) {
+          updateCurrentCard(
+            presentationData,
+            presentationData.current_card_index
+          );
+          setLessonStarted(true);
+        } else {
+          // We're in waiting room state
+          setCurrentCard(null);
+          setCurrentCardAttachments([]);
+          setLessonStarted(false);
+        }
 
         // Load existing messages
         const existingMessages = await getTeacherMessagesForPresentation(
@@ -105,13 +115,6 @@ export function useStudentSession(code: string, studentName: string) {
         }
 
         setJoined(true);
-
-        // Check if the lesson has already started (current_card_index >= 0 means lesson started, -1 means waiting room)
-        if (presentationData.current_card_index >= 0) {
-          setLessonStarted(true);
-        } else {
-          setLessonStarted(false);
-        }
       } catch (err) {
         console.error("Error joining session:", err);
         setError(err instanceof Error ? err.message : "Failed to join session");
