@@ -72,12 +72,14 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
         const currentStatus = await checkParticipantStatus(state.participantId!);
         console.log("Current participant status:", currentStatus);
         
-        if (currentStatus === 'approved') {
-          processApproval();
-        } else if (currentStatus === 'rejected') {
-          handleRejection();
-        } else if (currentStatus === 'pending') {
-          setState(prev => ({ ...prev, status: 'pending' }));
+        if (currentStatus) {
+          setState(prev => ({ ...prev, status: currentStatus as 'pending' | 'approved' | 'rejected' }));
+          
+          if (currentStatus === 'approved') {
+            processApproval();
+          } else if (currentStatus === 'rejected') {
+            handleRejection();
+          }
         }
       } catch (err) {
         console.error('Error in initial status check:', err);

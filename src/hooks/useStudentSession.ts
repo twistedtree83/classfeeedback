@@ -30,7 +30,7 @@ export function useStudentSession(code: string, studentName: string) {
   // Function to update the current card based on index
   const updateCurrentCard = useCallback(
     (presentation: LessonPresentation, index: number) => {
-      console.log(`Attempting to update card to index: ${index}`);
+      console.log(`Attempting to update card to index: ${index}, lesson started: ${lessonStarted}`);
       
       // Teacher is explicitly keeping students in waiting room state
       // current_card_index = -1 is the teacher's explicit signal to show waiting room
@@ -63,6 +63,8 @@ export function useStudentSession(code: string, studentName: string) {
 
       setCurrentCard(card);
       setCurrentCardAttachments(card.attachments || []);
+      
+      // Lesson has started when we have a valid card index (>= 0)
       setLessonStarted(true);
     },
     []
@@ -112,7 +114,7 @@ export function useStudentSession(code: string, studentName: string) {
             presentationData,
             presentationData.current_card_index
           );
-          // updateCurrentCard will set lessonStarted to true
+          // The updateCurrentCard function will set lessonStarted to true
         } else {
           // We're in waiting room state
           console.log("Initial state: waiting room");
@@ -178,6 +180,13 @@ export function useStudentSession(code: string, studentName: string) {
 
             // Update current card immediately
             updateCurrentCard(updated, updatedPresentation.current_card_index);
+
+            // Check if lesson has started or returned to waiting room
+            if (updatedPresentation.current_card_index >= 0) {
+              setLessonStarted(true);
+            } else {
+              setLessonStarted(false);
+            }
 
             return updated;
           });

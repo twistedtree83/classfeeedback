@@ -112,7 +112,7 @@ export function StudentContent({
             />
           ) : (
             <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
-              <p className="text-gray-500">Content is not available yet.</p>
+              <p className="text-gray-500">The teacher is preparing the lesson content. Please wait...</p>
             </div>
           )}
 

@@ -169,7 +169,7 @@ export const subscribeToTeachingFeedback = (
   return subscription;
 };
 
-// Get feedback for a specific card by student
+// Get feedback for a specific card by student name
 export const getCardFeedbackByStudent = async (
   presentationId: string,
   cardIndex?: number
