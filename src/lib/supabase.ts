@@ -26,3 +26,9 @@ export * from './supabase/messages';
 
 // Re-export questions functions
 export * from './supabase/questions';
+
+// Re-export utility functions
+export { generateRandomName } from './supabase/utils';
+
+// Re-export utility functions from utils.ts
+export { groupFeedbackByType } from './utils';

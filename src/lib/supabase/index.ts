@@ -1,34 +1,75 @@
-// Re-export all Supabase client functionality from a single entry point
-
 // Export the Supabase client itself
-export { supabase } from './supabase/client';
+export { supabase } from "./client";
 
 // Re-export types
-export * from './supabase/types';
+export * from "./types";
 
 // Re-export auth functions
-export * from './supabase/auth';
+export {
+  getCurrentUser,
+  signUp,
+  signIn,
+  signOut,
+  resetPassword,
+  updatePassword,
+} from "./auth";
 
 // Re-export sessions functions
-export * from './supabase/sessions';
+export {
+  createSession,
+  getSessionByCode,
+  endSession,
+  addSessionParticipant,
+  getParticipantsForSession,
+  getPendingParticipantsForSession,
+  subscribeToSessionParticipants,
+  checkParticipantStatus,
+  approveParticipant,
+  rejectParticipant,
+  subscribeToParticipantStatus,
+} from "./sessions";
 
 // Re-export lesson plans functions
-export * from './supabase/lessonPlans';
+export { getLessonPlanById } from "./lessonPlans";
 
 // Re-export presentations functions
-export * from './supabase/presentations';
+export {
+  createLessonPresentation,
+  getLessonPresentationByCode,
+  updateLessonPresentationCardIndex,
+  endLessonPresentation,
+  subscribeToLessonPresentation,
+} from "./presentations";
 
 // Re-export feedback functions
-export * from './supabase/feedback';
+export {
+  submitFeedback,
+  getFeedbackForSession,
+  subscribeToSessionFeedback,
+  submitTeachingFeedback,
+  getStudentFeedbackForCard,
+  getTeachingFeedbackForPresentation,
+  subscribeToTeachingFeedback,
+  getCardFeedbackByStudent,
+} from "./feedback";
 
 // Re-export messages functions
-export * from './supabase/messages';
+export {
+  sendTeacherMessage,
+  getTeacherMessagesForPresentation,
+  subscribeToTeacherMessages,
+} from "./messages";
 
 // Re-export questions functions
-export * from './supabase/questions';
+export {
+  submitTeachingQuestion,
+  markQuestionAsAnswered,
+  getTeachingQuestionsForPresentation,
+  subscribeToTeachingQuestions,
+} from "./questions";
 
 // Re-export utility functions
 export { generateRandomName } from "./utils";
 
-// Re-export the groupFeedbackByType from utils
+// Re-export utility functions from utils.ts
 export { groupFeedbackByType } from "../utils";

@@ -42,16 +42,27 @@ export function generateRandomName(): string {
 /**
  * Groups feedback by type
  */
-export function groupFeedbackByType(feedback: Array<{ value: string }>) {
-  const counts = {
+export function groupFeedbackByType(feedback: Array<{ value?: string; feedback_type?: string }>) {
+  const counts: Record<string, number> = {
     '👍': 0,
     '😕': 0,
-    '❓': 0
+    '❓': 0,
+    'understand': 0,
+    'confused': 0,
+    'slower': 0
   };
   
   feedback.forEach(item => {
-    if (item.value in counts) {
-      counts[item.value as keyof typeof counts]++;
+    // Handle old format
+    if (item.value && counts[item.value] !== undefined) {
+      counts[item.value]++;
+    }
+    
+    // Handle new format
+    if (item.feedback_type) {
+      if (item.feedback_type === 'understand') counts['understand']++;
+      if (item.feedback_type === 'confused') counts['confused']++; 
+      if (item.feedback_type === 'slower') counts['slower']++;
     }
   });
   
