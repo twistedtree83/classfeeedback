@@ -59,6 +59,7 @@ export const getSessionByCode = async (
       query = query.eq("active", true);
     }
 
+    // Use maybeSingle instead of single to prevent 406 errors when no records are found
     const { data, error } = await query.maybeSingle();
 
     if (error) {

@@ -68,20 +68,12 @@ export function StudentContent({
         sessionCode={sessionCode}
         teacherName={teacherName}
         wordleWord={presentation?.wordle_word || null}
-        lessonTitle="Lesson"
+        lessonTitle={presentation?.lesson_title || "Lesson"}
       />
     );
   }
 
   // Show main content when lesson has started
-  if (!currentCard) {
-    return null;
-  }
-
-  const hasDifferentiatedContent = currentCard?.differentiatedContent
-    ? true
-    : false;
-
   return (
     <div className="min-h-screen bg-teal/5 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10 py-3 px-4">
@@ -104,19 +96,25 @@ export function StudentContent({
 
       <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
-          <LessonContentDisplay
-            content={
-              viewingDifferentiated && currentCard.differentiatedContent
-                ? currentCard.differentiatedContent
-                : currentCard.content
-            }
-            attachments={currentCardAttachments}
-            hasDifferentiatedContent={hasDifferentiatedContent}
-            viewingDifferentiated={viewingDifferentiated}
-            generatingDifferentiated={generatingDifferentiated}
-            onToggleDifferentiatedView={onToggleDifferentiatedView}
-            onGenerateDifferentiated={onGenerateDifferentiated}
-          />
+          {currentCard ? (
+            <LessonContentDisplay
+              content={
+                viewingDifferentiated && currentCard.differentiatedContent
+                  ? currentCard.differentiatedContent
+                  : currentCard.content
+              }
+              attachments={currentCardAttachments}
+              hasDifferentiatedContent={!!currentCard.differentiatedContent}
+              viewingDifferentiated={viewingDifferentiated}
+              generatingDifferentiated={generatingDifferentiated}
+              onToggleDifferentiatedView={onToggleDifferentiatedView}
+              onGenerateDifferentiated={onGenerateDifferentiated}
+            />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
+              <p className="text-gray-500">Content is not available yet.</p>
+            </div>
+          )}
 
           <StudentInteractionPanel
             onSendFeedback={onSendFeedback}

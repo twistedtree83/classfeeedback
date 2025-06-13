@@ -30,7 +30,7 @@ export function useStudentSession(code: string, studentName: string) {
   // Function to update the current card based on index
   const updateCurrentCard = useCallback(
     (presentation: LessonPresentation, index: number) => {
-      console.log(`Attempting to update card to index: ${index}, lesson started: ${lessonStarted}`);
+      console.log(`Attempting to update card to index: ${index}`);
       
       // Teacher is explicitly keeping students in waiting room state
       // current_card_index = -1 is the teacher's explicit signal to show waiting room
@@ -50,10 +50,9 @@ export function useStudentSession(code: string, studentName: string) {
         index < 0 ||
         index >= presentation.cards.length
       ) {
-        console.log("Invalid card index or no cards available, showing waiting room");
+        console.log("Invalid card index or no cards available");
         setCurrentCard(null);
         setCurrentCardAttachments([]);
-        setLessonStarted(false);
         return;
       }
 
@@ -62,10 +61,9 @@ export function useStudentSession(code: string, studentName: string) {
       const card = presentation.cards[index];
       console.log(`Updating to card ${index}:`, card);
 
-      // Set lesson as started ONLY when we have a valid card to show
-      setLessonStarted(true);
       setCurrentCard(card);
       setCurrentCardAttachments(card.attachments || []);
+      setLessonStarted(true);
     },
     []
   );
@@ -95,30 +93,26 @@ export function useStudentSession(code: string, studentName: string) {
         }
 
         console.log("Setting presentation data:", presentationData);
-        console.log("Current card index:", presentationData.current_card_index);
-        console.log("Has cards:", presentationData.cards && Array.isArray(presentationData.cards) && presentationData.cards.length > 0);
         setPresentation(presentationData);
 
         // IMPORTANT: The waiting room state is controlled by the teacher
         // The student should only see cards when the teacher has moved past the welcome card
         // In the database, this is represented by current_card_index >= 0
-        // And we need to verify there are actual cards to show
-        const hasValidCards = presentationData.cards && 
-                             Array.isArray(presentationData.cards) && 
-                             presentationData.cards.length > 0;
-                             
+        
+        const hasValidCards = 
+          presentationData.cards && 
+          Array.isArray(presentationData.cards) && 
+          presentationData.cards.length > 0;
+        
         const teacherHasStarted = presentationData.current_card_index >= 0;
         
-        // CRITICAL FIX: The teacher must explicitly start the lesson (index > -1)
-        // Even if the card index is 0, we need to make sure it wasn't just set
-        // as a default value but rather as an explicit teacher action
         if (hasValidCards && teacherHasStarted) {
           // Teacher has started the lesson and there are cards to show
           updateCurrentCard(
             presentationData,
             presentationData.current_card_index
           );
-          // The updateCurrentCard function will set lessonStarted to true
+          // updateCurrentCard will set lessonStarted to true
         } else {
           // We're in waiting room state
           console.log("Initial state: waiting room");

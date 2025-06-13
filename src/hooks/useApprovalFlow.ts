@@ -96,36 +96,19 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
         
         if (processedApproval.current) return;
         
+        setState(prev => ({ ...prev, status: newStatus as 'pending' | 'approved' | 'rejected' }));
+        
         if (newStatus === 'approved') {
           processApproval();
         } else if (newStatus === 'rejected') {
           handleRejection();
-        } else if (newStatus === 'pending') {
-          setState(prev => ({ ...prev, status: 'pending' }));
         }
       }
     );
     
-    // Set up polling as a fallback
-    const pollingInterval = setInterval(async () => {
-      if (processedApproval.current || state.status !== 'pending') return;
-      
-      try {
-        const currentStatus = await checkParticipantStatus(state.participantId!);
-        if (currentStatus === 'approved') {
-          processApproval();
-        } else if (currentStatus === 'rejected') {
-          handleRejection();
-        }
-      } catch (err) {
-        console.error('Error checking participant status:', err);
-      }
-    }, 5000);
-    
     return () => {
-      console.log("Cleaning up participant status subscription and polling");
+      console.log("Cleaning up participant status subscription");
       subscription.unsubscribe();
-      clearInterval(pollingInterval);
     };
   }, [state.participantId, sessionCode]);
 
@@ -133,6 +116,7 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
   const processApproval = () => {
     if (processedApproval.current) return;
     
+    console.log("Processing approval...");
     processedApproval.current = true;
     
     setState(prev => ({ 
@@ -222,6 +206,7 @@ export function useApprovalFlow(sessionCode: string, studentName: string) {
       url.searchParams.set('name', studentName.trim());
       window.history.pushState({}, '', url);
       
+      processingJoin.current = false;
     } catch (err) {
       console.error('Error joining session:', err);
       setState(prev => ({ 
