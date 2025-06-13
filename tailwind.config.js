@@ -1,3 +1,5 @@
+const { fontFamily } = require("tailwindcss/defaultTheme");
+
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
@@ -11,6 +13,12 @@ export default {
       },
     },
     extend: {
+      // Font Family Configuration
+      fontFamily: {
+        sans: ["Nunito", ...fontFamily.sans],
+        display: ["Inter", ...fontFamily.sans],
+      },
+
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
