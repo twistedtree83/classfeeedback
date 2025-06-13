@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getLessonPresentationByCode,
   subscribeToLessonPresentation,
+  getSessionByCode,
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
-  getSessionByCode,
   TeacherMessage,
   LessonPresentation,
   LessonCard,
@@ -56,9 +56,7 @@ export function useStudentSession(code: string, studentName: string) {
       setCurrentCardAttachments(card.attachments || []);
 
       // Lesson has started when we have a valid card index (>= 0)
-      if (index >= 0) {
-        setLessonStarted(true);
-      }
+      setLessonStarted(true);
     },
     []
   );

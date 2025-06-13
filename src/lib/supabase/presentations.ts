@@ -25,19 +25,21 @@ export const createLessonPresentation = async (
   try {
     console.log("Creating lesson presentation with wordleWord:", wordleWord);
 
+    // CRITICAL FIX: Ensure cards are properly handled
+    // Make sure cards is a valid JSON array when stored
+    const cardsData = Array.isArray(cards) ? cards : [];
+
     // Prepare the insert data
-    const insertData: any = {
+    const insertData = {
       session_id: sessionId,
       session_code: sessionCode,
       lesson_id: lessonId,
-      cards: cards,
+      cards: cardsData, // This will be stored as JSONB in Postgres
       current_card_index: -1, // Start in waiting room (-1), lesson begins at index 0
       active: true,
       realtime_enabled: true,
+      wordle_word: wordleWord
     };
-
-    // Always add wordle_word field, even if null
-    insertData.wordle_word = wordleWord;
 
     console.log("Insert data:", insertData);
 
@@ -55,10 +57,10 @@ export const createLessonPresentation = async (
 
     console.log("Created presentation data:", data);
 
-    // The cards should already be an object from the database
+    // Ensure cards are properly formatted in the response
     const parsedData = {
       ...data,
-      cards: Array.isArray(data.cards) ? data.cards : data.cards,
+      cards: Array.isArray(data.cards) ? data.cards : [],
     };
 
     return parsedData;
@@ -94,8 +96,11 @@ export const getLessonPresentationByCode = async (
     // Handle both string and object formats for cards
     const parsedData = {
       ...data,
-      cards:
-        typeof data.cards === "string" ? JSON.parse(data.cards) : data.cards,
+      cards: typeof data.cards === "string" 
+        ? JSON.parse(data.cards) 
+        : Array.isArray(data.cards) 
+          ? data.cards 
+          : []
     };
 
     console.log("Parsed presentation data:", parsedData);
@@ -172,10 +177,11 @@ export const subscribeToLessonPresentation = (
         if (payload.new) {
           const parsedPayload = {
             ...payload.new,
-            cards:
-              typeof payload.new.cards === "string"
-                ? JSON.parse(payload.new.cards)
-                : payload.new.cards,
+            cards: typeof payload.new.cards === "string"
+              ? JSON.parse(payload.new.cards)
+              : Array.isArray(payload.new.cards) 
+                ? payload.new.cards 
+                : []
           } as LessonPresentation;
           callback(parsedPayload);
         }
