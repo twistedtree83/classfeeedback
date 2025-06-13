@@ -5,7 +5,7 @@ import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { User, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
 import { ProtectedRoute } from "../components/auth/ProtectedRoute";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabase";
 
 export function Profile() {
   const { user, signOut } = useAuth();

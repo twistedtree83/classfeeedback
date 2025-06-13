@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, CheckCircle, XCircle } from 'lucide-react';
-import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants, approveParticipant } from '../lib/supabaseClient';
+import { SessionParticipant, getParticipantsForSession, subscribeToSessionParticipants, approveParticipant } from '../lib/supabase';
 import { formatTime } from '../lib/utils';
 import { Button } from './ui/Button';
 

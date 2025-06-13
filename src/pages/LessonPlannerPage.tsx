@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { BookOpen, ArrowLeft, GraduationCap, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { ProcessedLesson } from "../lib/types";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabase";
 
 export function LessonPlannerPage() {
   const [lessons, setLessons] = useState<ProcessedLesson[]>([]);

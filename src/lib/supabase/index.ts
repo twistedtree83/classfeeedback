@@ -53,7 +53,6 @@ export {
   getTeachingFeedbackForPresentation,
   subscribeToTeachingFeedback,
   getCardFeedbackByStudent,
-  groupFeedbackByType,
 } from "./feedback";
 
 // Re-export messages functions
