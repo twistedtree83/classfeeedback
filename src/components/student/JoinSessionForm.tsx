@@ -1,9 +1,9 @@
-import React from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { AlertCircle } from 'lucide-react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { BookOpen } from 'lucide-react';
+import React from "react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { AlertCircle } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { BookOpen } from "lucide-react";
 
 interface JoinSessionFormProps {
   sessionCode: string;
@@ -28,7 +28,7 @@ export function JoinSessionForm({
   onCodeChange,
   onNameChange,
   onAvatarChange,
-  onSubmit
+  onSubmit,
 }: JoinSessionFormProps) {
   return (
     <div className="max-w-md w-full">
@@ -73,13 +73,13 @@ export function JoinSessionForm({
             </label>
             <div className="grid grid-cols-4 gap-2">
               {availableAvatars.map((avatar, index) => (
-                <div 
+                <div
                   key={index}
                   onClick={() => onAvatarChange(avatar)}
                   className={`cursor-pointer p-2 rounded-lg border-2 transition-all ${
-                    selectedAvatar === avatar 
-                      ? 'border-teal bg-teal/10 scale-105' 
-                      : 'border-gray-200 hover:border-teal/30 hover:bg-teal/5'
+                    selectedAvatar === avatar
+                      ? "border-teal bg-teal/10 scale-105"
+                      : "border-gray-200 hover:border-teal/30 hover:bg-teal/5"
                   }`}
                 >
                   <Avatar className="h-12 w-12 mx-auto">
@@ -104,7 +104,7 @@ export function JoinSessionForm({
             className="w-full bg-teal hover:bg-teal/90 text-white"
             size="lg"
           >
-            {loading ? 'Joining...' : 'Join Session'}
+            {loading ? "Joining..." : "Join Session"}
           </Button>
         </form>
       </div>

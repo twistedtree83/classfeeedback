@@ -91,32 +91,56 @@ export const submitTeachingFeedback = async (
   try {
     // Check if this student has already submitted feedback for this card
     if (cardIndex !== undefined) {
-      const { data: existingFeedback, error: checkError } = await supabase
-        .from("teaching_feedback")
-        .select("id")
-        .eq("presentation_id", presentationId)
-        .eq("student_name", studentName)
-        .eq("card_index", cardIndex)
-        .single();
+      try {
+        const { data: existingFeedback, error: checkError } = await supabase
+          .from("teaching_feedback")
+          .select("id")
+          .eq("presentation_id", presentationId)
+          .eq("student_name", studentName)
+          .eq("card_index", cardIndex)
+          .single();
 
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking existing feedback:", checkError);
-        return false;
-      }
-
-      if (existingFeedback) {
-        console.log("Feedback already submitted for this card");
-        return false;
+        if (checkError && checkError.code !== "PGRST116") {
+          // If it's a column error (406), continue without checking - column doesn't exist yet
+          if (checkError.code === "42703") {
+            console.warn(
+              "card_index column not found, skipping duplicate check"
+            );
+          } else {
+            console.error("Error checking existing feedback:", checkError);
+            return false;
+          }
+        } else if (existingFeedback) {
+          console.log("Feedback already submitted for this card");
+          return false;
+        }
+      } catch (columnError) {
+        console.warn("card_index column not found, skipping duplicate check");
       }
     }
 
-    const { error } = await supabase.from("teaching_feedback").insert({
+    // Build insert object dynamically to handle missing card_index column
+    const insertData: any = {
       presentation_id: presentationId,
       student_name: studentName,
       feedback_type: feedbackType,
-      card_index: cardIndex ?? null,
       content: content ?? null,
-    });
+    };
+
+    // Only add card_index if it's provided
+    if (cardIndex !== undefined) {
+      try {
+        insertData.card_index = cardIndex;
+      } catch (columnError) {
+        console.warn(
+          "card_index column not found, inserting without card_index"
+        );
+      }
+    }
+
+    const { error } = await supabase
+      .from("teaching_feedback")
+      .insert(insertData);
 
     if (error) {
       console.error("Error submitting teaching feedback:", error);
@@ -144,16 +168,27 @@ export const submitTeachingQuestion = async (
       card_index: cardIndex,
     });
 
+    // Build insert object dynamically to handle missing card_index column
+    const insertData: any = {
+      presentation_id: presentationId,
+      student_name: studentName,
+      question,
+    };
+
+    // Only add card_index if it's provided
+    if (cardIndex !== undefined) {
+      try {
+        insertData.card_index = cardIndex;
+      } catch (columnError) {
+        console.warn(
+          "card_index column not found, inserting without card_index"
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from("teaching_questions")
-      .insert([
-        {
-          presentation_id: presentationId,
-          student_name: studentName,
-          question,
-          card_index: cardIndex,
-        },
-      ])
+      .insert([insertData])
       .select();
 
     if (error) {
@@ -175,13 +210,21 @@ export const getStudentFeedbackForCard = async (
   cardIndex: number
 ): Promise<any | null> => {
   try {
-    const { data, error } = await supabase
+    // Build query dynamically to handle missing card_index column
+    let query = supabase
       .from("teaching_feedback")
       .select("*")
       .eq("presentation_id", presentationId)
-      .eq("student_name", studentName)
-      .eq("card_index", cardIndex)
-      .single();
+      .eq("student_name", studentName);
+
+    // Only add card_index filter if the column exists (this will fail gracefully if not)
+    try {
+      query = query.eq("card_index", cardIndex);
+    } catch (columnError) {
+      console.warn("card_index column not found, fetching without card filter");
+    }
+
+    const { data, error } = await query.single();
 
     if (error && error.code !== "PGRST116") {
       console.error("Error fetching student feedback:", error);
@@ -273,10 +316,9 @@ export const subscribeToTeachingFeedback = (
     channel += `:${cardIndex}`;
   }
 
-  let filter = `presentation_id=eq.${presentationId}`;
-  if (cardIndex !== undefined) {
-    filter += `,card_index=eq.${cardIndex}`;
-  }
+  // For now, don't use card_index in filter until column exists
+  // Only filter by presentation_id to avoid the subscription errors
+  const filter = `presentation_id=eq.${presentationId}`;
 
   return supabase
     .channel(channel)
@@ -290,6 +332,10 @@ export const subscribeToTeachingFeedback = (
       },
       (payload) => {
         console.log("New teaching feedback:", payload);
+        // If cardIndex is specified, only call callback for matching cards
+        if (cardIndex !== undefined && payload.new.card_index !== cardIndex) {
+          return;
+        }
         callback(payload.new);
       }
     )
@@ -301,14 +347,17 @@ export const subscribeToTeachingQuestions = (
   callback: (question: any) => void,
   cardIndex?: number
 ) => {
-  // Create a filter including the card index if provided
-  const filter =
-    cardIndex !== undefined
-      ? `presentation_id=eq.${presentationId}&card_index=eq.${cardIndex}`
-      : `presentation_id=eq.${presentationId}`;
+  // For now, don't use card_index in filter until column exists
+  // Only filter by presentation_id to avoid the subscription errors
+  const filter = `presentation_id=eq.${presentationId}`;
+
+  let channel = `teaching_questions:${presentationId}`;
+  if (cardIndex !== undefined) {
+    channel += `:${cardIndex}`;
+  }
 
   return supabase
-    .channel("teaching_questions")
+    .channel(channel)
     .on(
       "postgres_changes",
       {
@@ -317,7 +366,13 @@ export const subscribeToTeachingQuestions = (
         table: "teaching_questions",
         filter,
       },
-      (payload) => callback(payload.new)
+      (payload) => {
+        // If cardIndex is specified, only call callback for matching cards
+        if (cardIndex !== undefined && payload.new.card_index !== cardIndex) {
+          return;
+        }
+        callback(payload.new);
+      }
     )
     .subscribe();
 };

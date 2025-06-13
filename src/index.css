@@ -166,6 +166,11 @@
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
+
+  /* Wordle tile flip animation */
+  .animate-flip {
+    animation: flip 0.6s ease-in-out;
+  }
 }
 
 @layer utilities {
@@ -182,5 +187,27 @@
   /* Text balance for better typography */
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes flip {
+  0% {
+    transform: rotateX(0);
+  }
+  50% {
+    transform: rotateX(-90deg);
+  }
+  100% {
+    transform: rotateX(0);
   }
 }

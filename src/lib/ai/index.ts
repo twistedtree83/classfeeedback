@@ -6,3 +6,4 @@ export * from "./successCriteria";
 export * from "./learningIntentions";
 export * from "./differentiatedContent";
 export * from "./sectionImprovement";
+export * from "./wordleGenerator";

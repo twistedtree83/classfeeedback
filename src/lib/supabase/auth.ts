@@ -1,9 +1,5 @@
-import { createClient, type User as SupabaseUser } from "@supabase/supabase-js";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import { type User as SupabaseUser } from "@supabase/supabase-js";
+import { supabase } from "./client";
 
 export type User = SupabaseUser;
 

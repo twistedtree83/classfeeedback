@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { ProcessedLesson } from "../lib/types";
 import {
   Clock,
@@ -9,6 +9,11 @@ import {
   Plus,
   GraduationCap,
   BookOpen,
+  ChevronDown,
+  ChevronRight,
+  BarChart3,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { sanitizeHtml } from "../lib/utils";
@@ -26,18 +31,162 @@ interface LessonPlanDisplayProps {
   ) => void;
 }
 
+interface CollapsibleSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+function CollapsibleSection({
+  title,
+  icon,
+  isExpanded,
+  onToggle,
+  children,
+  className = "",
+}: CollapsibleSectionProps) {
+  return (
+    <div
+      className={`glass-card border border-white/20 rounded-xl ${className}`}
+    >
+      <button
+        onClick={onToggle}
+        className="w-full p-6 flex items-center justify-between hover:bg-white/10 transition-colors rounded-t-xl focus:outline-none focus:ring-2 focus:ring-brand-primary"
+      >
+        <div className="flex items-center">
+          <div className="p-2 bg-white/20 rounded-xl mr-3">{icon}</div>
+          <h3 className="text-xl font-semibold text-foreground">{title}</h3>
+        </div>
+        {isExpanded ? (
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        )}
+      </button>
+      {isExpanded && <div className="px-6 pb-6">{children}</div>}
+    </div>
+  );
+}
+
+function LessonStatistics({ lesson }: { lesson: ProcessedLesson }) {
+  const totalActivities = lesson.sections.reduce(
+    (total, section) => total + section.activities.length,
+    0
+  );
+
+  const stats = [
+    {
+      label: "Learning Objectives",
+      value: lesson.objectives.filter((obj) => obj.trim()).length,
+      color: "text-dark-purple",
+      bg: "bg-dark-purple/10",
+    },
+    {
+      label: "Materials",
+      value: lesson.materials.filter((mat) => mat.trim()).length,
+      color: "text-harvest-gold",
+      bg: "bg-harvest-gold/10",
+    },
+    {
+      label: "Lesson Sections",
+      value: lesson.sections.length,
+      color: "text-deep-sky-blue",
+      bg: "bg-deep-sky-blue/10",
+    },
+    {
+      label: "Total Activities",
+      value: totalActivities,
+      color: "text-sea-green",
+      bg: "bg-sea-green/10",
+    },
+  ];
+
+  return (
+    <div className="glass-card p-6 border border-white/20 bg-gradient-to-r from-white/10 to-white/5 rounded-xl">
+      <div className="flex items-center mb-4">
+        <div className="p-2 bg-brand-primary/20 rounded-xl mr-3">
+          <BarChart3 className="h-5 w-5 text-brand-primary" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground">
+          Lesson Overview
+        </h3>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, index) => (
+          <div
+            key={index}
+            className={`p-4 rounded-xl border border-white/20 ${stat.bg} text-center`}
+          >
+            <div className={`text-2xl font-bold ${stat.color} mb-1`}>
+              {stat.value}
+            </div>
+            <div className="text-sm text-muted-foreground">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function LessonPlanDisplay({
   lesson,
   onAddToTeaching,
 }: LessonPlanDisplayProps) {
+  const [expandedSections, setExpandedSections] = useState({
+    objectives: true, // Keep objectives expanded by default
+    background: false,
+    materials: false,
+    sections: false,
+  });
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const allExpanded = Object.values(expandedSections).every(Boolean);
+
+  const toggleAllSections = () => {
+    const newState = !allExpanded;
+    setExpandedSections({
+      objectives: newState,
+      background: newState,
+      materials: newState,
+      sections: newState,
+    });
+  };
+
   return (
     <div className="glass backdrop-blur-sm border border-white/20 rounded-2xl shadow-large p-8 space-y-8">
-      {/* Header Section */}
+      {/* Header Section - Always visible */}
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold gradient-text mb-4">
-            {lesson.title}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-3xl font-bold gradient-text">{lesson.title}</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleAllSections}
+              className="border-brand-primary/30 text-brand-primary hover:bg-brand-primary/10"
+            >
+              {allExpanded ? (
+                <>
+                  <Minimize2 className="h-4 w-4 mr-2" />
+                  Collapse All
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="h-4 w-4 mr-2" />
+                  Expand All
+                </>
+              )}
+            </Button>
+          </div>
 
           <div
             className="text-muted-foreground leading-relaxed mb-6"
@@ -60,16 +209,17 @@ export function LessonPlanDisplay({
         </div>
       </div>
 
-      {/* Learning Intentions Section */}
-      <div className="glass-card p-6 border border-dark-purple/20 bg-dark-purple/5">
-        <div className="flex items-center mb-4">
-          <div className="p-2 bg-dark-purple/20 rounded-xl mr-3">
-            <Target className="h-6 w-6 text-dark-purple" />
-          </div>
-          <h3 className="text-xl font-semibold text-dark-purple">
-            Learning Intentions
-          </h3>
-        </div>
+      {/* Lesson Statistics */}
+      <LessonStatistics lesson={lesson} />
+
+      {/* Learning Intentions Section - Collapsible */}
+      <CollapsibleSection
+        title="Learning Intentions"
+        icon={<Target className="h-6 w-6 text-dark-purple" />}
+        isExpanded={expandedSections.objectives}
+        onToggle={() => toggleSection("objectives")}
+        className="border-dark-purple/20 bg-dark-purple/5"
+      >
         <div className="space-y-4">
           <ul className="space-y-3">
             {lesson.objectives
@@ -156,19 +306,17 @@ export function LessonPlanDisplay({
             </div>
           )}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* Topic Background Section */}
+      {/* Topic Background Section - Collapsible */}
       {lesson.topic_background && (
-        <div className="glass-card p-6 border border-bice-blue/20 bg-bice-blue/5">
-          <div className="flex items-center mb-4">
-            <div className="p-2 bg-bice-blue/20 rounded-xl mr-3">
-              <BookOpen className="h-6 w-6 text-bice-blue" />
-            </div>
-            <h3 className="text-xl font-semibold text-bice-blue">
-              Topic Background
-            </h3>
-          </div>
+        <CollapsibleSection
+          title="Topic Background"
+          icon={<BookOpen className="h-6 w-6 text-bice-blue" />}
+          isExpanded={expandedSections.background}
+          onToggle={() => toggleSection("background")}
+          className="border-bice-blue/20 bg-bice-blue/5"
+        >
           <div className="space-y-4">
             <div
               className="p-4 bg-background/60 rounded-xl border border-white/30 text-foreground leading-relaxed"
@@ -193,19 +341,17 @@ export function LessonPlanDisplay({
               </Button>
             )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Materials Section */}
-      <div className="glass-card p-6 border border-harvest-gold/20 bg-harvest-gold/5">
-        <div className="flex items-center mb-4">
-          <div className="p-2 bg-harvest-gold/20 rounded-xl mr-3">
-            <FileText className="h-6 w-6 text-harvest-gold" />
-          </div>
-          <h3 className="text-xl font-semibold text-harvest-gold">
-            Materials Needed
-          </h3>
-        </div>
+      {/* Materials Section - Collapsible */}
+      <CollapsibleSection
+        title="Materials Needed"
+        icon={<FileText className="h-6 w-6 text-harvest-gold" />}
+        isExpanded={expandedSections.materials}
+        onToggle={() => toggleSection("materials")}
+        className="border-harvest-gold/20 bg-harvest-gold/5"
+      >
         <div className="space-y-4">
           <ul className="space-y-2">
             {lesson.materials
@@ -240,18 +386,16 @@ export function LessonPlanDisplay({
             </Button>
           )}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      {/* Lesson Sections */}
-      <div className="glass-card p-6 border border-deep-sky-blue/20 bg-deep-sky-blue/5">
-        <div className="flex items-center mb-6">
-          <div className="p-2 bg-deep-sky-blue/20 rounded-xl mr-3">
-            <List className="h-6 w-6 text-deep-sky-blue" />
-          </div>
-          <h3 className="text-xl font-semibold text-deep-sky-blue">
-            Lesson Sections
-          </h3>
-        </div>
+      {/* Lesson Sections - Collapsible */}
+      <CollapsibleSection
+        title={`Lesson Sections (${lesson.sections.length})`}
+        icon={<List className="h-6 w-6 text-deep-sky-blue" />}
+        isExpanded={expandedSections.sections}
+        onToggle={() => toggleSection("sections")}
+        className="border-deep-sky-blue/20 bg-deep-sky-blue/5"
+      >
         <div className="space-y-6">
           {lesson.sections.map((section, sectionIndex) => (
             <div
@@ -296,7 +440,7 @@ export function LessonPlanDisplay({
                 <div className="mt-4 p-4 bg-white/40 rounded-xl border border-white/40">
                   <h5 className="font-semibold text-foreground mb-3 flex items-center">
                     <div className="w-2 h-2 bg-deep-sky-blue rounded-full mr-2"></div>
-                    Activities
+                    Activities ({section.activities.length})
                   </h5>
                   <ul className="space-y-2">
                     {section.activities
@@ -353,7 +497,7 @@ export function LessonPlanDisplay({
             </div>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }

@@ -58,9 +58,9 @@ export function CardCreationToolbar({
   return (
     <div className="space-y-6">
       {/* Quick Add Section */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5 text-blue-600" />
+      <div className="modern-card hover-lift p-6 bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-sm border border-white/30">
+        <h3 className="text-lg font-semibold text-dark-purple mb-4 flex items-center gap-2">
+          <Plus className="h-5 w-5 text-brand-primary" />
           Quick Add Cards
         </h3>
 
@@ -68,54 +68,54 @@ export function CardCreationToolbar({
           <Button
             onClick={onCreateObjectiveCard}
             variant="outline"
-            className="flex flex-col items-center gap-2 h-auto py-4 text-center"
+            className="flex flex-col items-center gap-2 h-auto py-4 text-center border-dark-purple/30 text-dark-purple hover:bg-dark-purple/10"
           >
-            <Target className="h-6 w-6 text-blue-600" />
+            <Target className="h-6 w-6 text-dark-purple" />
             <span className="text-sm font-medium">Learning Objectives</span>
           </Button>
 
           <Button
             onClick={onCreateMaterialsCard}
             variant="outline"
-            className="flex flex-col items-center gap-2 h-auto py-4 text-center"
+            className="flex flex-col items-center gap-2 h-auto py-4 text-center border-harvest-gold/30 text-harvest-gold hover:bg-harvest-gold/10"
           >
-            <BookOpen className="h-6 w-6 text-green-600" />
+            <BookOpen className="h-6 w-6 text-harvest-gold" />
             <span className="text-sm font-medium">Materials</span>
           </Button>
 
           <Button
             onClick={onCreateTopicBackgroundCard}
             variant="outline"
-            className="flex flex-col items-center gap-2 h-auto py-4 text-center"
+            className="flex flex-col items-center gap-2 h-auto py-4 text-center border-bice-blue/30 text-bice-blue hover:bg-bice-blue/10"
           >
-            <Lightbulb className="h-6 w-6 text-indigo-600" />
+            <Lightbulb className="h-6 w-6 text-bice-blue" />
             <span className="text-sm font-medium">Topic Background</span>
           </Button>
 
           <Button
             onClick={onCreateSectionCards}
             variant="outline"
-            className="flex flex-col items-center gap-2 h-auto py-4 text-center"
+            className="flex flex-col items-center gap-2 h-auto py-4 text-center border-deep-sky-blue/30 text-deep-sky-blue hover:bg-deep-sky-blue/10"
           >
-            <BookMarked className="h-6 w-6 text-purple-600" />
+            <BookMarked className="h-6 w-6 text-deep-sky-blue" />
             <span className="text-sm font-medium">All Sections</span>
           </Button>
 
           <Button
             onClick={onAddCustomCard}
             variant="outline"
-            className="flex flex-col items-center gap-2 h-auto py-4 text-center"
+            className="flex flex-col items-center gap-2 h-auto py-4 text-center border-muted-foreground/30 text-muted-foreground hover:bg-muted/10"
           >
-            <FileEdit className="h-6 w-6 text-gray-600" />
+            <FileEdit className="h-6 w-6 text-muted-foreground" />
             <span className="text-sm font-medium">Custom Card</span>
           </Button>
         </div>
       </div>
 
       {/* AI Enhancement Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-600" />
+      <div className="modern-card hover-lift p-6 bg-gradient-to-br from-brand-primary/5 via-deep-sky-blue/5 to-harvest-gold/5 border border-brand-primary/20 backdrop-blur-sm">
+        <h3 className="text-lg font-semibold text-dark-purple mb-4 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-brand-primary" />
           AI Enhancement Tools
         </h3>
 
@@ -126,7 +126,7 @@ export function CardCreationToolbar({
               onClick={onGenerateSuccessCriteria}
               disabled={generatingCriteria}
               variant="outline"
-              className="w-full flex items-center gap-2"
+              className="w-full flex items-center gap-2 border-sea-green/30 text-sea-green hover:bg-sea-green/10"
             >
               {generatingCriteria ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -139,20 +139,20 @@ export function CardCreationToolbar({
             </Button>
 
             {criteriaMessage && (
-              <p className="text-sm text-gray-600 bg-white p-2 rounded border">
+              <p className="text-sm text-muted-foreground bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-white/30 shadow-soft">
                 {criteriaMessage}
               </p>
             )}
 
             {successCriteria.length > 0 && (
-              <div className="bg-white p-3 rounded border">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
+              <div className="bg-white/80 backdrop-blur-sm p-4 rounded-lg border border-white/30 shadow-soft">
+                <h4 className="text-sm font-medium text-dark-purple mb-2">
                   Generated Success Criteria:
                 </h4>
-                <ul className="text-sm text-gray-600 space-y-1">
+                <ul className="text-sm text-muted-foreground space-y-1">
                   {successCriteria.map((criterion, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <span className="text-green-500 mt-0.5">•</span>
+                      <span className="text-sea-green mt-0.5">•</span>
                       <span>{criterion}</span>
                     </li>
                   ))}
@@ -167,7 +167,7 @@ export function CardCreationToolbar({
               onClick={onImproveLearningIntentions}
               disabled={improvingIntentions}
               variant="outline"
-              className="w-full flex items-center gap-2"
+              className="w-full flex items-center gap-2 border-deep-sky-blue/30 text-deep-sky-blue hover:bg-deep-sky-blue/10"
             >
               {improvingIntentions ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -180,7 +180,7 @@ export function CardCreationToolbar({
             </Button>
 
             {intentionsMessage && (
-              <p className="text-sm text-gray-600 bg-white p-2 rounded border">
+              <p className="text-sm text-muted-foreground bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-white/30 shadow-soft">
                 {intentionsMessage}
               </p>
             )}
@@ -188,12 +188,12 @@ export function CardCreationToolbar({
         </div>
 
         {/* Bulk Actions */}
-        <div className="flex gap-3 pt-4 border-t border-blue-200">
+        <div className="flex flex-wrap gap-3 pt-4 border-t border-brand-primary/20">
           <Button
             onClick={onMakeAllStudentFriendly}
             disabled={processingAllCards}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-harvest-gold/30 text-harvest-gold hover:bg-harvest-gold/10"
           >
             {processingAllCards ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -206,7 +206,7 @@ export function CardCreationToolbar({
           <Button
             onClick={onCreateDifferentiatedCards}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-bice-blue/30 text-bice-blue hover:bg-bice-blue/10"
           >
             <Users className="h-4 w-4" />
             Create Differentiated Cards
@@ -215,7 +215,7 @@ export function CardCreationToolbar({
           <Button
             onClick={onToggleDifferentiatedSelector}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-deep-sky-blue/30 text-deep-sky-blue hover:bg-deep-sky-blue/10"
           >
             <Users className="h-4 w-4" />
             Select Cards for Differentiation

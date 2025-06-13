@@ -1,11 +1,12 @@
-import React from 'react';
-import { MessagePanel } from '../MessagePanel';
-import { StudentHeader } from './StudentHeader';
-import { LessonContentDisplay } from './LessonContentDisplay';
-import { StudentInteractionPanel } from './StudentInteractionPanel';
-import { WaitingRoom } from './WaitingRoom';
-import { CheckCircle2 } from 'lucide-react';
-import type { LessonCard, TeacherMessage, CardAttachment } from '@/lib/types';
+import React from "react";
+import { MessagePanel } from "../MessagePanel";
+import { StudentHeader } from "./StudentHeader";
+import { LessonContentDisplay } from "./LessonContentDisplay";
+import { StudentInteractionPanel } from "./StudentInteractionPanel";
+import { WaitingRoom } from "./WaitingRoom";
+import { CheckCircle2 } from "lucide-react";
+import type { LessonCard, TeacherMessage, CardAttachment } from "@/lib/types";
+import type { LessonPresentation } from "@/lib/supabase/presentations";
 
 interface StudentContentProps {
   studentName: string;
@@ -23,6 +24,7 @@ interface StudentContentProps {
   lessonStarted: boolean;
   currentFeedback: string | null;
   isSending: boolean;
+  presentation?: LessonPresentation | null;
   onToggleMessagePanel: () => void;
   onToggleDifferentiatedView: () => void;
   onGenerateDifferentiated: () => Promise<void>;
@@ -46,35 +48,44 @@ export function StudentContent({
   lessonStarted,
   currentFeedback,
   isSending,
+  presentation,
   onToggleMessagePanel,
   onToggleDifferentiatedView,
   onGenerateDifferentiated,
   onSendFeedback,
-  onSendQuestion
+  onSendQuestion,
 }: StudentContentProps) {
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
+    console.log(
+      "StudentContent: showing waiting room, presentation:",
+      presentation
+    );
     return (
       <WaitingRoom
         studentName={studentName}
         avatarUrl={avatarUrl}
         sessionCode={sessionCode}
         teacherName={teacherName}
+        wordleWord={presentation?.wordle_word || null}
+        lessonTitle="Lesson"
       />
     );
   }
-  
+
   // Show main content when lesson has started
   if (!currentCard) {
     return null;
   }
-  
-  const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
-  
+
+  const hasDifferentiatedContent = currentCard?.differentiatedContent
+    ? true
+    : false;
+
   return (
     <div className="min-h-screen bg-teal/5 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10 py-3 px-4">
-        <StudentHeader 
+        <StudentHeader
           studentName={studentName}
           sessionCode={sessionCode}
           avatarUrl={avatarUrl}
@@ -93,10 +104,12 @@ export function StudentContent({
 
       <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
-          <LessonContentDisplay 
-            content={viewingDifferentiated && currentCard.differentiatedContent 
-              ? currentCard.differentiatedContent 
-              : currentCard.content}
+          <LessonContentDisplay
+            content={
+              viewingDifferentiated && currentCard.differentiatedContent
+                ? currentCard.differentiatedContent
+                : currentCard.content
+            }
             attachments={currentCardAttachments}
             hasDifferentiatedContent={hasDifferentiatedContent}
             viewingDifferentiated={viewingDifferentiated}
@@ -104,8 +117,8 @@ export function StudentContent({
             onToggleDifferentiatedView={onToggleDifferentiatedView}
             onGenerateDifferentiated={onGenerateDifferentiated}
           />
-          
-          <StudentInteractionPanel 
+
+          <StudentInteractionPanel
             onSendFeedback={onSendFeedback}
             onSendQuestion={onSendQuestion}
             isSending={isSending}
@@ -128,7 +141,10 @@ export function StudentContent({
             onClick={onToggleMessagePanel}
             className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-full shadow-lg hover:bg-teal/90 transition-colors"
           >
-            <span>{newMessageCount} new {newMessageCount === 1 ? 'message' : 'messages'}</span>
+            <span>
+              {newMessageCount} new{" "}
+              {newMessageCount === 1 ? "message" : "messages"}
+            </span>
           </button>
         </div>
       )}

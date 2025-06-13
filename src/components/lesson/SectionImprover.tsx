@@ -74,36 +74,38 @@ export function SectionImprover({
         improvement.issue
       );
 
-      // Try to parse JSON response
+      // Parse JSON response with better error handling
       try {
         const parsedResult = JSON.parse(result);
         if (parsedResult.activities && Array.isArray(parsedResult.activities)) {
-          setActivitySuggestions(parsedResult.activities);
-          setSelectedActivities(
-            new Array(parsedResult.activities.length).fill(false)
+          // Validate each activity has required fields
+          const validActivities = parsedResult.activities.filter(
+            (activity: any) =>
+              activity.title &&
+              activity.description &&
+              typeof activity.title === "string" &&
+              typeof activity.description === "string"
           );
+
+          if (validActivities.length > 0) {
+            setActivitySuggestions(validActivities);
+            setSelectedActivities(
+              new Array(validActivities.length).fill(false)
+            );
+          } else {
+            throw new Error("No valid activities found in response");
+          }
         } else {
-          throw new Error("Invalid JSON structure");
+          throw new Error("Invalid JSON structure - missing activities array");
         }
       } catch (parseError) {
-        console.warn(
-          "Failed to parse JSON, falling back to text parsing:",
-          parseError
-        );
-        // Fallback to old text parsing method
-        const processedActivities = cleanAndParseActivities(result);
-        const fallbackSuggestions = processedActivities.map((activity) => ({
-          title:
-            activity.substring(0, 50) + (activity.length > 50 ? "..." : ""),
-          description: activity,
-          duration: "10-15 minutes",
-          materials: "Standard classroom materials",
-          grouping: "Varies",
-        }));
-        setActivitySuggestions(fallbackSuggestions);
-        setSelectedActivities(
-          new Array(fallbackSuggestions.length).fill(false)
-        );
+        console.warn("Failed to parse JSON response:", parseError);
+        console.warn("Raw response:", result);
+
+        // Enhanced fallback parsing for better activity extraction
+        const fallbackActivities = extractActivitiesFromText(result);
+        setActivitySuggestions(fallbackActivities);
+        setSelectedActivities(new Array(fallbackActivities.length).fill(false));
       }
     } catch (err) {
       console.error("Error improving section:", err);
@@ -115,7 +117,86 @@ export function SectionImprover({
     }
   };
 
-  // Clean and parse activities from AI response (fallback method)
+  // Enhanced activity extraction for better fallback parsing
+  const extractActivitiesFromText = (
+    aiResponse: string
+  ): ActivitySuggestion[] => {
+    // Try to extract activities from unstructured text
+    const lines = aiResponse.split(/\n+/);
+    const activities: ActivitySuggestion[] = [];
+
+    let currentActivity: Partial<ActivitySuggestion> = {};
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      // Look for activity titles (often start with numbers or bullets)
+      if (
+        trimmedLine.match(/^(\d+[.)]|\*|\-)\s*.{10,}/) ||
+        trimmedLine.includes("Activity:") ||
+        trimmedLine.includes("Exercise:")
+      ) {
+        // Save previous activity if it exists
+        if (currentActivity.description) {
+          activities.push({
+            title: currentActivity.title || `Activity ${activities.length + 1}`,
+            description: currentActivity.description,
+            duration: currentActivity.duration || "10-15 minutes",
+            materials:
+              currentActivity.materials || "Standard classroom materials",
+            grouping: currentActivity.grouping || "Varies",
+          });
+        }
+
+        // Start new activity
+        const cleanTitle = trimmedLine
+          .replace(/^(\d+[.)]|\*|\-)\s*/, "")
+          .replace(/^(Activity|Exercise):\s*/i, "")
+          .trim();
+
+        currentActivity = {
+          title:
+            cleanTitle.substring(0, 60) + (cleanTitle.length > 60 ? "..." : ""),
+          description: cleanTitle,
+        };
+      } else if (currentActivity.title && trimmedLine.length > 20) {
+        // Add to current activity description
+        currentActivity.description =
+          (currentActivity.description || "") +
+          (currentActivity.description ? " " : "") +
+          trimmedLine;
+      }
+    }
+
+    // Add the last activity
+    if (currentActivity.description) {
+      activities.push({
+        title: currentActivity.title || `Activity ${activities.length + 1}`,
+        description: currentActivity.description,
+        duration: currentActivity.duration || "10-15 minutes",
+        materials: currentActivity.materials || "Standard classroom materials",
+        grouping: currentActivity.grouping || "Varies",
+      });
+    }
+
+    // If no activities found, create a generic one from the response
+    if (activities.length === 0) {
+      activities.push({
+        title: "Suggested Activity",
+        description:
+          aiResponse.trim() ||
+          "Please review and modify this activity as needed.",
+        duration: "10-15 minutes",
+        materials: "Standard classroom materials",
+        grouping: "Varies",
+      });
+    }
+
+    return activities;
+  };
+
+  // Clean and parse activities from AI response (legacy fallback method)
   const cleanAndParseActivities = (aiResponse: string): string[] => {
     // Split by common separators (newlines, bullet points, numbers)
     const lines = aiResponse.split(/\n+/);

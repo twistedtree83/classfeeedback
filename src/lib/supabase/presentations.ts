@@ -11,6 +11,7 @@ export interface LessonPresentation {
   active: boolean;
   created_at: string;
   realtime_enabled: boolean;
+  wordle_word?: string | null;
 }
 
 export const createLessonPresentation = async (
@@ -18,33 +19,46 @@ export const createLessonPresentation = async (
   sessionCode: string,
   lessonId: string,
   cards: LessonCard[],
-  teacherName: string
+  teacherName: string,
+  wordleWord?: string | null
 ): Promise<LessonPresentation | null> => {
   try {
+    console.log("Creating lesson presentation with wordleWord:", wordleWord);
+
+    // Prepare the insert data
+    const insertData: any = {
+      session_id: sessionId,
+      session_code: sessionCode,
+      lesson_id: lessonId,
+      cards: cards,
+      current_card_index: -1, // Start in waiting room (-1), lesson begins at index 0
+      active: true,
+      realtime_enabled: true,
+    };
+
+    // Always add wordle_word field, even if null
+    insertData.wordle_word = wordleWord;
+
+    console.log("Insert data:", insertData);
+
     const { data, error } = await supabase
       .from("lesson_presentations")
-      .insert({
-        session_id: sessionId,
-        session_code: sessionCode,
-        lesson_id: lessonId,
-        cards: JSON.stringify(cards),
-        current_card_index: 0,
-        active: true,
-        realtime_enabled: true,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
       console.error("Error creating lesson presentation:", error);
+      console.error("Error details:", error.details, error.hint, error.message);
       return null;
     }
 
-    // Parse the cards back to objects
+    console.log("Created presentation data:", data);
+
+    // The cards should already be an object from the database
     const parsedData = {
       ...data,
-      cards:
-        typeof data.cards === "string" ? JSON.parse(data.cards) : data.cards,
+      cards: Array.isArray(data.cards) ? data.cards : data.cards,
     };
 
     return parsedData;
@@ -75,12 +89,16 @@ export const getLessonPresentationByCode = async (
       return null;
     }
 
-    // Parse the cards from JSON string to array
+    console.log("Raw presentation data from database:", data);
+
+    // Handle both string and object formats for cards
     const parsedData = {
       ...data,
       cards:
         typeof data.cards === "string" ? JSON.parse(data.cards) : data.cards,
     };
+
+    console.log("Parsed presentation data:", parsedData);
 
     return parsedData;
   } catch (err) {

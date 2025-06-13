@@ -1,56 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { SendMessageModal } from '../components/SendMessageModal';
-import { TeachingHeader } from '../components/teacher/TeachingHeader';
-import { TeachingContentArea } from '../components/teacher/TeachingContentArea';
-import { TeacherSidebar } from '../components/TeacherSidebar';
-import { Sidebar } from '@/components/ui/sidebar';
-import { useTeacherPresentation } from '../hooks/useTeacherPresentation';
-import { useTeacherParticipants } from '../hooks/useTeacherParticipants';
-import { useTeacherFeedbackAndQuestions } from '../hooks/useTeacherFeedbackAndQuestions';
-import { useTeacherMessaging } from '../hooks/useTeacherMessaging';
-import { endLessonPresentation } from '../lib/supabase';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { SendMessageModal } from "../components/SendMessageModal";
+import { TeachingHeader } from "../components/teacher/TeachingHeader";
+import { TeachingContentArea } from "../components/teacher/TeachingContentArea";
+import { TeacherSidebar } from "../components/TeacherSidebar";
+import { Sidebar } from "@/components/ui/sidebar";
+import { useTeacherPresentation } from "../hooks/useTeacherPresentation";
+import { useTeacherParticipants } from "../hooks/useTeacherParticipants";
+import { useTeacherFeedbackAndQuestions } from "../hooks/useTeacherFeedbackAndQuestions";
+import { useTeacherMessaging } from "../hooks/useTeacherMessaging";
+import { endLessonPresentation } from "../lib/supabase";
 
 export function TeachingModePage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  
+
   // State for sidebar visibility
   const [showSidebar, setShowSidebar] = useState(true);
-  
+
   // Custom hooks for managing different aspects of the teaching mode
-  const { 
-    presentation, 
-    currentCard, 
+  const {
+    presentation,
+    currentCard,
     displayedCardIndex,
     actualCardIndex,
     teacherName,
     lessonTitle,
-    loading, 
-    error, 
-    handlePrevious, 
+    loading,
+    error,
+    handlePrevious,
     handleNext,
-    totalCards
+    totalCards,
   } = useTeacherPresentation(code);
-  
+
   const {
     pendingCount,
     pendingParticipants,
     handleApproveParticipant,
-    handleRejectParticipant
+    handleRejectParticipant,
   } = useTeacherParticipants(code);
-  
-  const {
-    hasNewQuestions,
-    clearHasNewQuestions
-  } = useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
-  
+
+  const { hasNewQuestions, clearHasNewQuestions } =
+    useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
+
   const {
     showMessageModal,
     isSending,
     handleSendMessage,
     openMessageModal,
-    closeMessageModal
+    closeMessageModal,
   } = useTeacherMessaging(presentation?.id, teacherName);
 
   const handleToggleSidebar = () => {
@@ -58,7 +56,10 @@ export function TeachingModePage() {
   };
 
   const handleEndSession = async () => {
-    if (!presentation || !window.confirm('Are you sure you want to end this teaching session?')) {
+    if (
+      !presentation ||
+      !window.confirm("Are you sure you want to end this teaching session?")
+    ) {
       return;
     }
 
@@ -71,13 +72,17 @@ export function TeachingModePage() {
 
   // Calculate state for component props
   const isFirstCard = displayedCardIndex === 0;
-  const isLastCard = presentation ? displayedCardIndex === totalCards - 1 : true;
-  const progressPercentage = totalCards ? ((displayedCardIndex + 1) / totalCards) * 100 : 0;
+  const isLastCard = presentation
+    ? displayedCardIndex === totalCards - 1
+    : true;
+  const progressPercentage = totalCards
+    ? ((displayedCardIndex + 1) / totalCards) * 100
+    : 0;
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
       </div>
     );
   }
@@ -86,14 +91,14 @@ export function TeachingModePage() {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="bg-red/10 text-red p-4 rounded-lg border border-red/20">
-          {error || 'Session not found or has ended'}
+          {error || "Session not found or has ended"}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white flex flex-col h-screen overflow-hidden">
       <TeachingHeader
         sessionCode={presentation.session_code}
         lessonTitle={lessonTitle}
@@ -107,7 +112,7 @@ export function TeachingModePage() {
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar open={showSidebar} setOpen={setShowSidebar}>
-          <TeacherSidebar 
+          <TeacherSidebar
             sessionCode={presentation.session_code}
             presentationId={presentation.id}
             teacherName={teacherName}

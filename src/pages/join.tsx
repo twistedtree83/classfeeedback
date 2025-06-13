@@ -1,12 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { JoinSessionForm } from '../components/JoinSessionForm';
+import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { JoinSessionForm } from "../components/JoinSessionForm";
 
 export function JoinPage() {
-  const handleJoinSession = (code: string, name: string, avatarUrl?: string) => {
+  const handleJoinSession = (
+    code: string,
+    name: string,
+    avatarUrl?: string
+  ) => {
     // Navigate to student view with code as URL parameter
-    window.location.href = `/student?code=${code}&name=${encodeURIComponent(name)}${avatarUrl ? `&avatar=${encodeURIComponent(avatarUrl)}` : ''}`;
+    window.location.href = `/student?code=${code}&name=${encodeURIComponent(
+      name
+    )}${avatarUrl ? `&avatar=${encodeURIComponent(avatarUrl)}` : ""}`;
   };
 
   return (
@@ -14,7 +20,10 @@ export function JoinPage() {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center">
           <div className="w-full max-w-md mb-4 flex justify-start">
-            <Link to="/" className="text-teal hover:text-coral flex items-center">
+            <Link
+              to="/"
+              className="text-brand-primary hover:text-dark-purple-400 flex items-center transition-colors"
+            >
               <ArrowLeft size={16} className="mr-1" />
               Back to Home
             </Link>

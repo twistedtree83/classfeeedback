@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { User, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
-import { ProtectedRoute } from '../components/auth/ProtectedRoute';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
+import { User, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import { supabase } from "../lib/supabaseClient";
 
 export function Profile() {
   const { user, signOut } = useAuth();
-  const [fullName, setFullName] = useState('');
-  const [title, setTitle] = useState('');
-  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [title, setTitle] = useState("");
+  const [email, setEmail] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -19,53 +19,53 @@ export function Profile() {
 
   useEffect(() => {
     if (user) {
-      setEmail(user.email || '');
-      setFullName(user.user_metadata?.full_name || '');
-      setTitle(user.user_metadata?.title || '');
+      setEmail(user.email || "");
+      setFullName(user.user_metadata?.full_name || "");
+      setTitle(user.user_metadata?.title || "");
     }
   }, [user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!fullName.trim()) {
-      setError('Name is required');
+      setError("Name is required");
       return;
     }
-    
+
     setIsUpdating(true);
     setError(null);
     setSuccessMessage(null);
-    
+
     try {
       const { error } = await supabase.auth.updateUser({
         data: {
           full_name: fullName,
-          title: title
-        }
+          title: title,
+        },
       });
-      
+
       if (error) {
         throw error;
       }
-      
-      setSuccessMessage('Profile updated successfully');
+
+      setSuccessMessage("Profile updated successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
+      setError(err.message || "Failed to update profile");
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleChangePassword = () => {
-    navigate('/update-password');
+    navigate("/update-password");
   };
 
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
-      navigate('/login');
+      navigate("/login");
     } else {
       setError(error);
     }
@@ -73,43 +73,46 @@ export function Profile() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="px-6 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white py-12">
+        <div className="max-w-md mx-auto">
+          <div className="modern-card hover-lift p-8 bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-sm border border-white/30">
             <div className="flex justify-center mb-6">
-              <div className="h-24 w-24 rounded-full bg-indigo-100 flex items-center justify-center">
-                <User className="h-12 w-12 text-indigo-600" />
+              <div className="h-24 w-24 rounded-full bg-dark-purple/10 flex items-center justify-center">
+                <User className="h-12 w-12 text-dark-purple" />
               </div>
             </div>
-            
-            <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
+
+            <h1 className="text-2xl font-bold text-center text-dark-purple mb-6">
               Profile Settings
             </h1>
-            
+
             {error && (
-              <div className="p-3 mb-4 rounded-md bg-red-50 text-red-700 flex items-start">
+              <div className="p-3 mb-4 rounded-md bg-red/10 text-red border border-red/20 flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
-            
+
             {successMessage && (
-              <div className="p-3 mb-4 rounded-md bg-green-50 text-green-700 flex items-start">
+              <div className="p-3 mb-4 rounded-md bg-sea-green/10 text-sea-green border border-sea-green/20 flex items-start">
                 <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <span>{successMessage}</span>
               </div>
             )}
-            
+
             <form onSubmit={handleUpdateProfile} className="space-y-6">
               <div className="space-y-2">
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="title"
+                  className="block text-sm font-medium text-dark-purple"
+                >
                   Title
                 </label>
                 <select
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-dark-purple/20 rounded-lg shadow-soft focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary transition-all"
                   required
                 >
                   <option value="">Select a title</option>
@@ -120,32 +123,28 @@ export function Profile() {
                   <option value="Dr.">Dr.</option>
                 </select>
               </div>
-              
+
               <Input
                 label="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                icon={<User className="h-5 w-5 text-gray-400" />}
+                icon={<User className="h-5 w-5 text-muted-foreground" />}
                 placeholder="Enter your name"
               />
-              
+
               <Input
                 label="Email"
                 value={email}
                 disabled
-                icon={<Mail className="h-5 w-5 text-gray-400" />}
-                className="bg-gray-50"
+                icon={<Mail className="h-5 w-5 text-muted-foreground" />}
+                className="bg-muted/50"
               />
-              
+
               <div className="flex flex-col space-y-4">
-                <Button
-                  type="submit"
-                  isLoading={isUpdating}
-                  className="w-full"
-                >
+                <Button type="submit" isLoading={isUpdating} className="w-full">
                   Save Changes
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -155,12 +154,12 @@ export function Profile() {
                   <Lock className="h-4 w-4 mr-2" />
                   Change Password
                 </Button>
-                
+
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="destructive"
                   onClick={handleSignOut}
-                  className="w-full text-red-600 border-red-200 hover:bg-red-50"
+                  className="w-full"
                 >
                   Sign Out
                 </Button>
