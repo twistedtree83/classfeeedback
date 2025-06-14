@@ -7,3 +7,4 @@ export * from "./learningIntentions";
 export * from "./differentiatedContent";
 export * from "./sectionImprovement";
 export * from "./wordleGenerator";
+export * from "./activityExpansion"; // Add the new activityExpansion module

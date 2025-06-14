@@ -13,6 +13,7 @@ import {
   ListChecks,
   Users,
   Loader2,
+  Wand,
 } from "lucide-react";
 import type { ProcessedLesson } from "../../lib/types";
 
@@ -34,6 +35,7 @@ interface CardCreationToolbarProps {
   onMakeAllStudentFriendly: () => void;
   onCreateDifferentiatedCards: () => void;
   onToggleDifferentiatedSelector: () => void;
+  onExpandActivities?: () => void; // New prop
 }
 
 export function CardCreationToolbar({
@@ -54,6 +56,7 @@ export function CardCreationToolbar({
   onMakeAllStudentFriendly,
   onCreateDifferentiatedCards,
   onToggleDifferentiatedSelector,
+  onExpandActivities,
 }: CardCreationToolbarProps) {
   return (
     <div className="space-y-6">
@@ -109,6 +112,17 @@ export function CardCreationToolbar({
             <FileEdit className="h-6 w-6 text-muted-foreground" />
             <span className="text-sm font-medium">Custom Card</span>
           </Button>
+
+          {onExpandActivities && (
+            <Button
+              onClick={onExpandActivities}
+              variant="outline"
+              className="flex flex-col items-center gap-2 h-auto py-4 text-center border-sea-green/30 text-sea-green hover:bg-sea-green/10"
+            >
+              <Wand className="h-6 w-6 text-sea-green" />
+              <span className="text-sm font-medium">Expand Activities</span>
+            </Button>
+          )}
         </div>
       </div>
 

@@ -17,6 +17,7 @@ export function useTeachingCardsManager(
   >(null);
   const [showDifferentiatedSelector, setShowDifferentiatedSelector] =
     useState(false);
+  const [showActivityExpander, setShowActivityExpander] = useState(false);
 
   // Handle drag end event with error handling
   const handleDragEnd = (result: DropResult) => {
@@ -174,6 +175,49 @@ export function useTeachingCardsManager(
     onSave(updatedCards);
   };
 
+  // Handle saving expanded activities from ActivityBulkExpander
+  const handleSaveExpandedActivities = (
+    updates: { sectionIndex: number; activityIndex: number; expanded: string }[]
+  ) => {
+    if (!lesson || updates.length === 0) return;
+    
+    // First, update the sections in the lesson
+    const updatedSections = [...lesson.sections];
+    
+    updates.forEach(({ sectionIndex, activityIndex, expanded }) => {
+      if (
+        sectionIndex >= 0 &&
+        sectionIndex < updatedSections.length &&
+        activityIndex >= 0 &&
+        activityIndex < updatedSections[sectionIndex].activities.length
+      ) {
+        updatedSections[sectionIndex].activities[activityIndex] = expanded;
+      }
+    });
+    
+    // Next, update any related cards that already exist
+    const updatedCards = selectedCards.map(card => {
+      if (card.type === 'activity' && card.sectionId && card.activityIndex !== null) {
+        // Find the corresponding section
+        const sectionIndex = updatedSections.findIndex(s => s.id === card.sectionId);
+        if (sectionIndex !== -1 && card.activityIndex < updatedSections[sectionIndex].activities.length) {
+          // Update the card content with the expanded activity
+          return {
+            ...card,
+            content: updatedSections[sectionIndex].activities[card.activityIndex]
+          };
+        }
+      }
+      return card;
+    });
+    
+    // Save updated cards
+    onSave(updatedCards);
+    
+    // Close the modal
+    setShowActivityExpander(false);
+  };
+
   return {
     // Editing state
     editingCardId,
@@ -191,6 +235,8 @@ export function useTeachingCardsManager(
     setCurrentCardForAttachment,
     showDifferentiatedSelector,
     setShowDifferentiatedSelector,
+    showActivityExpander,
+    setShowActivityExpander,
 
     // Card management actions
     handleDragEnd,
@@ -206,5 +252,8 @@ export function useTeachingCardsManager(
     handleAddAttachment,
     handleAttachmentAdded,
     handleDeleteAttachment,
+    
+    // Activity expansion
+    handleSaveExpandedActivities,
   };
 }

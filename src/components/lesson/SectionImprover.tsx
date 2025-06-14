@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
-import { improveLessonSection } from "@/lib/aiService";
+import { improveLessonSection, expandActivity } from "@/lib/ai";
 import {
   Loader2,
   CheckCircle,
@@ -13,6 +13,7 @@ import {
   Clock,
   Users,
   Package,
+  Wand,
 } from "lucide-react";
 import { ImprovementArea } from "@/types/lessonTypes";
 import { sanitizeHtml } from "@/lib/utils";
@@ -52,6 +53,7 @@ export function SectionImprover({
       : []
   );
   const [error, setError] = useState("");
+  const [expandingActivityIndex, setExpandingActivityIndex] = useState<number | null>(null);
 
   // Function to generate improved content from AI
   const generateImprovement = async () => {
@@ -196,24 +198,6 @@ export function SectionImprover({
     return activities;
   };
 
-  // Clean and parse activities from AI response (legacy fallback method)
-  const cleanAndParseActivities = (aiResponse: string): string[] => {
-    // Split by common separators (newlines, bullet points, numbers)
-    const lines = aiResponse.split(/\n+/);
-
-    // Process each line to remove bullet points, numbering, etc.
-    return lines
-      .map((line) => {
-        // Remove bullet points, numbers, and extra whitespace
-        return line
-          .trim()
-          .replace(/^[•\-*]\s*/, "") // Bullet points
-          .replace(/^\d+[.):]\s*/, "") // Numbering
-          .trim();
-      })
-      .filter((line) => line.length > 0); // Remove empty lines
-  };
-
   // Generate improvement when component mounts
   useEffect(() => {
     generateImprovement();
@@ -243,6 +227,33 @@ export function SectionImprover({
     const newActivities = [...existingActivities];
     newActivities.splice(index, 1);
     setExistingActivities(newActivities);
+  };
+
+  // Handle expanding an activity with AI
+  const handleExpandActivity = (index: number) => {
+    if (existingActivities[index]) {
+      setExpandingActivityIndex(index);
+    }
+  };
+
+  // Handle expanded activity from AI
+  const handleExpandedActivity = async (index: number) => {
+    if (index === null || !existingActivities[index]) return;
+    
+    setIsGenerating(true);
+    
+    try {
+      const expanded = await expandActivity(existingActivities[index]);
+      const newActivities = [...existingActivities];
+      newActivities[index] = expanded;
+      setExistingActivities(newActivities);
+    } catch (err) {
+      console.error("Error expanding activity:", err);
+      setError("Failed to expand activity.");
+    } finally {
+      setIsGenerating(false);
+      setExpandingActivityIndex(null);
+    }
   };
 
   // Handle approving the changes
@@ -310,14 +321,27 @@ export function SectionImprover({
                   rows={3}
                   placeholder={`Activity ${index + 1} description...`}
                 />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-500"
-                  onClick={() => handleRemoveExistingActivity(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex flex-col gap-1">
+                  {activity.trim().length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExpandActivity(index)}
+                      title="Expand activity with AI"
+                      className="text-green-600"
+                    >
+                      <Wand className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500"
+                    onClick={() => handleRemoveExistingActivity(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
             <Button
@@ -441,7 +465,7 @@ export function SectionImprover({
       {/* Action Buttons */}
       <div className="flex justify-between items-center mt-6 pt-4 border-t border-blue-200">
         <div className="text-sm text-gray-600">
-          {hasSelectedActivities && (
+          {hasSelectedActivities && !isGenerating && (
             <span className="text-blue-600">
               {selectedActivities.filter((s) => s).length} activity(ies)
               selected
@@ -466,6 +490,43 @@ export function SectionImprover({
           </Button>
         </div>
       </div>
+
+      {/* Expanded activity modal */}
+      {expandingActivityIndex !== null && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl">
+            <h3 className="text-lg font-medium mb-4">Expanding Activity</h3>
+            {isGenerating ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-4" />
+                <p className="text-gray-700">Generating detailed instructions...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-amber-50 p-3 rounded-lg">
+                  <p className="text-sm font-medium">Original activity:</p>
+                  <p className="text-amber-800">{existingActivities[expandingActivityIndex]}</p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setExpandingActivityIndex(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => handleExpandedActivity(expandingActivityIndex)}
+                    className="bg-blue-600 text-white"
+                  >
+                    <Sparkles className="h-4 w-4 mr-1" />
+                    Expand with AI
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

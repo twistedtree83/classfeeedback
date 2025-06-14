@@ -5,6 +5,7 @@ import { CardCreationToolbar } from "./cards/CardCreationToolbar";
 import { CardsContainer } from "./cards/CardsContainer";
 import { FileUploadModal } from "./FileUploadModal";
 import { DifferentiatedCardsSelector } from "./DifferentiatedCardsSelector";
+import { ActivityBulkExpander } from "./ActivityBulkExpander"; // Import the new component
 import {
   createObjectiveCard,
   createMaterialsCard,
@@ -67,6 +68,15 @@ export function TeachingCardsManager({
     onSave([...selectedCards, ...newCards]);
   };
 
+  // Prepare activities for bulk expander
+  const sectionsWithActivities = lesson.sections
+    .map((section, index) => ({
+      section: section.title,
+      sectionIndex: index,
+      activities: section.activities || [],
+    }))
+    .filter((section) => section.activities.length > 0);
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="create">
@@ -90,46 +100,31 @@ export function TeachingCardsManager({
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Quick Add Cards</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <button
-                onClick={createObjectiveCardHandler}
-                className="p-3 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors flex flex-col items-center justify-center aspect-square text-center"
-              >
-                <Target className="h-6 w-6 mb-2 text-primary" />
-                <span className="text-sm font-medium">Learning Objectives</span>
-              </button>
-
-              <button
-                onClick={createMaterialsCardHandler}
-                className="p-3 rounded-lg bg-accent/10 hover:bg-accent/20 transition-colors flex flex-col items-center justify-center aspect-square text-center"
-              >
-                <BookOpen className="h-6 w-6 mb-2 text-accent" />
-                <span className="text-sm font-medium">Materials</span>
-              </button>
-
-              <button
-                onClick={createTopicBackgroundCardHandler}
-                className="p-3 rounded-lg bg-info/10 hover:bg-info/20 transition-colors flex flex-col items-center justify-center aspect-square text-center"
-              >
-                <Lightbulb className="h-6 w-6 mb-2 text-info" />
-                <span className="text-sm font-medium">Topic Background</span>
-              </button>
-
-              <button
-                onClick={createSectionCardsHandler}
-                className="p-3 rounded-lg bg-secondary/10 hover:bg-secondary/20 transition-colors flex flex-col items-center justify-center aspect-square text-center"
-              >
-                <BookMarked className="h-6 w-6 mb-2 text-secondary" />
-                <span className="text-sm font-medium">All Sections</span>
-              </button>
-
-              <button
-                onClick={cardManager.handleAddCustomCard}
-                className="p-3 rounded-lg bg-muted/80 hover:bg-muted transition-colors flex flex-col items-center justify-center aspect-square text-center"
-              >
-                <FileEdit className="h-6 w-6 mb-2 text-muted-foreground" />
-                <span className="text-sm font-medium">Custom Card</span>
-              </button>
+            <CardContent>
+              <CardCreationToolbar
+                lesson={lesson}
+                successCriteria={aiTools.successCriteria}
+                criteriaMessage={aiTools.criteriaMessage?.text || ""}
+                intentionsMessage={aiTools.intentionsMessage?.text || ""}
+                generatingCriteria={aiTools.generatingCriteria}
+                improvingIntentions={aiTools.improvingIntentions}
+                processingAllCards={aiTools.processingAllCards}
+                onCreateObjectiveCard={createObjectiveCardHandler}
+                onCreateMaterialsCard={createMaterialsCardHandler}
+                onCreateTopicBackgroundCard={createTopicBackgroundCardHandler}
+                onCreateSectionCards={createSectionCardsHandler}
+                onAddCustomCard={cardManager.handleAddCustomCard}
+                onGenerateSuccessCriteria={aiTools.handleGenerateSuccessCriteria}
+                onImproveLearningIntentions={aiTools.handleImproveLearningIntentions}
+                onMakeAllStudentFriendly={aiTools.makeAllCardsStudentFriendly}
+                onCreateDifferentiatedCards={aiTools.createDifferentiatedCards}
+                onToggleDifferentiatedSelector={() => 
+                  cardManager.setShowDifferentiatedSelector(true)
+                }
+                onExpandActivities={() => 
+                  cardManager.setShowActivityExpander(true)
+                }
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -155,7 +150,7 @@ export function TeachingCardsManager({
                     {aiTools.generatingCriteria ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <ListChecks className="h-4 w-4" />
+                      <CheckSquare className="h-4 w-4" />
                     )}
                     {aiTools.generatingCriteria
                       ? "Generating..."
@@ -218,6 +213,15 @@ export function TeachingCardsManager({
                 >
                   <Users className="h-4 w-4" />
                   Create Differentiated Cards
+                </Button>
+
+                <Button
+                  onClick={() => cardManager.setShowActivityExpander(true)}
+                  variant="outline" 
+                  className="flex items-center gap-2 border-sea-green/30 text-sea-green hover:bg-sea-green/10"
+                >
+                  <Wand className="h-4 w-4" />
+                  Expand Activities
                 </Button>
               </div>
             </CardContent>
@@ -292,6 +296,16 @@ export function TeachingCardsManager({
           onCancel={() => cardManager.setShowDifferentiatedSelector(false)}
         />
       )}
+      
+      {cardManager.showActivityExpander && (
+        <ActivityBulkExpander
+          activities={sectionsWithActivities}
+          lessonTitle={lesson.title}
+          lessonLevel={lesson.level}
+          onClose={() => cardManager.setShowActivityExpander(false)}
+          onSaveExpanded={cardManager.handleSaveExpandedActivities}
+        />
+      )}
     </div>
   );
 }
@@ -308,4 +322,3 @@ import {
   Users,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";

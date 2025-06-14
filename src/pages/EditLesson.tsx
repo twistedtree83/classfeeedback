@@ -141,8 +141,8 @@ export function EditLesson() {
       // Use the AI service to generate background information
       const result = await aiAnalyzeLesson(lessonContent, level);
 
-      if (result && result.topic_background) {
-        setTopicBackground(result.topic_background);
+      if (result && result.data.topic_background) {
+        setTopicBackground(result.data.topic_background);
         setBackgroundMessage({
           text: "Background information generated successfully",
           type: "success",
@@ -604,6 +604,8 @@ export function EditLesson() {
               }
               onDelete={() => handleRemoveSection(index)}
               isProcessing={saving}
+              lessonContext={title}
+              lessonLevel={level}
             />
           ))}
         </div>
