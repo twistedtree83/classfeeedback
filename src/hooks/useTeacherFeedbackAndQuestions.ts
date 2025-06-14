@@ -233,11 +233,15 @@ export function useTeacherFeedbackAndQuestions(
   
   // Pending extension requests count
   const pendingExtensionCount = extensionRequests.filter(r => r.status === 'pending').length;
+  
+  // Get only pending extension requests for display
+  const pendingExtensionRequests = extensionRequests.filter(r => r.status === 'pending');
 
   return {
     feedback,
     questions,
     extensionRequests,
+    pendingExtensionRequests,
     feedbackCounts,
     newQuestionsCount,
     pendingExtensionCount,

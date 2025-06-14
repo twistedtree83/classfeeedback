@@ -43,7 +43,10 @@ export function TeachingModePage() {
   const { 
     hasNewQuestions, 
     hasNewExtensionRequests,
-    clearHasNewQuestions 
+    clearHasNewQuestions,
+    pendingExtensionRequests,
+    handleApproveExtension,
+    handleRejectExtension
   } = useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
 
   const {
@@ -139,8 +142,11 @@ export function TeachingModePage() {
             onNext={handleNext}
             sessionCode={presentation.session_code}
             pendingParticipants={pendingParticipants}
+            pendingExtensionRequests={pendingExtensionRequests}
             onApproveParticipant={handleApproveParticipant}
             onRejectParticipant={handleRejectParticipant}
+            onApproveExtension={handleApproveExtension}
+            onRejectExtension={handleRejectExtension}
           />
         </main>
       </div>

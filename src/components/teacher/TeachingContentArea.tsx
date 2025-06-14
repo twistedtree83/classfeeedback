@@ -1,8 +1,8 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Play, Paperclip, UserCheck, UserX } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play, Paperclip, UserCheck, UserX, Sparkles, Clock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
-import type { LessonCard, SessionParticipant } from '../../lib/types';
+import type { LessonCard, SessionParticipant, ExtensionRequest } from '../../lib/types';
 import { AttachmentDisplay } from '../AttachmentDisplay';
 
 interface TeachingContentAreaProps {
@@ -16,8 +16,11 @@ interface TeachingContentAreaProps {
   onNext: () => void;
   sessionCode: string;
   pendingParticipants?: SessionParticipant[];
+  pendingExtensionRequests?: ExtensionRequest[];
   onApproveParticipant?: (participantId: string) => void;
   onRejectParticipant?: (participantId: string) => void;
+  onApproveExtension?: (requestId: string) => Promise<boolean>;
+  onRejectExtension?: (requestId: string) => Promise<boolean>;
 }
 
 export function TeachingContentArea({
@@ -31,9 +34,44 @@ export function TeachingContentArea({
   onNext,
   sessionCode,
   pendingParticipants = [],
+  pendingExtensionRequests = [],
   onApproveParticipant,
-  onRejectParticipant
+  onRejectParticipant,
+  onApproveExtension,
+  onRejectExtension
 }: TeachingContentAreaProps) {
+  const [processingExtensionIds, setProcessingExtensionIds] = React.useState<Set<string>>(new Set());
+  
+  const handleApproveExtension = async (requestId: string) => {
+    if (!onApproveExtension) return;
+    
+    setProcessingExtensionIds(prev => new Set([...prev, requestId]));
+    try {
+      await onApproveExtension(requestId);
+    } finally {
+      setProcessingExtensionIds(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
+    }
+  };
+  
+  const handleRejectExtension = async (requestId: string) => {
+    if (!onRejectExtension) return;
+    
+    setProcessingExtensionIds(prev => new Set([...prev, requestId]));
+    try {
+      await onRejectExtension(requestId);
+    } finally {
+      setProcessingExtensionIds(prev => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
+    }
+  };
+
   if (!currentCard) {
     return (
       <div className="max-w-4xl mx-auto">
@@ -137,6 +175,58 @@ export function TeachingContentArea({
           )}
         </div>
       </div>
+
+      {/* Pending extension requests section */}
+      {pendingExtensionRequests.length > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg mb-6">
+          <div className="px-4 py-3 border-b border-purple-200 flex justify-between items-center">
+            <h3 className="font-semibold text-purple-700 flex items-center">
+              <Sparkles className="h-5 w-5 mr-2" />
+              Extension Activity Requests ({pendingExtensionRequests.length})
+            </h3>
+          </div>
+          <div className="p-4">
+            <div className="grid gap-2">
+              {pendingExtensionRequests.map(request => (
+                <div key={request.id} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-purple-100">
+                  <div>
+                    <div className="font-medium text-gray-800">{request.student_name}</div>
+                    <div className="text-sm text-gray-600 flex items-center">
+                      <Clock className="h-4 w-4 mr-1 text-purple-500" />
+                      <span>Card {request.card_index + 1} • Requested extension activity</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleApproveExtension(request.id)}
+                      size="sm"
+                      disabled={processingExtensionIds.has(request.id)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      {processingExtensionIds.has(request.id) ? (
+                        <Clock className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-1" />
+                      )}
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={() => handleRejectExtension(request.id)}
+                      size="sm"
+                      variant="outline"
+                      disabled={processingExtensionIds.has(request.id)}
+                      className="border-red text-red hover:bg-red/10"
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending students approval section */}
       {pendingParticipants.length > 0 && (
