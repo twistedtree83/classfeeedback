@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { 
   Clock, 
   FileText, 
@@ -10,7 +10,8 @@ import {
   List,
   Maximize2,
   Minimize2,
-  Wand
+  ChevronRight,
+  ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,8 +23,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { sanitizeHtml } from "../lib/utils";
-import { ActivityExpander } from "./ActivityExpander";
 import type { ProcessedLesson } from "../lib/types";
+import { SectionImprover } from "@/components/lesson/SectionImprover";
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
@@ -35,6 +36,151 @@ interface LessonPlanDisplayProps {
 
 interface LessonStatsProps {
   lesson: ProcessedLesson;
+}
+
+interface ActivityExpansionProps {
+  activity: string;
+  sectionId: string;
+  activityIndex: number;
+  onAddToTeaching?: (
+    cardType: "objective" | "material" | "section" | "activity" | "topic_background",
+    data: any
+  ) => void;
+  sectionTitle: string;
+}
+
+function ActivityExpansion({ 
+  activity, 
+  sectionId, 
+  activityIndex, 
+  onAddToTeaching,
+  sectionTitle
+}: ActivityExpansionProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [expandedActivity, setExpandedActivity] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleExpand = async () => {
+    if (!expanded) {
+      setIsGenerating(true);
+      try {
+        // In a real implementation, this would call an API to expand the activity
+        // For now, we'll just simulate a delay and add more detail
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Create a more detailed version of the activity
+        const expandedVersion = `${activity}\n\n**Detailed Instructions:**\n\n1. Setup: ${getRandomSetupInstructions()}\n2. Procedure: ${getRandomProcedureInstructions()}\n3. Variations: ${getRandomVariations()}\n4. Assessment: ${getRandomAssessment()}`;
+        
+        setExpandedActivity(expandedVersion);
+        setExpanded(true);
+      } catch (error) {
+        console.error("Error expanding activity:", error);
+      } finally {
+        setIsGenerating(false);
+      }
+    } else {
+      setExpanded(false);
+    }
+  };
+
+  const handleUseExpanded = () => {
+    if (onAddToTeaching && expanded) {
+      onAddToTeaching("activity", {
+        title: `Activity: ${sectionTitle}`,
+        content: expandedActivity,
+        sectionId: sectionId,
+        activityIndex: activityIndex,
+      });
+    }
+  };
+
+  // Helper functions to generate random detailed content
+  const getRandomSetupInstructions = () => {
+    const setups = [
+      "Arrange students in pairs facing each other about 2 meters apart.",
+      "Create a grid on the floor using tape or chalk, with 1-meter squares.",
+      "Divide the class into groups of 4-5 students and assign each group to a station.",
+      "Set up cones in a zigzag pattern with 3 meters between each cone.",
+      "Place students in a circle with enough space to move freely."
+    ];
+    return setups[Math.floor(Math.random() * setups.length)];
+  };
+
+  const getRandomProcedureInstructions = () => {
+    const procedures = [
+      "Demonstrate the technique first, then have students practice in pairs while you provide feedback.",
+      "Start with a slow pace to ensure proper form, then gradually increase speed as students become comfortable.",
+      "Have students take turns leading the activity while others follow, switching roles every 2 minutes.",
+      "Begin with individual practice, then progress to partner work, and finally to small group collaboration.",
+      "Use a countdown timer and challenge students to improve their performance with each round."
+    ];
+    return procedures[Math.floor(Math.random() * procedures.length)];
+  };
+
+  const getRandomVariations = () => {
+    const variations = [
+      "For advanced students, add obstacles to navigate around. For those who need support, reduce the distance or complexity.",
+      "Modify the activity by changing the pace, direction, or adding additional rules as students progress.",
+      "Create competitive and non-competitive versions to accommodate different student preferences.",
+      "Adjust the space constraints to make the activity more challenging or more accessible.",
+      "Provide visual cues for students who benefit from visual learning approaches."
+    ];
+    return variations[Math.floor(Math.random() * variations.length)];
+  };
+
+  const getRandomAssessment = () => {
+    const assessments = [
+      "Observe student technique and provide immediate feedback. Look for proper form and execution.",
+      "Have students self-assess using a simple rubric focusing on key skills.",
+      "Use peer feedback with specific criteria for students to watch for.",
+      "Track improvement over multiple attempts using a simple checklist.",
+      "Ask students to reflect on their performance and identify one strength and one area for improvement."
+    ];
+    return assessments[Math.floor(Math.random() * assessments.length)];
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex items-start">
+        <div 
+          className="flex-1 text-sm text-muted-foreground"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(expanded ? expandedActivity : activity) }}
+        ></div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleExpand}
+          className="ml-2 flex-shrink-0 text-secondary border border-secondary/20 bg-secondary/5 hover:bg-secondary/10"
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-secondary border-t-transparent"></div>
+          ) : expanded ? (
+            <Minimize2 className="h-3.5 w-3.5" />
+          ) : (
+            <ExternalLink className="h-3.5 w-3.5" />
+          )}
+          <span className="ml-1 text-xs">
+            {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand"}
+          </span>
+        </Button>
+      </div>
+      
+      {expanded && (
+        <div className="mt-2 text-right">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUseExpanded}
+            className="text-xs border-success text-success hover:bg-success/10"
+          >
+            Use Expanded Activity
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function LessonStatistics({ lesson }: LessonStatsProps) {
@@ -99,9 +245,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     materials: false,
     sections: false,
   });
-  
-  // State to track temporarily updated activities
-  const [updatedSections, setUpdatedSections] = useState<ProcessedLesson['sections'] | null>(null);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -122,48 +265,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     });
   };
 
-  const [expandingActivity, setExpandingActivity] = useState<{
-    sectionId: string;
-    activityIndex: number;
-    content: string;
-  } | null>(null);
-
-  const handleExpandActivity = useCallback((sectionId: string, activityIndex: number, content: string) => {
-    setExpandingActivity({
-      sectionId,
-      activityIndex,
-      content
-    });
-  }, []);
-
-  const handleExpandedActivity = useCallback((expanded: string) => {
-    if (!expandingActivity) return;
-    
-    // Get the current sections to update (either from updatedSections state or the original lesson)
-    const sectionsToUpdate = updatedSections || lesson.sections;
-    
-    // Find the section and update the activity
-    const sectionIndex = sectionsToUpdate.findIndex(s => s.id === expandingActivity.sectionId);
-    if (sectionIndex !== -1) {
-      const newSections = [...sectionsToUpdate];
-      newSections[sectionIndex] = {
-        ...newSections[sectionIndex],
-        activities: [
-          ...newSections[sectionIndex].activities.slice(0, expandingActivity.activityIndex),
-          expanded,
-          ...newSections[sectionIndex].activities.slice(expandingActivity.activityIndex + 1)
-        ]
-      };
-      
-      // Update our local state with the modified sections
-      setUpdatedSections(newSections);
-      console.log("Activity expanded and updated in local state");
-    }
-    
-    // Close the expander
-    setExpandingActivity(null);
-  }, [expandingActivity, lesson.sections, updatedSections]);
-
   // Map section names to their values
   const sectionValues = {
     objectives: "objectives",
@@ -171,9 +272,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     materials: "materials",
     sections: "sections",
   };
-
-  // Use either updated sections or original lesson sections
-  const sectionsToDisplay = updatedSections || lesson.sections;
 
   return (
     <Card className="shadow-card">
@@ -419,7 +517,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-6 py-2">
-                {sectionsToDisplay.map((section, sectionIndex) => (
+                {lesson.sections.map((section, sectionIndex) => (
                   <Card key={section.id} className="shadow-sm overflow-hidden">
                     <CardHeader className="p-4 bg-muted/50">
                       <div className="flex justify-between items-center">
@@ -462,49 +560,21 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                             <div className="w-2 h-2 bg-secondary rounded-full mr-2"></div>
                             Activities ({section.activities.length})
                           </h5>
-                          <ul className="space-y-2">
+                          <ul className="space-y-4">
                             {section.activities
                               .filter((activity) => activity.trim())
                               .map((activity, index) => (
                                 <li
                                   key={index}
-                                  className="flex items-start justify-between gap-3 p-2 bg-background/60 rounded-lg group"
+                                  className="flex flex-col gap-2 p-3 bg-background/60 rounded-lg"
                                 >
-                                  <span
-                                    className="text-sm text-muted-foreground flex-1"
-                                    dangerouslySetInnerHTML={{
-                                      __html: sanitizeHtml(activity),
-                                    }}
-                                  ></span>
-                                  <div className="flex items-center space-x-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleExpandActivity(section.id, index, activity)}
-                                      className="text-sea-green opacity-0 group-hover:opacity-100 transition-opacity"
-                                      title="Expand activity"
-                                    >
-                                      <Wand className="h-4 w-4" />
-                                    </Button>
-                                    
-                                    {onAddToTeaching && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          onAddToTeaching("activity", {
-                                            title: `Activity: ${section.title}`,
-                                            content: activity,
-                                            sectionId: section.id,
-                                            activityIndex: index,
-                                          })
-                                        }
-                                        className="text-secondary"
-                                      >
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
+                                  <ActivityExpansion
+                                    activity={activity}
+                                    sectionId={section.id}
+                                    activityIndex={index}
+                                    onAddToTeaching={onAddToTeaching}
+                                    sectionTitle={section.title}
+                                  />
                                 </li>
                               ))}
                           </ul>
@@ -534,17 +604,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
           </AccordionItem>
         </Accordion>
       </CardContent>
-      
-      {/* Activity Expander Modal */}
-      {expandingActivity && (
-        <ActivityExpander
-          activity={expandingActivity.content}
-          context={lesson.title}
-          level={lesson.level}
-          onExpandedActivity={handleExpandedActivity}
-          onClose={() => setExpandingActivity(null)}
-        />
-      )}
     </Card>
   );
 }
