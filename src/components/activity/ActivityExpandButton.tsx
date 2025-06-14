@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/Button';
 import { Wand } from 'lucide-react';
 
 interface ActivityExpandButtonProps {
@@ -9,14 +8,13 @@ interface ActivityExpandButtonProps {
 
 export function ActivityExpandButton({ onClick, className }: ActivityExpandButtonProps) {
   return (
-    <Button
+    <button
       onClick={onClick}
-      variant="default"
-      size="sm"
-      className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 h-auto"
+      className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors ${className || ''}`}
+      title="Expand activity with AI"
     >
-      <Wand className="h-4 w-4 mr-1" />
-      Expand Activity
-    </Button>
+      <Wand className="h-3.5 w-3.5 mr-1" />
+      <span>Expand Activity</span>
+    </button>
   );
 }

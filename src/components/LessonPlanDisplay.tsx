@@ -1,24 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
-  Clock, 
-  FileText, 
   Target, 
-  CheckSquare, 
-  Plus,
-  GraduationCap, 
+  FileText, 
   BookOpen, 
   List,
   Maximize2,
   Minimize2,
   ChevronRight,
-  Wand
+  Wand,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
+  AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,7 +159,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     <Card className="shadow-card">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold">{lesson.title}</CardTitle>
+          <CardTitle className="text-2xl font-bold">Lesson Content</CardTitle>
           <Button
             variant="outline"
             size="sm"
@@ -181,25 +178,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
               </>
             )}
           </Button>
-        </div>
-
-        <div 
-          className="text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.summary) }}
-        />
-
-        <div className="flex flex-wrap gap-3 mt-2">
-          <div className="inline-flex items-center rounded-md bg-secondary/10 px-3 py-1 text-sm">
-            <Clock className="h-4 w-4 mr-2 text-secondary" />
-            <span>{lesson.duration}</span>
-          </div>
-
-          {lesson.level && (
-            <div className="inline-flex items-center rounded-md bg-accent/10 px-3 py-1 text-sm">
-              <GraduationCap className="h-4 w-4 mr-2 text-accent" />
-              <span>Level: {lesson.level}</span>
-            </div>
-          )}
         </div>
       </CardHeader>
 
@@ -461,7 +439,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                                       }}
                                     ></span>
                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                      {/* This is the expand activity button the user wants */}
+                                      {/* This is the prominent expand activity button the user wants */}
                                       <ActivityExpandButton 
                                         onClick={() => handleExpandActivity(
                                           activity, 
@@ -533,3 +511,5 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     </Card>
   );
 }
+
+import { CheckSquare } from 'lucide-react';

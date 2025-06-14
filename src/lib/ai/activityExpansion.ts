@@ -1,5 +1,6 @@
-import OpenAI from 'openai';
-
+/**
+ * Expands a brief activity description into detailed teaching instructions
+ */
 export async function expandActivity(
   activity: string,
   subjectContext?: string,
@@ -12,11 +13,6 @@ export async function expandActivity(
       console.error("OpenAI API key is missing");
       return generateFallbackExpansion(activity);
     }
-
-    const openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true
-    });
 
     const prompt = `Expand this brief classroom activity description into detailed teaching instructions:
 
@@ -33,23 +29,36 @@ Grade level: ${gradeLevel || "Not specified"}
 
 Format the response with clear headings and bullet points for easy reading.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert educator who provides detailed, practical activity instructions for teachers."
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 800,
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert educator who provides detailed, practical activity instructions for teachers."
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
+      }),
     });
 
-    const result = response.choices[0].message.content;
+    if (!response.ok) {
+      console.error("Error expanding activity from AI");
+      return generateFallbackExpansion(activity);
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content;
 
     if (!result) {
       return generateFallbackExpansion(activity);
