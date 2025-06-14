@@ -55,25 +55,29 @@ export const submitFeedback = async (
 // Subscribe to real-time feedback updates for a session
 export const subscribeToSessionFeedback = (
   sessionCode: string,
-  callback: (feedback: FeedbackRow[]) => void
+  callback: (feedback: FeedbackRow) => void
 ) => {
+  const channelName = `feedback_${sessionCode}`;
+  console.log(`Setting up feedback subscription on channel: ${channelName}`);
+  
   const subscription = supabase
-    .channel(`feedback_${sessionCode}`)
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'feedback',
         filter: `session_code=eq.${sessionCode}`
       },
-      async () => {
-        // Fetch updated feedback when changes occur
-        const feedback = await getFeedbackForSession(sessionCode);
-        callback(feedback);
+      (payload) => {
+        console.log("New feedback received:", payload);
+        callback(payload.new as FeedbackRow);
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`Feedback subscription status: ${status}`);
+    });
 
   return subscription;
 };
@@ -87,14 +91,25 @@ export const submitTeachingFeedback = async (
   content?: string
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
+    console.log('Submitting teaching feedback:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      feedback_type: feedbackType,
+      content: content,
+      card_index: cardIndex
+    });
+    
+    const { data, error } = await supabase
       .from('teaching_feedback')
-      .insert({
+      .upsert({
         presentation_id: presentationId,
         student_name: studentName,
         feedback_type: feedbackType,
         content: content,
         card_index: cardIndex !== undefined ? cardIndex : null
+      }, {
+        onConflict: 'presentation_id,student_name,card_index',
+        ignoreDuplicates: false
       });
 
     if (error) {
@@ -102,6 +117,7 @@ export const submitTeachingFeedback = async (
       return false;
     }
 
+    console.log('Teaching feedback submitted successfully:', data);
     return true;
   } catch (err) {
     console.error('Exception submitting teaching feedback:', err);
@@ -149,8 +165,11 @@ export const subscribeToTeachingFeedback = (
     filter += `,card_index=eq.${cardIndex}`;
   }
 
+  const channelName = `teaching_feedback_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}`;
+  console.log(`Setting up teaching feedback subscription on channel: ${channelName}`);
+  
   const subscription = supabase
-    .channel(`teaching_feedback_${presentationId}_${cardIndex || 'all'}`)
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
@@ -164,7 +183,22 @@ export const subscribeToTeachingFeedback = (
         callback(payload.new as TeachingFeedbackRow);
       }
     )
-    .subscribe();
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'teaching_feedback',
+        filter
+      },
+      (payload) => {
+        console.log("Updated teaching feedback:", payload);
+        callback(payload.new as TeachingFeedbackRow);
+      }
+    )
+    .subscribe((status) => {
+      console.log(`Teaching feedback subscription status: ${status}`);
+    });
 
   return subscription;
 };
@@ -206,6 +240,12 @@ export const getStudentFeedbackForCard = async (
   cardIndex?: number
 ): Promise<any | null> => {
   try {
+    console.log('Getting student feedback for card:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      card_index: cardIndex
+    });
+    
     let query = supabase
       .from("teaching_feedback")
       .select("*")
@@ -225,6 +265,7 @@ export const getStudentFeedbackForCard = async (
       return null;
     }
 
+    console.log('Student feedback found:', data);
     return data;
   } catch (err) {
     console.error("Exception fetching student feedback:", err);

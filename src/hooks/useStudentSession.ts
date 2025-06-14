@@ -5,10 +5,10 @@ import {
   getSessionByCode,
   getTeacherMessagesForPresentation,
   subscribeToTeacherMessages,
-  TeacherMessage,
   LessonPresentation,
   LessonCard,
   CardAttachment,
+  TeacherMessage,
 } from "../lib/supabase";
 
 export function useStudentSession(code: string, studentName: string) {
@@ -26,6 +26,9 @@ export function useStudentSession(code: string, studentName: string) {
   const [joined, setJoined] = useState(false);
   const [teacherName, setTeacherName] = useState("");
   const [lessonStarted, setLessonStarted] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<
+    { unsubscribe: () => void }[]
+  >([]);
 
   // Function to update the current card based on index
   const updateCurrentCard = useCallback(
@@ -134,6 +137,12 @@ export function useStudentSession(code: string, studentName: string) {
   // Set up subscriptions when joined
   useEffect(() => {
     if (!joined || !presentation || !presentation.session_code) return;
+    
+    // Clean up existing subscriptions first to avoid duplicates
+    subscriptions.forEach(sub => sub.unsubscribe());
+    setSubscriptions([]);
+
+    const newSubscriptions = [];
 
     // Subscribe to presentation updates
     console.log(
@@ -185,6 +194,7 @@ export function useStudentSession(code: string, studentName: string) {
         }
       }
     );
+    newSubscriptions.push(presentationSubscription);
 
     // Subscribe to teacher messages
     const messageSubscription = subscribeToTeacherMessages(
@@ -208,14 +218,18 @@ export function useStudentSession(code: string, studentName: string) {
         }
       }
     );
+    newSubscriptions.push(messageSubscription);
 
+    // Save subscriptions for cleanup
+    setSubscriptions(newSubscriptions);
+
+    // Only clean up when unmounting or when code/presentation changes
     return () => {
       console.log("Cleaning up subscriptions");
-      presentationSubscription.unsubscribe();
-      messageSubscription.unsubscribe();
+      newSubscriptions.forEach(sub => sub.unsubscribe());
       console.log("Cleaned up subscriptions");
     };
-  }, [joined, presentation, updateCurrentCard]);
+  }, [joined, presentation?.id, presentation?.session_code, updateCurrentCard]);
 
   return {
     presentation,

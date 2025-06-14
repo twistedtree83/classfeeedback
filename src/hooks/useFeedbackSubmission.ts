@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   submitTeachingFeedback, 
   submitTeachingQuestion,
@@ -13,6 +13,7 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const [currentFeedback, setCurrentFeedback] = useState<string | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState<number | undefined>(undefined);
+  const feedbackCheckRef = useRef<boolean>(false);
 
   // Helper to clear success message after a timeout
   const showSuccessAndClear = (message: string, duration = 3000) => {
@@ -24,19 +25,27 @@ export function useFeedbackSubmission(presentationId: string | undefined, studen
 
   // Update current card index when it changes in the presentation
   useEffect(() => {
-    if (presentationId && currentCardIndex !== undefined) {
+    if (presentationId && currentCardIndex !== undefined && !feedbackCheckRef.current) {
+      feedbackCheckRef.current = true;
+      
       // Check if student has already submitted feedback for this card
       const checkExistingFeedback = async () => {
-        const existingFeedback = await getStudentFeedbackForCard(
-          presentationId,
-          studentName,
-          currentCardIndex
-        );
-        
-        if (existingFeedback) {
-          setCurrentFeedback(existingFeedback.feedback_type);
-        } else {
-          setCurrentFeedback(null);
+        try {
+          const existingFeedback = await getStudentFeedbackForCard(
+            presentationId,
+            studentName,
+            currentCardIndex
+          );
+          
+          if (existingFeedback) {
+            setCurrentFeedback(existingFeedback.feedback_type);
+          } else {
+            setCurrentFeedback(null);
+          }
+        } catch (err) {
+          console.error('Error checking existing feedback:', err);
+        } finally {
+          feedbackCheckRef.current = false;
         }
       };
       
