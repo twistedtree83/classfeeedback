@@ -3,36 +3,23 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getLessonPlanById, createSession, createLessonPresentation } from '../lib/supabase';
 import { generateWordleWord } from '../lib/ai';
-import { LessonPlanDisplay } from '../components/LessonPlanDisplay';
-import { TeachingCardsManager } from '../components/TeachingCardsManager';
-import type { LessonCard, ProcessedLesson } from '../lib/types';
-import { BookOpen, ExternalLink, Send, Loader2, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter
-} from '@/components/ui/card';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
+import { LessonHeader } from '@/components/lesson-details/LessonHeader';
+import { LessonPlan } from '@/components/lesson-details/LessonPlan';
+import { TeachingCardsManager } from '@/components/lesson-details/TeachingCardsManager';
+import { WordleConfigCard } from '@/components/lesson-details/WordleConfigCard';
+import { StartButtonCard } from '@/components/lesson-details/StartButtonCard';
+import { EmptyState } from '@/components/lesson-details/EmptyState';
+import { CardSkeleton } from '@/components/lesson-details/CardSkeleton';
+import type { LessonCard, ProcessedLesson } from "../lib/types";
 import { MainNav } from '@/components/MainNav';
+import { useToast } from '@/components/ui/use-toast';
+import { ClipboardList } from 'lucide-react';
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [lesson, setLesson] = useState<ProcessedLesson | null>(null);
   const [selectedCards, setSelectedCards] = useState<LessonCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,6 +51,27 @@ export function LessonDetails() {
 
     loadLesson();
   }, [id]);
+
+  // Load saved cards from sessionStorage
+  useEffect(() => {
+    if (id) {
+      const savedCards = sessionStorage.getItem(`lesson_cards_${id}`);
+      if (savedCards) {
+        try {
+          setSelectedCards(JSON.parse(savedCards));
+        } catch (e) {
+          console.error('Error parsing saved cards:', e);
+        }
+      }
+    }
+  }, [id]);
+
+  // Save cards to sessionStorage when they change
+  useEffect(() => {
+    if (id && selectedCards.length > 0) {
+      sessionStorage.setItem(`lesson_cards_${id}`, JSON.stringify(selectedCards));
+    }
+  }, [id, selectedCards]);
 
   // Handle adding cards to the teaching sequence
   const handleAddToTeaching = (
@@ -114,6 +122,11 @@ export function LessonDetails() {
       setWordleWord(generatedWord);
     } catch (err) {
       console.error('Error generating wordle word:', err);
+      toast({
+        title: "Error",
+        description: "Failed to generate Wordle word",
+        variant: "destructive"
+      });
     } finally {
       setIsGeneratingWord(false);
     }
@@ -124,6 +137,11 @@ export function LessonDetails() {
 
     if (!user?.user_metadata?.title || !user?.user_metadata?.full_name) {
       setError("Please set your title and name in your profile first");
+      toast({
+        title: "Profile Incomplete",
+        description: "Please set your title and name in your profile first",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -181,201 +199,91 @@ export function LessonDetails() {
       }
 
       setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
       setIsStartingTeaching(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen py-8">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin mb-2" />
-          <span className="text-lg text-muted-foreground">Loading lesson details...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!lesson) {
-    return (
-      <div className="container flex items-center justify-center min-h-screen py-8">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Lesson Not Found</CardTitle>
-            <CardDescription>
-              We couldn't find the lesson you're looking for.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button asChild className="w-full">
-              <Link to="/planner">Return to Planner</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="container py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:flex-[2]">
-          <div className="flex items-center gap-2 mb-6">
-            <Button variant="ghost" size="sm" asChild className="h-8 gap-1">
-              <Link to="/planner">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back</span>
-              </Link>
-            </Button>
-
-            <Separator orientation="vertical" className="h-6" />
-            
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold leading-tight tracking-tight">{lesson.title}</h1>
-              <div className="flex items-center gap-2 mt-1 text-muted-foreground text-sm">
-                <BookOpen className="h-4 w-4" />
-                <span>{lesson.level || 'No level specified'}</span>
-                <span>•</span>
-                <span>{lesson.duration || 'No duration specified'}</span>
-              </div>
-            </div>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={startTeaching}
-                    disabled={isStartingTeaching || selectedCards.length === 0}
-                    size="lg"
-                  >
-                    {isStartingTeaching ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Starting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Start Teaching
-                      </>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {selectedCards.length === 0 
-                    ? "Add at least one card to start teaching" 
-                    : "Start a live teaching session with these cards"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-
-          {error && (
-            <Card className="mb-6 border-destructive/50 bg-destructive/5">
-              <CardContent className="p-4 text-destructive">
-                {error}
-              </CardContent>
-            </Card>
-          )}
-
-          <LessonPlanDisplay 
-            lesson={lesson}
-            onAddToTeaching={handleAddToTeaching}
-          />
-        </div>
-
-        <div className="lg:flex-1">
-          <div className="lg:sticky lg:top-16 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Teaching Cards</CardTitle>
-                <CardDescription>
-                  {selectedCards.length > 0
-                    ? `${selectedCards.length} cards ready for presentation`
-                    : "Add cards from the lesson to create your presentation"}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                {selectedCards.length === 0 && (
-                  <div className="bg-muted p-6 rounded-lg text-center mb-4">
-                    <div className="text-3xl mb-3">📝</div>
-                    <p className="text-muted-foreground mb-2">No cards selected yet</p>
-                    <p className="text-sm text-muted-foreground">
-                      Use the "Add to Teaching" buttons in the lesson content to build your presentation
-                    </p>
-                  </div>
-                )}
-                
-                <TeachingCardsManager
+    <div className="min-h-screen bg-background text-foreground">
+      <MainNav />
+      <main className="container grid lg:grid-cols-12 gap-6 pt-6 pb-12">
+        {/* LEFT: lesson preview */}
+        <section className="lg:col-span-8">
+          {isLoading ? (
+            <>
+              <CardSkeleton className="h-40 mb-6" />
+              <CardSkeleton className="h-[600px]" />
+            </>
+          ) : !lesson ? (
+            <EmptyState 
+              icon={ClipboardList}
+              title="Lesson Not Found"
+              description="We couldn't find the lesson you're looking for."
+              action={
+                <Link to="/planner">
+                  <Button>Return to Planner</Button>
+                </Link>
+              }
+            />
+          ) : (
+            <>
+              <LessonHeader 
+                lesson={lesson} 
+                error={error}
+                onStartTeaching={startTeaching}
+                isStartingTeaching={isStartingTeaching}
+                hasCards={selectedCards.length > 0}
+              />
+              <div className="mt-6">
+                <LessonPlan 
                   lesson={lesson}
-                  selectedCards={selectedCards}
-                  onSave={handleSaveCards}
+                  onAddToTeaching={handleAddToTeaching}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </>
+          )}
+        </section>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Teaching Options</CardTitle>
-              </CardHeader>
+        {/* RIGHT: tools */}
+        <aside className="lg:col-span-4 lg:sticky lg:top-[72px] lg:h-[calc(100vh-88px)] lg:overflow-y-auto pb-6">
+          {isLoading ? (
+            <>
+              <CardSkeleton className="h-96 mb-6" />
+              <CardSkeleton className="h-48" />
+            </>
+          ) : lesson && (
+            <>
+              <TeachingCardsManager
+                lesson={lesson}
+                selectedCards={selectedCards}
+                onSave={handleSaveCards}
+              />
               
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="wordle">Waiting Room Wordle Game</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Students can play Wordle while waiting
-                    </p>
-                  </div>
-                  <Switch 
-                    id="wordle"
-                    checked={wordleEnabled}
-                    onCheckedChange={setWordleEnabled}
-                  />
-                </div>
-                
-                {wordleEnabled && (
-                  <div className="rounded-md border p-4 mt-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="wordleWord">Wordle Word (5 letters)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="wordleWord"
-                          value={wordleWord}
-                          onChange={(e) => setWordleWord(e.target.value.toUpperCase())}
-                          maxLength={5}
-                          className="uppercase"
-                          placeholder="WORD"
-                        />
-                        
-                        <Button
-                          onClick={handleGenerateWordleWord}
-                          disabled={isGeneratingWord}
-                          variant="outline"
-                          size="sm"
-                        >
-                          {isGeneratingWord ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              <span className="sr-only">Generating</span>
-                            </>
-                          ) : (
-                            "Generate"
-                          )}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Choose a 5-letter word related to the lesson content
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+              <WordleConfigCard 
+                className="mt-6"
+                wordleEnabled={wordleEnabled}
+                wordleWord={wordleWord}
+                isGeneratingWord={isGeneratingWord}
+                onWordleEnabledChange={setWordleEnabled}
+                onWordleWordChange={setWordleWord}
+                onGenerateWordleWord={handleGenerateWordleWord}
+              />
+              
+              <StartButtonCard 
+                className="mt-6"
+                onStartTeaching={startTeaching}
+                isStartingTeaching={isStartingTeaching}
+                hasCards={selectedCards.length > 0}
+              />
+            </>
+          )}
+        </aside>
+      </main>
     </div>
   );
 }

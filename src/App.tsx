@@ -8,7 +8,6 @@ import { EditLesson } from './pages/EditLesson';
 import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
 import { TeachingModePage } from './pages/TeachingModePage';
-import { MainNav } from './components/MainNav';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { ResetPassword } from './pages/ResetPassword';
@@ -19,24 +18,23 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { HomePage } from './pages/HomePage';
 import { LessonSummaryPage } from './pages/LessonSummaryPage';
-import { AboutPage } from './pages/AboutPage';
 import { FeaturesPage } from './pages/FeaturesPage';
+import { AboutPage } from './pages/AboutPage';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <MainNav />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/features" element={<FeaturesPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/join" element={<JoinPage />} />
           <Route path="/student" element={<StudentView />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/about" element={<AboutPage />} />
           
           {/* Protected routes */}
           <Route path="/dashboard" element={

@@ -50,7 +50,6 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, isLoading, children, disabled, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
     const content = isLoading ? (
       <>
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
