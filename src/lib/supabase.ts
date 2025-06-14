@@ -27,6 +27,9 @@ export * from './supabase/messages';
 // Re-export questions functions
 export * from './supabase/questions';
 
+// Re-export extensions functions
+export * from './supabase/extensions';
+
 // Re-export utility functions
 export { generateRandomName } from './supabase/utils';
 
