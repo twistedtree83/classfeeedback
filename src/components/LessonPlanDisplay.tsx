@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { 
   Clock, 
   FileText, 
@@ -11,7 +11,6 @@ import {
   Maximize2,
   Minimize2,
   ChevronRight,
-  ExternalLink,
   Wand
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { sanitizeHtml } from "../lib/utils";
 import type { ProcessedLesson } from "../lib/types";
-import { SectionImprover } from "@/components/lesson/SectionImprover";
+import { ActivityExpander } from "./ActivityExpander";
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
@@ -39,137 +38,57 @@ interface LessonStatsProps {
   lesson: ProcessedLesson;
 }
 
-interface ActivityExpansionProps {
+// Activity expansion component
+interface ActivityExpandProps {
   activity: string;
   sectionId: string;
+  sectionTitle: string;
   activityIndex: number;
   onAddToTeaching?: (
     cardType: "objective" | "material" | "section" | "activity" | "topic_background",
     data: any
   ) => void;
-  sectionTitle: string;
 }
 
-function ActivityExpansion({ 
+function ActivityExpand({ 
   activity, 
   sectionId, 
+  sectionTitle,
   activityIndex, 
-  onAddToTeaching,
-  sectionTitle
-}: ActivityExpansionProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [expandedActivity, setExpandedActivity] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
+  onAddToTeaching 
+}: ActivityExpandProps) {
+  const [showExpander, setShowExpander] = useState(false);
+  const [expandedContent, setExpandedContent] = useState<string | null>(null);
 
-  const handleExpand = async () => {
-    if (!expanded) {
-      setIsGenerating(true);
-      try {
-        // In a real implementation, this would call an API to expand the activity
-        // For now, we'll just simulate a delay and add more detail
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Create a more detailed version of the activity
-        const expandedVersion = `${activity}\n\n**Detailed Instructions:**\n\n1. Setup: ${getRandomSetupInstructions()}\n2. Procedure: ${getRandomProcedureInstructions()}\n3. Variations: ${getRandomVariations()}\n4. Assessment: ${getRandomAssessment()}`;
-        
-        setExpandedActivity(expandedVersion);
-        setExpanded(true);
-      } catch (error) {
-        console.error("Error expanding activity:", error);
-      } finally {
-        setIsGenerating(false);
-      }
-    } else {
-      setExpanded(false);
-    }
+  const handleExpandActivity = () => {
+    setShowExpander(true);
   };
 
-  const handleUseExpanded = () => {
-    if (onAddToTeaching && expanded) {
-      onAddToTeaching("activity", {
-        title: `Activity: ${sectionTitle}`,
-        content: expandedActivity,
-        sectionId: sectionId,
-        activityIndex: activityIndex,
-      });
-    }
-  };
-
-  // Helper functions to generate random detailed content
-  const getRandomSetupInstructions = () => {
-    const setups = [
-      "Arrange students in pairs facing each other about 2 meters apart.",
-      "Create a grid on the floor using tape or chalk, with 1-meter squares.",
-      "Divide the class into groups of 4-5 students and assign each group to a station.",
-      "Set up cones in a zigzag pattern with 3 meters between each cone.",
-      "Place students in a circle with enough space to move freely."
-    ];
-    return setups[Math.floor(Math.random() * setups.length)];
-  };
-
-  const getRandomProcedureInstructions = () => {
-    const procedures = [
-      "Demonstrate the technique first, then have students practice in pairs while you provide feedback.",
-      "Start with a slow pace to ensure proper form, then gradually increase speed as students become comfortable.",
-      "Have students take turns leading the activity while others follow, switching roles every 2 minutes.",
-      "Begin with individual practice, then progress to partner work, and finally to small group collaboration.",
-      "Use a countdown timer and challenge students to improve their performance with each round."
-    ];
-    return procedures[Math.floor(Math.random() * procedures.length)];
-  };
-
-  const getRandomVariations = () => {
-    const variations = [
-      "For advanced students, add obstacles to navigate around. For those who need support, reduce the distance or complexity.",
-      "Modify the activity by changing the pace, direction, or adding additional rules as students progress.",
-      "Create competitive and non-competitive versions to accommodate different student preferences.",
-      "Adjust the space constraints to make the activity more challenging or more accessible.",
-      "Provide visual cues for students who benefit from visual learning approaches."
-    ];
-    return variations[Math.floor(Math.random() * variations.length)];
-  };
-
-  const getRandomAssessment = () => {
-    const assessments = [
-      "Observe student technique and provide immediate feedback. Look for proper form and execution.",
-      "Have students self-assess using a simple rubric focusing on key skills.",
-      "Use peer feedback with specific criteria for students to watch for.",
-      "Track improvement over multiple attempts using a simple checklist.",
-      "Ask students to reflect on their performance and identify one strength and one area for improvement."
-    ];
-    return assessments[Math.floor(Math.random() * assessments.length)];
+  const handleExpandedActivity = (expanded: string) => {
+    setExpandedContent(expanded);
+    setShowExpander(false);
   };
 
   return (
-    <div className="relative">
-      <div className="flex items-center gap-3">
+    <div className="group">
+      <div className="flex items-start justify-between gap-2 w-full">
         <div 
           className="flex-1 text-sm text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(expanded ? expandedActivity : activity) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(expandedContent || activity) }}
         ></div>
         
-        <div className="flex-shrink-0 flex gap-2">
-          {/* Expand Button - FIXED WITH HIGH CONTRAST STYLING */}
+        <div className="flex gap-1">
+          {/* Highly visible expand button with strong visual styling */}
           <Button
+            onClick={handleExpandActivity}
             variant="default"
             size="sm"
-            onClick={handleExpand}
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0 px-3 py-1 h-auto"
-            disabled={isGenerating}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 h-auto"
           >
-            {isGenerating ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></div>
-            ) : expanded ? (
-              <Minimize2 className="h-3.5 w-3.5 mr-1" />
-            ) : (
-              <Wand className="h-3.5 w-3.5 mr-1" />
-            )}
-            <span className="text-xs whitespace-nowrap">
-              {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand Activity"}
-            </span>
+            <Wand className="h-4 w-4 mr-1" />
+            Expand Activity
           </Button>
 
-          {/* Add to Teaching Button */}
           {onAddToTeaching && (
             <Button
               variant="ghost"
@@ -177,30 +96,26 @@ function ActivityExpansion({
               onClick={() =>
                 onAddToTeaching("activity", {
                   title: `Activity: ${sectionTitle}`,
-                  content: expanded ? expandedActivity : activity,
+                  content: expandedContent || activity,
                   sectionId: sectionId,
                   activityIndex: activityIndex,
                 })
               }
-              className="text-secondary"
+              className="text-secondary flex-shrink-0"
             >
               <Plus className="h-4 w-4" />
             </Button>
           )}
         </div>
       </div>
-      
-      {expanded && (
-        <div className="mt-2 text-right">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleUseExpanded}
-            className="text-xs border-success text-success hover:bg-success/10"
-          >
-            Use Expanded Version
-          </Button>
-        </div>
+
+      {showExpander && (
+        <ActivityExpander
+          activity={activity}
+          context={sectionTitle}
+          onExpandedActivity={handleExpandedActivity}
+          onClose={() => setShowExpander(false)}
+        />
       )}
     </div>
   );
@@ -286,14 +201,6 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       materials: newState,
       sections: newState,
     });
-  };
-
-  // Map section names to their values
-  const sectionValues = {
-    objectives: "objectives",
-    background: "background",
-    materials: "materials",
-    sections: "sections",
   };
 
   return (
@@ -589,14 +496,14 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                               .map((activity, index) => (
                                 <li
                                   key={index}
-                                  className="flex flex-col gap-2 p-3 bg-background/60 rounded-lg"
+                                  className="p-3 bg-background/60 rounded-lg border border-border/40"
                                 >
-                                  <ActivityExpansion
+                                  <ActivityExpand
                                     activity={activity}
                                     sectionId={section.id}
+                                    sectionTitle={section.title}
                                     activityIndex={index}
                                     onAddToTeaching={onAddToTeaching}
-                                    sectionTitle={section.title}
                                   />
                                 </li>
                               ))}

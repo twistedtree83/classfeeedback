@@ -1,3 +1,5 @@
+import { OpenAI } from 'openai';
+
 export async function expandActivity(
   activity: string,
   subjectContext?: string,
@@ -11,51 +13,40 @@ export async function expandActivity(
       return generateFallbackExpansion(activity);
     }
 
-    const prompt = `Expand this brief classroom activity description into a concise, single paragraph with more details for teachers. Keep it brief but informative.
+    const openai = new OpenAI({ apiKey });
+
+    const prompt = `Expand this brief classroom activity description into detailed teaching instructions:
 
 Brief activity: "${activity}"
 
-Consider:
-- How the teacher should organize and facilitate the activity
-- What students will do during the activity
-- What materials might be needed
-- Approximately how much time it should take
-
-Make it a simple, straightforward paragraph that provides just enough additional detail for the teacher to understand and implement the activity efficiently. Do NOT create lengthy multi-step instructions or elaborate formatting - just a clear, focused paragraph.
+Provide a comprehensive expansion that includes:
+1. Setup: How to organize the classroom, student grouping, materials needed
+2. Procedure: Clear, step-by-step instructions for implementing the activity
+3. Variations: Options for different skill levels or learning styles
+4. Assessment: How to check student understanding or success
 
 Context: ${subjectContext || "General education"}
-Grade level: ${gradeLevel || "Not specified"}`;
+Grade level: ${gradeLevel || "Not specified"}
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert educator who provides concise, practical activity descriptions for teachers."
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 300, // Limiting to keep it concise
-      }),
+Format the response with clear headings and bullet points for easy reading.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert educator who provides detailed, practical activity instructions for teachers."
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 800,
     });
 
-    if (!response.ok) {
-      console.error("Error expanding activity from AI");
-      return generateFallbackExpansion(activity);
-    }
-
-    const data = await response.json();
-    const result = data.choices?.[0]?.message?.content;
+    const result = completion.choices[0].message.content;
 
     if (!result) {
       return generateFallbackExpansion(activity);
@@ -69,5 +60,27 @@ Grade level: ${gradeLevel || "Not specified"}`;
 }
 
 function generateFallbackExpansion(activity: string): string {
-  return `${activity} - For this activity, the teacher should organize students appropriately and provide clear instructions. Students will engage with the content through this structured exercise, developing their understanding and skills. The activity should take approximately 10-15 minutes and requires standard classroom materials. Monitor student progress throughout and provide guidance as needed to ensure learning objectives are met.`;
+  return `## ${activity}
+
+### Setup
+* Organize students into pairs or small groups
+* Materials needed: standard classroom equipment
+* Clear an appropriate space in the classroom
+
+### Procedure
+1. Explain the activity clearly to students
+2. Demonstrate the expected actions or outcomes
+3. Allow students to practice in pairs or small groups
+4. Provide feedback and guidance as students work
+5. Wrap up with a whole-class discussion about what was learned
+
+### Variations
+* For advanced students: Increase the complexity or speed
+* For struggling students: Provide additional support or simplify steps
+* Alternative approach: Try a collaborative version of the activity
+
+### Assessment
+* Observe students during the activity to assess understanding
+* Use peer feedback for additional insights
+* Have students reflect on their learning at the end`;
 }
