@@ -22,7 +22,22 @@ import {
 } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Wand, Palette, Settings } from "lucide-react";
+import { 
+  Sparkles, 
+  Wand, 
+  Palette, 
+  Settings,
+  Target,
+  BookOpen,
+  Lightbulb,
+  BookMarked,
+  FileEdit,
+  PencilRuler,
+  Wand2,
+  Users,
+  Loader2,
+  CheckSquare,
+} from "lucide-react";
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -310,17 +325,3 @@ export function TeachingCardsManager({
     </div>
   );
 }
-
-import {
-  Target,
-  BookOpen,
-  Lightbulb,
-  BookMarked,
-  FileEdit,
-  PencilRuler,
-  Wand2,
-  ListChecks,
-  Users,
-  Loader2,
-  CheckSquare,
-} from "lucide-react";
