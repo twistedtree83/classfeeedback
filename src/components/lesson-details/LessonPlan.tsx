@@ -160,10 +160,10 @@ export function LessonPlan({
                 {lesson.success_criteria &&
                   lesson.success_criteria.length > 0 && (
                     <div className="mt-6 p-4 bg-success/5 rounded-lg border border-success/20">
-                      <h4 className="font-semibold text-success flex items-center mb-3">
+                      <h3 className="font-semibold text-success flex items-center mb-3">
                         <CheckSquare className="h-5 w-5 mr-2" />
                         Success Criteria
-                      </h4>
+                      </h3>
                       <ul className="space-y-2">
                         {lesson.success_criteria
                           .filter((criteria) => criteria.trim())
@@ -218,7 +218,12 @@ export function LessonPlan({
               <AccordionContent>
                 <div className="space-y-4 py-2">
                   <div
-                    className="p-4 bg-muted rounded-lg prose dark:prose-invert max-w-none"
+                    className="p-4 bg-muted rounded-lg prose dark:prose-invert max-w-none 
+                              prose-headings:font-semibold prose-headings:text-gray-800 
+                              prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                              prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                              prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                              prose-p:text-gray-700 prose-p:leading-relaxed"
                     dangerouslySetInnerHTML={{
                       __html: sanitizeHtml(lesson.topic_background),
                     }}
@@ -317,7 +322,11 @@ export function LessonPlan({
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
                       <div
-                        className="prose dark:prose-invert max-w-none text-muted-foreground"
+                        className="prose dark:prose-invert max-w-none text-muted-foreground
+                                  prose-headings:font-semibold prose-headings:text-gray-800 
+                                  prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                                  prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                                  prose-p:leading-relaxed"
                         dangerouslySetInnerHTML={{
                           __html: sanitizeHtml(section.content),
                         }}
@@ -344,30 +353,44 @@ export function LessonPlan({
                       {/* Activities */}
                       {section.activities.length > 0 && (
                         <div className="mt-4 p-4 bg-secondary/5 rounded-xl border border-secondary/20">
-                          <h5 className="font-semibold text-foreground mb-3 flex items-center">
+                          <h3 className="font-semibold text-foreground mb-3 flex items-center">
                             <div className="w-2 h-2 bg-secondary rounded-full mr-2"></div>
                             Activities ({section.activities.length})
-                          </h5>
-                          <ul className="space-y-2">
+                          </h3>
+                          <ul className="space-y-3">
                             {section.activities
                               .filter((activity) => activity.trim())
                               .map((activity, index) => (
                                 <li
                                   key={index}
-                                  className="flex items-start justify-between gap-3 p-2 bg-background/60 rounded-lg"
+                                  className="flex items-start justify-between gap-3 p-3 bg-background/60 rounded-lg"
                                 >
-                                  <span
-                                    className="text-sm text-muted-foreground flex-1"
-                                    dangerouslySetInnerHTML={{
-                                      __html: sanitizeHtml(activity),
-                                    }}
-                                  ></span>
-                                  <div className="flex gap-1 flex-shrink-0">
+                                  <div className="flex items-start gap-2 flex-1">
+                                    <div className="flex-shrink-0 mt-1 text-secondary font-medium">
+                                      {index + 1}.
+                                    </div>
+                                    <span
+                                      className="text-sm text-muted-foreground"
+                                      dangerouslySetInnerHTML={{
+                                        __html: sanitizeHtml(activity),
+                                      }}
+                                    ></span>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <ActivityExpandButton
+                                      onClick={() =>
+                                        setExpanderData({
+                                          activity,
+                                          sectionTitle: section.title,
+                                        })
+                                      }
+                                      className="mr-1"
+                                    />
                                     {onAddToTeaching && (
                                       <Button
                                         variant="default"
                                         size="icon"
-                                        className="bg-bice-blue hover:bg-bice-blue/90 text-white shadow"
+                                        className="bg-bice-blue hover:bg-bice-blue/90 text-white shadow h-8 w-8"
                                         onClick={() =>
                                           onAddToTeaching("activity", {
                                             title: `Activity: ${section.title}`,
@@ -380,14 +403,6 @@ export function LessonPlan({
                                         <Plus className="h-4 w-4" />
                                       </Button>
                                     )}
-                                    <ActivityExpandButton
-                                      onClick={() =>
-                                        setExpanderData({
-                                          activity,
-                                          sectionTitle: section.title,
-                                        })
-                                      }
-                                    />
                                   </div>
                                 </li>
                               ))}
@@ -400,7 +415,7 @@ export function LessonPlan({
                         <div className="mt-4 p-4 bg-success/5 rounded-xl border border-success/20">
                           <div className="flex items-center text-success mb-2">
                             <CheckSquare className="h-4 w-4 mr-2" />
-                            <h5 className="font-semibold">Assessment</h5>
+                            <h4 className="font-semibold">Assessment</h4>
                           </div>
                           <div
                             className="text-sm text-muted-foreground"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Target, 
   FileText, 
@@ -239,10 +239,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                 {/* Success Criteria */}
                 {lesson.success_criteria && lesson.success_criteria.length > 0 && (
                   <div className="mt-6 p-4 bg-success/5 rounded-lg border border-success/20">
-                    <h4 className="font-semibold text-success flex items-center mb-3">
+                    <h3 className="font-semibold text-success flex items-center mb-3">
                       <CheckSquare className="h-5 w-5 mr-2" />
                       Success Criteria
-                    </h4>
+                    </h3>
                     <ul className="space-y-2">
                       {lesson.success_criteria
                         .filter((criteria) => criteria.trim())
@@ -297,7 +297,12 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
               <AccordionContent>
                 <div className="space-y-4 py-2">
                   <div
-                    className="p-4 bg-muted rounded-lg prose max-w-none"
+                    className="p-4 bg-muted rounded-lg prose max-w-none
+                             prose-headings:font-semibold 
+                             prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                             prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                             prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                             prose-p:text-gray-700"
                     dangerouslySetInnerHTML={{
                       __html: sanitizeHtml(lesson.topic_background),
                     }}
@@ -392,7 +397,12 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
                       <div
-                        className="prose max-w-none text-muted-foreground"
+                        className="prose max-w-none text-muted-foreground
+                                  prose-headings:font-semibold 
+                                  prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                                  prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                                  prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                                  prose-p:text-gray-700"
                         dangerouslySetInnerHTML={{
                           __html: sanitizeHtml(section.content),
                         }}
@@ -419,10 +429,10 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                       {/* Activities */}
                       {section.activities.length > 0 && (
                         <div className="mt-4 p-4 bg-secondary/5 rounded-xl border border-secondary/20">
-                          <h5 className="font-semibold text-foreground mb-3 flex items-center">
+                          <h4 className="font-semibold text-foreground mb-3 flex items-center">
                             <div className="w-2 h-2 bg-secondary rounded-full mr-2"></div>
                             Activities ({section.activities.length})
-                          </h5>
+                          </h4>
                           <ul className="space-y-4">
                             {section.activities
                               .filter((activity) => activity.trim())
@@ -432,12 +442,17 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                                   className="p-3 bg-background/60 rounded-lg border border-border/40"
                                 >
                                   <div className="flex items-start justify-between gap-3">
-                                    <span
-                                      className="text-sm text-muted-foreground"
-                                      dangerouslySetInnerHTML={{
-                                        __html: sanitizeHtml(activity),
-                                      }}
-                                    ></span>
+                                    <div className="flex items-start gap-2 flex-1">
+                                      <h5 className="font-medium text-secondary flex-shrink-0 mt-0.5">
+                                        Activity {index + 1}:
+                                      </h5>
+                                      <span
+                                        className="text-sm text-muted-foreground"
+                                        dangerouslySetInnerHTML={{
+                                          __html: sanitizeHtml(activity),
+                                        }}
+                                      ></span>
+                                    </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
                                       {/* This is the prominent expand activity button the user wants */}
                                       <ActivityExpandButton 
@@ -479,7 +494,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                         <div className="mt-4 p-4 bg-success/5 rounded-xl border border-success/20">
                           <div className="flex items-center text-success mb-2">
                             <CheckSquare className="h-4 w-4 mr-2" />
-                            <h5 className="font-semibold">Assessment</h5>
+                            <h4 className="font-semibold">Assessment</h4>
                           </div>
                           <div
                             className="text-sm text-muted-foreground"

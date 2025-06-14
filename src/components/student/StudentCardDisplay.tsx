@@ -62,6 +62,25 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
       ? card.differentiatedContent
       : card.content;
 
+  // Enhanced content renderer with proper heading levels
+  const renderContent = () => {
+    return (
+      <div
+        className="prose prose-lg max-w-none overflow-y-auto max-h-96
+                   prose-headings:font-semibold prose-headings:text-gray-800 
+                   prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                   prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2
+                   prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                   prose-p:text-gray-700 prose-p:leading-relaxed
+                   prose-li:text-gray-700 prose-li:my-1
+                   prose-strong:font-semibold prose-strong:text-gray-800"
+        dangerouslySetInnerHTML={{
+          __html: sanitizeHtml(displayContent),
+        }}
+      />
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-6">
@@ -117,11 +136,10 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
         {/* Content Display */}
         <div
           ref={contentRef}
-          className="prose prose-lg max-w-none overflow-y-auto max-h-96"
-          dangerouslySetInnerHTML={{
-            __html: sanitizeHtml(displayContent),
-          }}
-        />
+          className="overflow-y-auto max-h-96"
+        >
+          {renderContent()}
+        </div>
 
         {/* Differentiated Content Indicator */}
         {viewingDifferentiated && (
@@ -136,9 +154,9 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
         {/* Attachments */}
         {card.attachments && card.attachments.length > 0 && (
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
+            <h3 className="text-base font-medium text-gray-700 mb-3">
               Resources
-            </h4>
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {card.attachments.map((attachment) => (
                 <a

@@ -116,6 +116,30 @@ export function TeachingCard({
       ? card.content
       : card.content;
 
+  // Enhanced content renderer with proper heading levels
+  const renderContent = () => {
+    if (isEditing) {
+      return (
+        <textarea
+          value={editContent}
+          onChange={(e) => onContentChange(e.target.value)}
+          className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Card content..."
+        />
+      );
+    }
+
+    // For cards that might contain HTML, use sanitizeHtml
+    return (
+      <div
+        className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-gray-800 prose-h2:text-lg prose-h3:text-base prose-h4:text-sm prose-p:text-gray-700 prose-ul:text-gray-700"
+        dangerouslySetInnerHTML={{
+          __html: sanitizeHtml(displayContent),
+        }}
+      />
+    );
+  };
+
   return (
     <Draggable draggableId={card.id} index={index}>
       {(provided, snapshot) => (
@@ -132,6 +156,7 @@ export function TeachingCard({
               <div
                 {...provided.dragHandleProps}
                 className="flex-shrink-0 mt-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+                title="Drag to reorder"
               >
                 <GripVertical className="h-5 w-5" />
               </div>
@@ -149,9 +174,9 @@ export function TeachingCard({
                         placeholder="Card title"
                       />
                     ) : (
-                      <h3 className="font-semibold text-base text-gray-800 truncate">
+                      <h2 className="font-semibold text-lg text-gray-800 truncate">
                         {card.title}
-                      </h3>
+                      </h2>
                     )}
                     {card.duration && !isEditing && (
                       <Badge variant="outline" className="text-xs bg-white">
@@ -305,21 +330,7 @@ export function TeachingCard({
 
             <CardContent className="p-3">
               {/* Card Content */}
-              {isEditing ? (
-                <textarea
-                  value={editContent}
-                  onChange={(e) => onContentChange(e.target.value)}
-                  className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Card content..."
-                />
-              ) : (
-                <div
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{
-                    __html: sanitizeHtml(displayContent),
-                  }}
-                />
-              )}
+              {renderContent()}
 
               {/* Content Type Indicators */}
               {(card.studentFriendly && card.originalContent) || 

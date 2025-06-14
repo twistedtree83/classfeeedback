@@ -133,36 +133,73 @@ export function sanitizeHtml(content: any): string {
   // Step 2: Process markdown
   // Replace markdown headers
   let formatted = contentWithPlaceholders
-    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold my-2">$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold my-3">$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold my-4">$1</h1>');
+    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold my-3">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold my-4">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-semibold my-4">$1</h1>');
   
-  // Replace markdown bold and italic
+  // Replace markdown bold, italic and other formatting
   formatted = formatted
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/__(.*?)__/g, '<u>$1</u>')
+    .replace(/~~(.*?)~~/g, '<del>$1</del>');
   
   // Step 3: Process markdown lists
   // Convert list items, but filter out empty ones
   const lines = formatted.split(/\n/);
   let inList = false;
   let listItems: string[] = [];
+  let listType = 'ul'; // default to unordered list
   
   const processedLines = lines.map(line => {
     // Check for markdown list indicators
     const trimmedLine = line.trim();
-    const listItemMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
     
-    if (listItemMatch) {
-      const content = listItemMatch[1].trim();
+    // Unordered list items (-, *, •)
+    const ulItemMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
+    
+    // Ordered list items (1., 2., etc.)
+    const olItemMatch = trimmedLine.match(/^(\d+)\.?\s+(.*)/);
+    
+    if (ulItemMatch) {
+      const content = ulItemMatch[1].trim();
       if (content) {
         if (!inList) {
           inList = true;
+          listType = 'ul';
           listItems = [`<li>${content}</li>`];
           return null; // Mark for later replacement
-        } else {
+        } else if (listType === 'ul') {
           listItems.push(`<li>${content}</li>`);
           return null; // Mark for later replacement
+        } else {
+          // We were in an ordered list, finish it and start unordered
+          const completedList = `<ol class="list-decimal pl-5 my-2">${listItems.join('')}</ol>`;
+          listType = 'ul';
+          listItems = [`<li>${content}</li>`];
+          return completedList;
+        }
+      } else {
+        // Skip empty list items
+        return null;
+      }
+    } else if (olItemMatch) {
+      const content = olItemMatch[2].trim();
+      if (content) {
+        if (!inList) {
+          inList = true;
+          listType = 'ol';
+          listItems = [`<li>${content}</li>`];
+          return null; // Mark for later replacement
+        } else if (listType === 'ol') {
+          listItems.push(`<li>${content}</li>`);
+          return null; // Mark for later replacement
+        } else {
+          // We were in an unordered list, finish it and start ordered
+          const completedList = `<ul class="list-disc pl-5 my-2">${listItems.join('')}</ul>`;
+          listType = 'ol';
+          listItems = [`<li>${content}</li>`];
+          return completedList;
         }
       } else {
         // Skip empty list items
@@ -173,7 +210,8 @@ export function sanitizeHtml(content: any): string {
       inList = false;
       // Only return a list if there are actually items in it
       if (listItems.length > 0) {
-        return `<ul class="list-disc pl-5 my-2">${listItems.join('')}</ul>${line}`;
+        const listTag = listType === 'ul' ? 'ul class="list-disc pl-5 my-2"' : 'ol class="list-decimal pl-5 my-2"';
+        return `<${listTag}>${listItems.join('')}</${listType}>${line}`;
       } else {
         return line;
       }
@@ -183,7 +221,8 @@ export function sanitizeHtml(content: any): string {
   
   // Handle case where list is at end of content
   if (inList && listItems.length > 0) {
-    processedLines.push(`<ul class="list-disc pl-5 my-2">${listItems.join('')}</ul>`);
+    const listTag = listType === 'ul' ? 'ul class="list-disc pl-5 my-2"' : 'ol class="list-decimal pl-5 my-2"';
+    processedLines.push(`<${listTag}>${listItems.join('')}</${listType}>`);
   }
   
   // Rejoin the processed lines
@@ -203,7 +242,8 @@ export function sanitizeHtml(content: any): string {
   // Step 7: Clean up any dangling empty list items
   formatted = formatted
     .replace(/<li>\s*<\/li>/g, '') // Remove empty list items
-    .replace(/<ul class="list-disc pl-5 my-2">\s*<\/ul>/g, ''); // Remove empty lists
+    .replace(/<ul class="list-disc pl-5 my-2">\s*<\/ul>/g, '') // Remove empty lists
+    .replace(/<ol class="list-decimal pl-5 my-2">\s*<\/ol>/g, ''); // Remove empty ordered lists
   
   // Step 8: Remove potentially dangerous tags and attributes
   return formatted

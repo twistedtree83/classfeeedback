@@ -10,7 +10,7 @@ export function ActivityExpandButton({ onClick, className }: ActivityExpandButto
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors ${className || ''}`}
+      className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm ${className || ''}`}
       title="Expand activity with AI"
     >
       <Wand className="h-3.5 w-3.5 mr-1" />
