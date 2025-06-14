@@ -105,6 +105,8 @@ export function StudentContent({
       <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
           <LessonContentDisplay
+            title={currentCard.title}
+            duration={currentCard.duration}
             content={
               viewingDifferentiated && currentCard.differentiatedContent
                 ? currentCard.differentiatedContent

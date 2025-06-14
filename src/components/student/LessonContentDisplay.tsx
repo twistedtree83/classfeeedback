@@ -1,11 +1,13 @@
 import React from 'react';
-import { Split, Loader2, Paperclip } from 'lucide-react';
+import { Split, Loader2, Paperclip, Clock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
 import { CardAttachment } from '@/lib/types';
 import { AttachmentDisplay } from '../AttachmentDisplay';
 
 interface LessonContentDisplayProps {
+  title: string;
+  duration?: string | null;
   content: string;
   attachments?: CardAttachment[];
   hasDifferentiatedContent: boolean;
@@ -16,6 +18,8 @@ interface LessonContentDisplayProps {
 }
 
 export function LessonContentDisplay({
+  title,
+  duration,
   content,
   attachments = [],
   hasDifferentiatedContent,
@@ -26,6 +30,20 @@ export function LessonContentDisplay({
 }: LessonContentDisplayProps) {
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
+      {/* Card Header */}
+      <div className="border-b border-gray-200 pb-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-teal">{title}</h2>
+          {duration && (
+            <div className="text-sm text-coral bg-coral/10 px-3 py-1 rounded-full flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              {duration}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Card Content */}
       <div 
         className="prose max-w-none text-gray-800"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
