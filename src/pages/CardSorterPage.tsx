@@ -418,7 +418,7 @@ export function CardSorterPage() {
   };
   
   // SortableCard component (used for drag and drop)
-  const SortableCard = ({ card }: { card: LessonCard }) => {
+  const SortableCard = ({ card, index }: { card: LessonCard, index: number }) => {
     const {
       attributes,
       listeners,
@@ -487,22 +487,30 @@ export function CardSorterPage() {
         >
           <div className={`border rounded-lg shadow-sm overflow-hidden transition-all h-full flex flex-col
                           ${getCardBackground(card.type)}`}>
-            {/* Card header with drag handle */}
-            <div className="flex items-center p-3 border-b border-gray-200">
+            {/* Card header with drag handle and number */}
+            <div className="flex items-center p-3 border-b border-gray-200 gap-2">
+              {/* Card number */}
+              <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-700">
+                {index + 1}
+              </div>
+              
+              {/* Drag handle */}
               <div
                 {...attributes}
                 {...listeners}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing mr-2"
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing mr-1"
               >
                 <GripVertical className="h-5 w-5" />
               </div>
-              <div className="flex items-center gap-2 flex-1">
+              
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 {getCardIcon(card.type)}
-                <h3 className="font-medium text-gray-800 truncate" title={card.title}>
+                <h3 className="font-medium text-gray-800 truncate text-sm" title={card.title}>
                   {card.title}
                 </h3>
               </div>
-              <div className="flex items-center gap-1 ml-auto">
+              
+              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
                 {card.duration && (
                   <Badge variant="outline" className="h-5 text-xs">
                     {card.duration}
@@ -525,7 +533,7 @@ export function CardSorterPage() {
                     e.stopPropagation();
                     toggleCardExpanded(card.id);
                   }}
-                  className="h-7 w-7 rounded-full"
+                  className="h-7 w-7 rounded-full flex-shrink-0"
                 >
                   {isExpanded ? (
                     <Minimize2 className="h-4 w-4 text-gray-500" />
@@ -591,6 +599,11 @@ export function CardSorterPage() {
         <div className={`border rounded-lg shadow-sm overflow-hidden transition-all
                         ${getCardBackground(card.type)}`}>
           <div className="flex items-center p-3">
+            {/* Card number */}
+            <div className="flex-shrink-0 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-700 mr-1">
+              {index + 1}
+            </div>
+            
             <div
               {...attributes}
               {...listeners}
@@ -598,14 +611,14 @@ export function CardSorterPage() {
             >
               <GripVertical className="h-5 w-5" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               {getCardIcon(card.type)}
-              <h3 className="font-medium text-gray-800" title={card.title}>
+              <h3 className="font-medium text-gray-800 truncate" title={card.title}>
                 {card.title}
               </h3>
             </div>
             
-            <div className="flex items-center ml-auto gap-2">
+            <div className="flex items-center ml-auto gap-2 flex-shrink-0">
               {card.duration && (
                 <Badge variant="outline" className="h-5 text-xs">
                   {card.duration}
@@ -1151,15 +1164,15 @@ export function CardSorterPage() {
           >
             <div className={
               layout === 'grid' 
-                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 auto-rows-fr"
+                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-fr"
                 : "space-y-2"
             }>
               <SortableContext
                 items={filteredCards.map((card) => card.id)}
-                strategy={layout === 'grid' ? rectSortingStrategy : verticalListSortingStrategy}
+                strategy={rectSortingStrategy}
               >
-                {filteredCards.map((card) => (
-                  <SortableCard key={card.id} card={card} />
+                {filteredCards.map((card, index) => (
+                  <SortableCard key={card.id} card={card} index={index} />
                 ))}
               </SortableContext>
             </div>
