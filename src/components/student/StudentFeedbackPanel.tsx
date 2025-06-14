@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } fr
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
+  submitExtensionRequest,
 } from "../../lib/supabase";
 
 interface StudentFeedbackPanelProps {
@@ -107,16 +108,24 @@ export function StudentFeedbackPanel({
     setRequestingExtension(true);
     
     try {
-      // In a real implementation, we would call an API to save the extension request
-      // For now, we'll simulate the request with a setTimeout
-      setTimeout(() => {
+      // Submit the extension request to the database
+      const success = await submitExtensionRequest(
+        presentationId,
+        studentName,
+        currentCardIndex
+      );
+      
+      if (success) {
+        console.log("Extension request submitted successfully");
         if (onExtensionRequested) {
           onExtensionRequested();
         }
-        setRequestingExtension(false);
-      }, 1000);
+      } else {
+        console.error("Failed to submit extension request");
+      }
     } catch (error) {
       console.error("Error requesting extension:", error);
+    } finally {
       setRequestingExtension(false);
     }
   };
