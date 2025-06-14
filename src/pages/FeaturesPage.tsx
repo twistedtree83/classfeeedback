@@ -14,7 +14,8 @@ import {
   Palette,
   Split,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Bell
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
