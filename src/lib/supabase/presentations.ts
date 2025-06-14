@@ -89,7 +89,7 @@ export const getLessonPresentationByCode = async (
 
     const { data, error } = await query.maybeSingle();
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') {
       console.error("Error fetching lesson presentation:", error);
       return null;
     }

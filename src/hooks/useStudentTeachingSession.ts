@@ -9,6 +9,7 @@ import {
   getTeacherMessagesForPresentation,
   checkParticipantStatus,
   subscribeToParticipantStatus,
+  getParticipantByCodeAndName,
 } from "../lib/supabase";
 import type {
   LessonPresentation,
@@ -44,6 +45,39 @@ export function useStudentTeachingSession() {
     }
   }, [location]);
 
+  // Check for previously stored approval
+  useEffect(() => {
+    if (!sessionCode || !studentName) return;
+    
+    const approvedKey = `student_approved_${sessionCode}`;
+    const approvedData = localStorage.getItem(approvedKey);
+    
+    if (approvedData) {
+      try {
+        const parsed = JSON.parse(approvedData);
+        if (parsed && parsed.approved && parsed.id) {
+          console.log('Found saved approval:', parsed);
+          setParticipantId(parsed.id);
+          setStatus('approved');
+          setJoined(true);
+          
+          // Get presentation data since we're already approved
+          getLessonPresentationByCode(sessionCode)
+            .then((presentationData) => {
+              if (presentationData) {
+                console.log("Loading presentation from saved approval:", presentationData);
+                setPresentation(presentationData);
+              }
+            })
+            .catch(err => console.error("Error loading presentation from saved approval:", err));
+        }
+      } catch (e) {
+        console.error('Failed to parse saved approval data:', e);
+        localStorage.removeItem(approvedKey);
+      }
+    }
+  }, [sessionCode, studentName]);
+
   // Check participant approval status with direct subscription
   useEffect(() => {
     if (!participantId || !sessionCode) return;
@@ -66,6 +100,16 @@ export function useStudentTeachingSession() {
         if (newStatus === "approved") {
           console.log("Participant approved - transitioning to teaching view");
           setJoined(true);
+          
+          // Save approval in localStorage to persist across page reloads
+          const approvalData = {
+            id: participantId,
+            approved: true,
+            name: studentName,
+            timestamp: new Date().toISOString()
+          };
+          
+          localStorage.setItem(`student_approved_${sessionCode}`, JSON.stringify(approvalData));
 
           // Get presentation data
           getLessonPresentationByCode(sessionCode)
@@ -100,6 +144,17 @@ export function useStudentTeachingSession() {
 
         if (currentStatus === "approved") {
           setJoined(true);
+          
+          // Save approval in localStorage to persist across page reloads
+          const approvalData = {
+            id: participantId,
+            approved: true,
+            name: studentName,
+            timestamp: new Date().toISOString()
+          };
+          
+          localStorage.setItem(`student_approved_${sessionCode}`, JSON.stringify(approvalData));
+          
           // Get presentation data
           const presentationData = await getLessonPresentationByCode(
             sessionCode
@@ -133,7 +188,7 @@ export function useStudentTeachingSession() {
       subscription.unsubscribe();
       clearInterval(pollingInterval);
     };
-  }, [participantId, sessionCode]);
+  }, [participantId, sessionCode, studentName]);
 
   // Load past teacher messages when joining a session
   useEffect(() => {
@@ -229,6 +284,43 @@ export function useStudentTeachingSession() {
       const session = await getSessionByCode(sessionCode);
       if (!session) {
         setError("Session not found. Please check the code and try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Check if we already exist
+      const existing = await getParticipantByCodeAndName(
+        sessionCode.trim().toUpperCase(),
+        studentName.trim()
+      );
+
+      if (existing) {
+        console.log("Found existing participant:", existing);
+        setParticipantId(existing.id);
+        setStatus(existing.status as ParticipantStatus);
+
+        if (existing.status === "approved") {
+          setJoined(true);
+          
+          // Save approval in localStorage
+          const approvalData = {
+            id: existing.id,
+            approved: true,
+            name: studentName,
+            timestamp: new Date().toISOString()
+          };
+          
+          localStorage.setItem(`student_approved_${sessionCode}`, JSON.stringify(approvalData));
+          
+          // Load presentation immediately
+          const pres = await getLessonPresentationByCode(sessionCode);
+          if (pres) {
+            setPresentation(pres);
+          } else {
+            console.log("Presentation not found for approved user");
+          }
+        }
+        setLoading(false);
         return;
       }
 

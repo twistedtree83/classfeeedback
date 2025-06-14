@@ -1,4 +1,4 @@
-import { supabase } from "./client";
+import { supabase } from './client';
 
 export interface Session {
   id: string;
@@ -101,13 +101,17 @@ export const addSessionParticipant = async (
   try {
     const { data, error } = await supabase
       .from("session_participants")
-      .insert([
+      .upsert(
         {
           session_code: sessionCode,
           student_name: studentName,
-          status: "pending",
+          status: "pending"         // ignored if row already exists
         },
-      ])
+        {
+          onConflict: "session_code,student_name",
+          ignoreDuplicates: false   // we want the row returned
+        }
+      )
       .select()
       .single();
 
@@ -119,6 +123,30 @@ export const addSessionParticipant = async (
     return data;
   } catch (err) {
     console.error("Exception adding participant:", err);
+    return null;
+  }
+};
+
+export const getParticipantByCodeAndName = async (
+  code: string,
+  name: string
+): Promise<SessionParticipant | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("session_participants")
+      .select("*")
+      .eq("session_code", code)
+      .eq("student_name", name)
+      .single();
+
+    if (error) {
+      console.error("Error fetching participant by name and code:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("Exception fetching participant by name and code:", err);
     return null;
   }
 };
