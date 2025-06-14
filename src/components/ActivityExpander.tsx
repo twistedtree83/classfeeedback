@@ -39,6 +39,7 @@ export function ActivityExpander({
 
   const handleUse = () => {
     if (expanded) {
+      console.log("Using expanded activity:", expanded);
       onExpandedActivity(expanded);
     }
   };

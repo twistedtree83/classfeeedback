@@ -99,12 +99,9 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     materials: false,
     sections: false,
   });
-
-  const [expandingActivity, setExpandingActivity] = useState<{
-    sectionId: string;
-    activityIndex: number;
-    content: string;
-  } | null>(null);
+  
+  // State to track temporarily updated activities
+  const [updatedSections, setUpdatedSections] = useState<ProcessedLesson['sections'] | null>(null);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -125,6 +122,12 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     });
   };
 
+  const [expandingActivity, setExpandingActivity] = useState<{
+    sectionId: string;
+    activityIndex: number;
+    content: string;
+  } | null>(null);
+
   const handleExpandActivity = useCallback((sectionId: string, activityIndex: number, content: string) => {
     setExpandingActivity({
       sectionId,
@@ -136,25 +139,30 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
   const handleExpandedActivity = useCallback((expanded: string) => {
     if (!expandingActivity) return;
     
+    // Get the current sections to update (either from updatedSections state or the original lesson)
+    const sectionsToUpdate = updatedSections || lesson.sections;
+    
     // Find the section and update the activity
-    const sectionIndex = lesson.sections.findIndex(s => s.id === expandingActivity.sectionId);
+    const sectionIndex = sectionsToUpdate.findIndex(s => s.id === expandingActivity.sectionId);
     if (sectionIndex !== -1) {
-      const updatedSections = [...lesson.sections];
-      updatedSections[sectionIndex] = {
-        ...updatedSections[sectionIndex],
+      const newSections = [...sectionsToUpdate];
+      newSections[sectionIndex] = {
+        ...newSections[sectionIndex],
         activities: [
-          ...updatedSections[sectionIndex].activities.slice(0, expandingActivity.activityIndex),
+          ...newSections[sectionIndex].activities.slice(0, expandingActivity.activityIndex),
           expanded,
-          ...updatedSections[sectionIndex].activities.slice(expandingActivity.activityIndex + 1)
+          ...newSections[sectionIndex].activities.slice(expandingActivity.activityIndex + 1)
         ]
       };
       
-      // TODO: In a real implementation, we would save this update to the database
-      // For now, we'll just close the expander
+      // Update our local state with the modified sections
+      setUpdatedSections(newSections);
+      console.log("Activity expanded and updated in local state");
     }
     
+    // Close the expander
     setExpandingActivity(null);
-  }, [expandingActivity, lesson.sections]);
+  }, [expandingActivity, lesson.sections, updatedSections]);
 
   // Map section names to their values
   const sectionValues = {
@@ -163,6 +171,9 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     materials: "materials",
     sections: "sections",
   };
+
+  // Use either updated sections or original lesson sections
+  const sectionsToDisplay = updatedSections || lesson.sections;
 
   return (
     <Card className="shadow-card">
@@ -408,7 +419,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-6 py-2">
-                {lesson.sections.map((section, sectionIndex) => (
+                {sectionsToDisplay.map((section, sectionIndex) => (
                   <Card key={section.id} className="shadow-sm overflow-hidden">
                     <CardHeader className="p-4 bg-muted/50">
                       <div className="flex justify-between items-center">
