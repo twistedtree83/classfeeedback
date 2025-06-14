@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import TeacherDashboard from './pages/index';
 import JoinPage from './pages/join';
 import { StudentView } from './pages/StudentView';
@@ -22,77 +22,85 @@ import { LessonSummaryPage } from './pages/LessonSummaryPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { AboutPage } from './pages/AboutPage';
 
+// Pages that have their own navigation (don't need MainNav)
+const PAGES_WITH_CUSTOM_NAV = ['/', '/features', '/about'];
+
+// Layout component to conditionally render the MainNav
+function Layout({ children }) {
+  const location = useLocation();
+  const shouldRenderNav = !PAGES_WITH_CUSTOM_NAV.includes(location.pathname);
+
+  return (
+    <>
+      {shouldRenderNav && <MainNav />}
+      {children}
+    </>
+  );
+}
+
 function App() {
-  // Pages that have their own navigation (don't need MainNav)
-  const pagesWithCustomNav = ['/', '/features', '/about'];
-  
   return (
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
-          {/* Marketing pages with their own navigation */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          
-          {/* All other pages that need the main navigation */}
-          <Route path="*" element={
-            <>
-              <MainNav />
-              <Routes>
-                {/* Auth pages */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/update-password" element={<UpdatePassword />} />
-                
-                {/* Public pages */}
-                <Route path="/join" element={<JoinPage />} />
-                <Route path="/student" element={<StudentView />} />
-                
-                {/* Protected routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <TeacherDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/planner" element={
-                  <ProtectedRoute>
-                    <LessonPlannerPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/planner/create" element={
-                  <ProtectedRoute>
-                    <CreateLesson />
-                  </ProtectedRoute>
-                } />
-                <Route path="/planner/:id/edit" element={
-                  <ProtectedRoute>
-                    <EditLesson />
-                  </ProtectedRoute>
-                } />
-                <Route path="/planner/:id" element={
-                  <ProtectedRoute>
-                    <LessonDetails />
-                  </ProtectedRoute>
-                } />
-                <Route path="/teach/:code" element={
-                  <ProtectedRoute>
-                    <TeachingModePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/lesson-summary/:code" element={
-                  <ProtectedRoute>
-                    <LessonSummaryPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/profile" element={<Profile />} />
-                
-                {/* Fallback route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </>
-          } />
+          {/* All routes wrapped with Layout component */}
+          <Route element={<Layout />}>
+            {/* Marketing pages with their own navigation */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            
+            {/* Auth pages */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
+            
+            {/* Public pages */}
+            <Route path="/join" element={<JoinPage />} />
+            <Route path="/student" element={<StudentView />} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <TeacherDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/planner" element={
+              <ProtectedRoute>
+                <LessonPlannerPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/planner/create" element={
+              <ProtectedRoute>
+                <CreateLesson />
+              </ProtectedRoute>
+            } />
+            <Route path="/planner/:id/edit" element={
+              <ProtectedRoute>
+                <EditLesson />
+              </ProtectedRoute>
+            } />
+            <Route path="/planner/:id" element={
+              <ProtectedRoute>
+                <LessonDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/teach/:code" element={
+              <ProtectedRoute>
+                <TeachingModePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/lesson-summary/:code" element={
+              <ProtectedRoute>
+                <LessonSummaryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={<Profile />} />
+            
+            {/* Fallback route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Routes>
         <Toaster />
       </BrowserRouter>
