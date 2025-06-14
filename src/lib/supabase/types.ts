@@ -92,4 +92,15 @@ export interface LessonCard {
   differentiatedContent?: string;
   isDifferentiated?: boolean;
   attachments?: CardAttachment[];
+  extensionActivity?: string;
+}
+
+// Extension activity requests
+export interface ExtensionRequest {
+  id: string;
+  presentation_id: string;
+  student_name: string;
+  card_index: number;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
 }

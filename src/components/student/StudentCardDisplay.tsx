@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/Button";
-import { Split, Loader2, Sparkles } from "lucide-react";
+import { Split, Loader2, Sparkles, Clock } from "lucide-react";
 import { generateDifferentiatedContent } from "../../lib/aiService";
 import { sanitizeHtml } from "../../lib/utils";
 import type { LessonCard } from "../../lib/types";
@@ -8,13 +8,13 @@ import type { LessonCard } from "../../lib/types";
 interface StudentCardDisplayProps {
   card: LessonCard;
   level?: string;
+  extensionApproved?: boolean;
 }
 
-export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
+export function StudentCardDisplay({ card, level, extensionApproved = false }: StudentCardDisplayProps) {
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
-  const [showExtensionActivity, setShowExtensionActivity] = useState(false);
-  const [requestingExtension, setRequestingExtension] = useState(false);
+  const [showExtensionActivity, setShowExtensionActivity] = useState(extensionApproved);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const hasDifferentiatedContent = card?.differentiatedContent ? true : false;
@@ -27,8 +27,12 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
     }
     // Reset differentiated view when card changes
     setViewingDifferentiated(false);
-    setShowExtensionActivity(false);
   }, [card.id]);
+  
+  // Update extension visibility when approval changes
+  useEffect(() => {
+    setShowExtensionActivity(extensionApproved);
+  }, [extensionApproved]);
 
   const toggleDifferentiatedView = () => {
     if (hasDifferentiatedContent) {
@@ -58,15 +62,6 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
     } finally {
       setGeneratingDifferentiated(false);
     }
-  };
-
-  const handleRequestExtension = () => {
-    setRequestingExtension(true);
-    // Simulate a request to the teacher
-    setTimeout(() => {
-      setShowExtensionActivity(true);
-      setRequestingExtension(false);
-    }, 1000);
   };
 
   const displayContent =
@@ -154,26 +149,6 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
         >
           {renderContent()}
         </div>
-
-        {/* Extension Activity Request Button */}
-        {card.type === 'activity' && hasExtensionActivity && !showExtensionActivity && (
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={handleRequestExtension}
-              disabled={requestingExtension}
-              className="flex items-center gap-2 text-purple-600 border-purple-200 hover:bg-purple-50"
-            >
-              {requestingExtension ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {requestingExtension ? "Requesting..." : "I've Finished - Request Extension Activity"}
-            </Button>
-          </div>
-        )}
 
         {/* Extension Activity Display */}
         {showExtensionActivity && hasExtensionActivity && (

@@ -16,6 +16,8 @@ interface StudentFeedbackPanelProps {
   onExtensionRequested?: () => void;
   showExtensionButton?: boolean;
   extensionRequested?: boolean;
+  extensionPending?: boolean;
+  extensionApproved?: boolean;
 }
 
 export function StudentFeedbackPanel({
@@ -26,7 +28,9 @@ export function StudentFeedbackPanel({
   onQuestionSubmitted,
   onExtensionRequested,
   showExtensionButton = false,
-  extensionRequested = false
+  extensionRequested = false,
+  extensionPending = false,
+  extensionApproved = false
 }: StudentFeedbackPanelProps) {
   const [question, setQuestion] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<string | null>(
@@ -102,11 +106,19 @@ export function StudentFeedbackPanel({
     
     setRequestingExtension(true);
     
-    // Simulate a delay for network request
-    setTimeout(() => {
-      onExtensionRequested?.();
+    try {
+      // In a real implementation, we would call an API to save the extension request
+      // For now, we'll simulate the request with a setTimeout
+      setTimeout(() => {
+        if (onExtensionRequested) {
+          onExtensionRequested();
+        }
+        setRequestingExtension(false);
+      }, 1000);
+    } catch (error) {
+      console.error("Error requesting extension:", error);
       setRequestingExtension(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -194,11 +206,20 @@ export function StudentFeedbackPanel({
           </div>
         )}
 
-        {extensionRequested && (
+        {extensionRequested && !extensionApproved && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2 text-yellow-700">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm">Extension activity request sent! Waiting for teacher approval...</span>
+            </div>
+          </div>
+        )}
+
+        {extensionApproved && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2 text-purple-700">
               <Sparkles className="h-4 w-4" />
-              <span className="text-sm">Extension activity is now available below!</span>
+              <span className="text-sm">Extension activity approved! Scroll down to view it.</span>
             </div>
           </div>
         )}

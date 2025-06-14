@@ -68,6 +68,16 @@ export {
   subscribeToTeachingQuestions,
 } from "./questions";
 
+// Re-export extension requests functions
+export {
+  submitExtensionRequest,
+  approveExtensionRequest,
+  rejectExtensionRequest,
+  getExtensionRequestsForPresentation,
+  getStudentExtensionRequestStatus,
+  subscribeToExtensionRequests,
+} from "./extensions";
+
 // Re-export utility functions
 export { generateRandomName } from "./utils";
 

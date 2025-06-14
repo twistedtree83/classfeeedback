@@ -70,3 +70,12 @@ export interface TeacherMessage {
 }
 
 export type ParticipantStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ExtensionRequest {
+  id: string;
+  presentation_id: string;
+  student_name: string;
+  card_index: number;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}

@@ -56,23 +56,43 @@ export function StudentContent({
   onSendFeedback,
   onSendQuestion,
 }: StudentContentProps) {
-  const [showExtensionActivity, setShowExtensionActivity] = useState(false);
+  const [extensionRequested, setExtensionRequested] = useState(false);
+  const [extensionPending, setExtensionPending] = useState(false);
+  const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
   
   // Check if current card has an extension activity
   useEffect(() => {
     if (currentCard) {
       setHasExtensionActivity(!!currentCard.extensionActivity);
-      setShowExtensionActivity(false); // Reset on card change
+      // Reset extension states when changing cards
+      setExtensionRequested(false);
+      setExtensionPending(false);
+      setExtensionApproved(false);
     } else {
       setHasExtensionActivity(false);
-      setShowExtensionActivity(false);
     }
   }, [currentCard]);
 
   // Handle extension activity request
   const handleExtensionRequest = () => {
-    setShowExtensionActivity(true);
+    setExtensionRequested(true);
+    setExtensionPending(true);
+    
+    // In a real implementation, we would send a request to the backend
+    // For now, we'll simulate a pending state that would wait for teacher approval
+    
+    // Mock API call to request extension
+    console.log(`Student ${studentName} requested extension activity for card index ${presentation?.current_card_index}`);
+    
+    // For demonstration purposes, after 5 seconds we'll simulate the teacher approving the request
+    // In a real implementation, this would happen through a real-time subscription
+    setTimeout(() => {
+      if (extensionRequested) {
+        setExtensionPending(false);
+        setExtensionApproved(true);
+      }
+    }, 5000);
   };
 
   // Show waiting room when lesson hasn't started yet
@@ -133,7 +153,7 @@ export function StudentContent({
                 : currentCard.content
             }
             extensionActivity={currentCard.extensionActivity}
-            showExtensionActivity={showExtensionActivity}
+            showExtensionActivity={extensionApproved}
             attachments={currentCardAttachments}
             hasDifferentiatedContent={hasDifferentiatedContent}
             viewingDifferentiated={viewingDifferentiated}
@@ -149,8 +169,10 @@ export function StudentContent({
             onFeedbackSubmitted={onSendFeedback}
             onQuestionSubmitted={() => onSendQuestion("Sample question")}
             onExtensionRequested={handleExtensionRequest}
-            showExtensionButton={currentCard.type === 'activity' && hasExtensionActivity && !showExtensionActivity}
-            extensionRequested={showExtensionActivity}
+            showExtensionButton={currentCard.type === 'activity' && hasExtensionActivity && !extensionRequested}
+            extensionRequested={extensionRequested}
+            extensionPending={extensionPending}
+            extensionApproved={extensionApproved}
           />
         </div>
 

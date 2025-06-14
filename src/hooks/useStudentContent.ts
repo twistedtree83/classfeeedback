@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFeedbackSubmission } from './useFeedbackSubmission';
 import { useStudentSession } from './useStudentSession';
+import { getStudentExtensionRequestStatus, submitExtensionRequest } from '../lib/supabase';
 
 export function useStudentContent(sessionCode: string, studentName: string, avatarUrl: string) {
   // UI state for interaction
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
+  const [extensionRequested, setExtensionRequested] = useState(false);
+  const [extensionPending, setExtensionPending] = useState(false);
+  const [extensionApproved, setExtensionApproved] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Use existing custom hooks for session data and feedback
@@ -42,6 +46,39 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
   }, [presentation?.current_card_index, setCurrentCardIndex]);
 
+  // Check for existing extension request
+  useEffect(() => {
+    const checkExtensionStatus = async () => {
+      if (presentation?.id && currentCard && currentCard.extensionActivity && presentation.current_card_index !== undefined) {
+        try {
+          const status = await getStudentExtensionRequestStatus(
+            presentation.id,
+            studentName,
+            presentation.current_card_index
+          );
+          
+          if (status === 'pending') {
+            setExtensionRequested(true);
+            setExtensionPending(true);
+            setExtensionApproved(false);
+          } else if (status === 'approved') {
+            setExtensionRequested(true);
+            setExtensionPending(false);
+            setExtensionApproved(true);
+          } else if (status === 'rejected') {
+            setExtensionRequested(false);
+            setExtensionPending(false);
+            setExtensionApproved(false);
+          }
+        } catch (error) {
+          console.error('Error checking extension request status:', error);
+        }
+      }
+    };
+    
+    checkExtensionStatus();
+  }, [presentation?.id, presentation?.current_card_index, currentCard, studentName]);
+
   // Scroll to top when card changes
   useEffect(() => {
     if (contentRef.current) {
@@ -64,6 +101,36 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
       setNewMessageCount(prev => prev + 1);
     }
   }, [newMessage, showMessagePanel]);
+
+  // Set up polling for extension request status
+  useEffect(() => {
+    if (!extensionRequested || !extensionPending || !presentation?.id) return;
+    
+    const checkInterval = setInterval(async () => {
+      try {
+        const status = await getStudentExtensionRequestStatus(
+          presentation.id,
+          studentName,
+          presentation.current_card_index
+        );
+        
+        if (status === 'approved') {
+          setExtensionPending(false);
+          setExtensionApproved(true);
+          clearInterval(checkInterval);
+        } else if (status === 'rejected') {
+          setExtensionRequested(false);
+          setExtensionPending(false);
+          setExtensionApproved(false);
+          clearInterval(checkInterval);
+        }
+      } catch (error) {
+        console.error('Error checking extension status:', error);
+      }
+    }, 5000);
+    
+    return () => clearInterval(checkInterval);
+  }, [extensionRequested, extensionPending, presentation?.id, studentName, presentation?.current_card_index]);
 
   const handleToggleDifferentiatedView = () => {
     setViewingDifferentiated(!viewingDifferentiated);
@@ -100,6 +167,33 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
   };
 
+  const handleExtensionRequest = async () => {
+    if (!presentation?.id || presentation.current_card_index === undefined) return;
+    
+    setExtensionRequested(true);
+    setExtensionPending(true);
+    
+    try {
+      // Submit the extension request
+      const result = await submitExtensionRequest(
+        presentation.id,
+        studentName,
+        presentation.current_card_index
+      );
+      
+      if (!result) {
+        throw new Error('Failed to submit extension request');
+      }
+      
+      // In a real implementation, we'd wait for the teacher to approve/reject
+      console.log('Extension request submitted:', result);
+    } catch (error) {
+      console.error('Error requesting extension activity:', error);
+      setExtensionRequested(false);
+      setExtensionPending(false);
+    }
+  };
+
   const toggleMessagePanel = () => {
     setShowMessagePanel(prev => !prev);
     if (!showMessagePanel) {
@@ -133,10 +227,14 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     showMessagePanel,
     newMessageCount,
     contentRef,
+    extensionRequested,
+    extensionPending,
+    extensionApproved,
     
     // Methods
     handleToggleDifferentiatedView,
     handleGenerateDifferentiated,
+    handleExtensionRequest,
     toggleMessagePanel
   };
 }
