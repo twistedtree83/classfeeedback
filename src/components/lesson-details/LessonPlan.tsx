@@ -1,41 +1,58 @@
-import React, { useState } from 'react';
-import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Target, 
-  FileText, 
-  BookOpen, 
+import React, { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Target,
+  FileText,
+  BookOpen,
   List,
   CheckSquare,
   Plus,
   Maximize2,
-  Minimize2
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+  Minimize2,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sanitizeHtml } from "@/lib/utils";
 import type { ProcessedLesson } from "@/lib/types";
+import { ActivityExpandButton } from "../activity/ActivityExpandButton";
+import { ActivityExpander } from "../ActivityExpander";
 
 interface LessonPlanProps {
   lesson: ProcessedLesson;
+  setLesson: React.Dispatch<React.SetStateAction<ProcessedLesson | null>>;
   onAddToTeaching?: (
-    cardType: "objective" | "material" | "section" | "activity" | "topic_background",
+    cardType:
+      | "objective"
+      | "material"
+      | "section"
+      | "activity"
+      | "topic_background",
     data: any
   ) => void;
 }
 
-export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
+export function LessonPlan({
+  lesson,
+  setLesson,
+  onAddToTeaching,
+}: LessonPlanProps) {
   const [expandedSections, setExpandedSections] = useState({
     objectives: true, // Keep objectives expanded by default
     background: false,
     materials: false,
     sections: false,
   });
+
+  const [expanderData, setExpanderData] = useState<{
+    activity: string;
+    sectionTitle: string;
+  } | null>(null);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -60,7 +77,9 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
     <Card className="shadow-card border-border/50">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold font-display">Lesson Content</CardTitle>
+          <CardTitle className="text-xl font-bold font-display">
+            Lesson Content
+          </CardTitle>
           <Button
             variant="outline"
             size="sm"
@@ -83,10 +102,14 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <Accordion type="multiple" defaultValue={["objectives"]} className="w-full">
+        <Accordion
+          type="multiple"
+          defaultValue={["objectives"]}
+          className="w-full"
+        >
           {/* Learning Intentions Accordion */}
           <AccordionItem value="objectives">
-            <AccordionTrigger className="py-4 text-lg font-medium flex items-center">
+            <AccordionTrigger className="py-4 text-lg font-medium flex items-center text-foreground hover:text-primary">
               <div className="flex items-center text-primary">
                 <Target className="h-5 w-5 mr-2" />
                 Learning Intentions
@@ -134,50 +157,51 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
                 )}
 
                 {/* Success Criteria */}
-                {lesson.success_criteria && lesson.success_criteria.length > 0 && (
-                  <div className="mt-6 p-4 bg-success/5 rounded-lg border border-success/20">
-                    <h4 className="font-semibold text-success flex items-center mb-3">
-                      <CheckSquare className="h-5 w-5 mr-2" />
-                      Success Criteria
-                    </h4>
-                    <ul className="space-y-2">
-                      {lesson.success_criteria
-                        .filter((criteria) => criteria.trim())
-                        .map((criteria, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start gap-3 p-2 bg-background/40 rounded-lg"
-                          >
-                            <div className="w-2 h-2 bg-success rounded-full mt-2 flex-shrink-0"></div>
-                            <span
-                              className="text-foreground text-sm"
-                              dangerouslySetInnerHTML={{
-                                __html: sanitizeHtml(criteria),
-                              }}
-                            ></span>
-                          </li>
-                        ))}
-                    </ul>
-                    {onAddToTeaching && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          onAddToTeaching("objective", {
-                            title: "Success Criteria",
-                            content: (lesson.success_criteria || [])
-                              .map((sc) => `• ${sc}`)
-                              .join("\n"),
-                          })
-                        }
-                        className="mt-3"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add to Teaching
-                      </Button>
-                    )}
-                  </div>
-                )}
+                {lesson.success_criteria &&
+                  lesson.success_criteria.length > 0 && (
+                    <div className="mt-6 p-4 bg-success/5 rounded-lg border border-success/20">
+                      <h4 className="font-semibold text-success flex items-center mb-3">
+                        <CheckSquare className="h-5 w-5 mr-2" />
+                        Success Criteria
+                      </h4>
+                      <ul className="space-y-2">
+                        {lesson.success_criteria
+                          .filter((criteria) => criteria.trim())
+                          .map((criteria, index) => (
+                            <li
+                              key={index}
+                              className="flex items-start gap-3 p-2 bg-background/40 rounded-lg"
+                            >
+                              <div className="w-2 h-2 bg-success rounded-full mt-2 flex-shrink-0"></div>
+                              <span
+                                className="text-foreground text-sm"
+                                dangerouslySetInnerHTML={{
+                                  __html: sanitizeHtml(criteria),
+                                }}
+                              ></span>
+                            </li>
+                          ))}
+                      </ul>
+                      {onAddToTeaching && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            onAddToTeaching("objective", {
+                              title: "Success Criteria",
+                              content: (lesson.success_criteria || [])
+                                .map((sc) => `• ${sc}`)
+                                .join("\n"),
+                            })
+                          }
+                          className="mt-3"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add to Teaching
+                        </Button>
+                      )}
+                    </div>
+                  )}
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -185,7 +209,7 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
           {/* Topic Background Accordion */}
           {lesson.topic_background && (
             <AccordionItem value="background">
-              <AccordionTrigger className="py-4 text-lg font-medium flex items-center">
+              <AccordionTrigger className="py-4 text-lg font-medium flex items-center text-foreground hover:text-primary">
                 <div className="flex items-center text-info">
                   <BookOpen className="h-5 w-5 mr-2" />
                   Topic Background
@@ -221,7 +245,7 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
 
           {/* Materials Accordion */}
           <AccordionItem value="materials">
-            <AccordionTrigger className="py-4 text-lg font-medium flex items-center">
+            <AccordionTrigger className="py-4 text-lg font-medium flex items-center text-foreground hover:text-primary">
               <div className="flex items-center text-accent">
                 <FileText className="h-5 w-5 mr-2" />
                 Materials Needed
@@ -240,7 +264,9 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
                         <span
                           className="text-foreground"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }}
+                          dangerouslySetInnerHTML={{
+                            __html: sanitizeHtml(material),
+                          }}
                         ></span>
                       </li>
                     ))}
@@ -252,7 +278,9 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
                     onClick={() =>
                       onAddToTeaching("material", {
                         title: "Required Materials",
-                        content: lesson.materials.map((mat) => `• ${mat}`).join("\n"),
+                        content: lesson.materials
+                          .map((mat) => `• ${mat}`)
+                          .join("\n"),
                       })
                     }
                   >
@@ -266,7 +294,7 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
 
           {/* Lesson Sections Accordion */}
           <AccordionItem value="sections">
-            <AccordionTrigger className="py-4 text-lg font-medium flex items-center">
+            <AccordionTrigger className="py-4 text-lg font-medium flex items-center text-foreground hover:text-primary">
               <div className="flex items-center text-secondary">
                 <List className="h-5 w-5 mr-2" />
                 Lesson Sections
@@ -334,23 +362,33 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
                                       __html: sanitizeHtml(activity),
                                     }}
                                   ></span>
-                                  {onAddToTeaching && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    {onAddToTeaching && (
+                                      <Button
+                                        variant="default"
+                                        size="icon"
+                                        className="bg-bice-blue hover:bg-bice-blue/90 text-white shadow"
+                                        onClick={() =>
+                                          onAddToTeaching("activity", {
+                                            title: `Activity: ${section.title}`,
+                                            content: activity,
+                                            sectionId: section.id,
+                                            activityIndex: index,
+                                          })
+                                        }
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <ActivityExpandButton
                                       onClick={() =>
-                                        onAddToTeaching("activity", {
-                                          title: `Activity: ${section.title}`,
-                                          content: activity,
-                                          sectionId: section.id,
-                                          activityIndex: index,
+                                        setExpanderData({
+                                          activity,
+                                          sectionTitle: section.title,
                                         })
                                       }
-                                      className="text-secondary flex-shrink-0"
-                                    >
-                                      <Plus className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                    />
+                                  </div>
                                 </li>
                               ))}
                           </ul>
@@ -379,6 +417,41 @@ export function LessonPlan({ lesson, onAddToTeaching }: LessonPlanProps) {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
+        {/* Activity Expander Modal */}
+        {expanderData && (
+          <ActivityExpander
+            activity={expanderData.activity}
+            context={expanderData.sectionTitle}
+            level={lesson.level}
+            onExpandedActivity={(expanded) => {
+              setLesson((prev) => {
+                if (!prev) return prev;
+                const clone = structuredClone(prev);
+                const secIdx = lesson.sections.findIndex(
+                  (s) => s.title === expanderData.sectionTitle
+                );
+                if (secIdx >= 0) {
+                  const actIdx = clone.sections[secIdx].activities.findIndex(
+                    (a) => a === expanderData?.activity
+                  );
+                  if (actIdx >= 0)
+                    clone.sections[secIdx].activities[actIdx] = expanded;
+                }
+                return clone;
+              });
+
+              if (onAddToTeaching) {
+                onAddToTeaching("activity", {
+                  title: `Activity: ${expanderData.sectionTitle}`,
+                  content: expanded,
+                });
+              }
+              setExpanderData(null);
+            }}
+            onClose={() => setExpanderData(null)}
+          />
+        )}
       </CardContent>
     </Card>
   );

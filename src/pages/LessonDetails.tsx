@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { getLessonPlanById, createSession, createLessonPresentation } from '../lib/supabase';
-import { generateWordleWord } from '../lib/ai';
-import { LessonHeader } from '@/components/lesson-details/LessonHeader';
-import { LessonPlan } from '@/components/lesson-details/LessonPlan';
-import { TeachingCardsManager } from '@/components/lesson-details/TeachingCardsManager';
-import { WordleConfigCard } from '@/components/lesson-details/WordleConfigCard';
-import { StartButtonCard } from '@/components/lesson-details/StartButtonCard';
-import { EmptyState } from '@/components/lesson-details/EmptyState';
-import { CardSkeleton } from '@/components/lesson-details/CardSkeleton';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  getLessonPlanById,
+  createSession,
+  createLessonPresentation,
+} from "../lib/supabase";
+import { generateWordleWord } from "../lib/ai";
+import { LessonHeader } from "@/components/lesson-details/LessonHeader";
+import { LessonPlan } from "@/components/lesson-details/LessonPlan";
+import { TeachingCardsManager } from "@/components/lesson-details/TeachingCardsManager";
+import { WordleConfigCard } from "@/components/lesson-details/WordleConfigCard";
+import { StartButtonCard } from "@/components/lesson-details/StartButtonCard";
+import { EmptyState } from "@/components/lesson-details/EmptyState";
+import { CardSkeleton } from "@/components/lesson-details/CardSkeleton";
 import type { LessonCard, ProcessedLesson } from "../lib/types";
-import { useToast } from '@/components/ui/use-toast';
-import { ClipboardList } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { ClipboardList } from "lucide-react";
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -25,24 +29,24 @@ export function LessonDetails() {
   const [isStartingTeaching, setIsStartingTeaching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wordleEnabled, setWordleEnabled] = useState(false);
-  const [wordleWord, setWordleWord] = useState('');
+  const [wordleWord, setWordleWord] = useState("");
   const [isGeneratingWord, setIsGeneratingWord] = useState(false);
 
   // Load lesson data
   useEffect(() => {
     const loadLesson = async () => {
       if (!id) return;
-      
+
       try {
         const lessonData = await getLessonPlanById(id);
         if (lessonData?.processed_content) {
           setLesson(lessonData.processed_content);
         } else {
-          throw new Error('Lesson data not found');
+          throw new Error("Lesson data not found");
         }
       } catch (err) {
-        console.error('Error loading lesson:', err);
-        setError('Failed to load lesson details');
+        console.error("Error loading lesson:", err);
+        setError("Failed to load lesson details");
       } finally {
         setIsLoading(false);
       }
@@ -59,7 +63,7 @@ export function LessonDetails() {
         try {
           setSelectedCards(JSON.parse(savedCards));
         } catch (e) {
-          console.error('Error parsing saved cards:', e);
+          console.error("Error parsing saved cards:", e);
         }
       }
     }
@@ -68,32 +72,72 @@ export function LessonDetails() {
   // Save cards to sessionStorage when they change
   useEffect(() => {
     if (id && selectedCards.length > 0) {
-      sessionStorage.setItem(`lesson_cards_${id}`, JSON.stringify(selectedCards));
+      sessionStorage.setItem(
+        `lesson_cards_${id}`,
+        JSON.stringify(selectedCards)
+      );
     }
   }, [id, selectedCards]);
 
   // Handle adding cards to the teaching sequence
-  const handleAddToTeaching = (
-    cardType: 'objective' | 'material' | 'section' | 'activity' | 'topic_background',
+  const handleAddToTeaching = async (
+    cardType:
+      | "objective"
+      | "material"
+      | "section"
+      | "activity"
+      | "topic_background",
     data: any
   ) => {
     // Create a unique ID for the new card
     const newCardId = crypto.randomUUID();
-    
+
     // Create the new card based on the type and data
     const newCard: LessonCard = {
       id: newCardId,
       type: cardType,
       title: data.title || `New ${cardType} Card`,
-      content: data.content || '',
+      content: data.content || "",
       duration: data.duration || null,
       sectionId: data.sectionId || null,
-      activityIndex: data.activityIndex !== undefined ? data.activityIndex : null,
-      attachments: []
+      activityIndex:
+        data.activityIndex !== undefined ? data.activityIndex : null,
+      attachments: [],
     };
-    
-    // Add the new card to the selected cards
-    setSelectedCards(prev => [...prev, newCard]);
+
+    // If this is an activity card, also generate a fast-finisher extension
+    if (cardType === "activity") {
+      try {
+        const { generateExtensionActivity } = await import(
+          "../lib/ai/extensionActivity"
+        );
+        const extensionContent = await generateExtensionActivity(
+          data.content || "",
+          lesson?.title,
+          lesson?.level
+        );
+
+        const extensionCard: LessonCard = {
+          id: crypto.randomUUID(),
+          type: "activity",
+          title: `Fast Finisher: ${data.title || "Extension"}`,
+          content: extensionContent,
+          duration: null,
+          sectionId: data.sectionId || null,
+          activityIndex: null,
+          attachments: [],
+        };
+
+        setSelectedCards((prev) => [...prev, newCard, extensionCard]);
+        return;
+      } catch (e) {
+        console.error("Extension activity generation failed", e);
+        // fallback to just adding original
+      }
+    }
+
+    // default add only original card
+    setSelectedCards((prev) => [...prev, newCard]);
   };
 
   // Handle saving the list of selected cards
@@ -111,20 +155,25 @@ export function LessonDetails() {
         lessonTitle: lesson.title,
         lessonObjectives: lesson.objectives,
         lessonContent: lesson.summary,
-        difficulty: lesson.level?.includes('Grade 1') || lesson.level?.includes('Kindergarten') 
-          ? 'elementary' 
-          : lesson.level?.includes('Grade 2') || lesson.level?.includes('Grade 3') || lesson.level?.includes('Grade 4') || lesson.level?.includes('Grade 5')
-            ? 'middle'
-            : 'high'
+        difficulty:
+          lesson.level?.includes("Grade 1") ||
+          lesson.level?.includes("Kindergarten")
+            ? "elementary"
+            : lesson.level?.includes("Grade 2") ||
+              lesson.level?.includes("Grade 3") ||
+              lesson.level?.includes("Grade 4") ||
+              lesson.level?.includes("Grade 5")
+            ? "middle"
+            : "high",
       });
-      
+
       setWordleWord(generatedWord);
     } catch (err) {
-      console.error('Error generating wordle word:', err);
+      console.error("Error generating wordle word:", err);
       toast({
         title: "Error",
         description: "Failed to generate Wordle word",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsGeneratingWord(false);
@@ -139,7 +188,7 @@ export function LessonDetails() {
       toast({
         title: "Profile Incomplete",
         description: "Please set your title and name in your profile first",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -179,7 +228,7 @@ export function LessonDetails() {
         session.id,
         session.code,
         id!,
-        selectedCards, 
+        selectedCards,
         teacherName,
         wordleEnabled ? wordleWord : null
       );
@@ -201,7 +250,7 @@ export function LessonDetails() {
       toast({
         title: "Error",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
       setIsStartingTeaching(false);
     }
@@ -218,7 +267,7 @@ export function LessonDetails() {
               <CardSkeleton className="h-[600px]" />
             </>
           ) : !lesson ? (
-            <EmptyState 
+            <EmptyState
               icon={ClipboardList}
               title="Lesson Not Found"
               description="We couldn't find the lesson you're looking for."
@@ -230,16 +279,17 @@ export function LessonDetails() {
             />
           ) : (
             <>
-              <LessonHeader 
-                lesson={lesson} 
+              <LessonHeader
+                lesson={lesson}
                 error={error}
                 onStartTeaching={startTeaching}
                 isStartingTeaching={isStartingTeaching}
                 hasCards={selectedCards.length > 0}
               />
               <div className="mt-6">
-                <LessonPlan 
+                <LessonPlan
                   lesson={lesson}
+                  setLesson={setLesson}
                   onAddToTeaching={handleAddToTeaching}
                 />
               </div>
@@ -254,31 +304,33 @@ export function LessonDetails() {
               <CardSkeleton className="h-96 mb-6" />
               <CardSkeleton className="h-48" />
             </>
-          ) : lesson && (
-            <>
-              <TeachingCardsManager
-                lesson={lesson}
-                selectedCards={selectedCards}
-                onSave={handleSaveCards}
-              />
-              
-              <WordleConfigCard 
-                className="mt-6"
-                wordleEnabled={wordleEnabled}
-                wordleWord={wordleWord}
-                isGeneratingWord={isGeneratingWord}
-                onWordleEnabledChange={setWordleEnabled}
-                onWordleWordChange={setWordleWord}
-                onGenerateWordleWord={handleGenerateWordleWord}
-              />
-              
-              <StartButtonCard 
-                className="mt-6"
-                onStartTeaching={startTeaching}
-                isStartingTeaching={isStartingTeaching}
-                hasCards={selectedCards.length > 0}
-              />
-            </>
+          ) : (
+            lesson && (
+              <>
+                <TeachingCardsManager
+                  lesson={lesson}
+                  selectedCards={selectedCards}
+                  onSave={handleSaveCards}
+                />
+
+                <WordleConfigCard
+                  className="mt-6"
+                  wordleEnabled={wordleEnabled}
+                  wordleWord={wordleWord}
+                  isGeneratingWord={isGeneratingWord}
+                  onWordleEnabledChange={setWordleEnabled}
+                  onWordleWordChange={setWordleWord}
+                  onGenerateWordleWord={handleGenerateWordleWord}
+                />
+
+                <StartButtonCard
+                  className="mt-6"
+                  onStartTeaching={startTeaching}
+                  isStartingTeaching={isStartingTeaching}
+                  hasCards={selectedCards.length > 0}
+                />
+              </>
+            )
           )}
         </aside>
       </main>

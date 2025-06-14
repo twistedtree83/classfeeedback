@@ -14,20 +14,14 @@ export async function expandActivity(
       return generateFallbackExpansion(activity);
     }
 
-    const prompt = `Expand this brief classroom activity description into detailed teaching instructions:
+    const prompt = `You are an expert teacher. Rewrite the given classroom activity as a concise, high-level directive for students who finish early.  Requirements:
+• Must build on the original activity and promote higher-order thinking.
+• Write as an instruction to students (imperative mood).
+• ONE paragraph only, maximum 80 words.  No headings, no bullets.
 
-Brief activity: "${activity}"
-
-Provide a comprehensive expansion that includes:
-1. Setup: How to organize the classroom, student grouping, materials needed
-2. Procedure: Clear, step-by-step instructions for implementing the activity
-3. Variations: Options for different skill levels or learning styles
-4. Assessment: How to check student understanding or success
-
-Context: ${subjectContext || "General education"}
+Lesson/Context: ${subjectContext || "General"}
 Grade level: ${gradeLevel || "Not specified"}
-
-Format the response with clear headings and bullet points for easy reading.`;
+Original activity: "${activity}"`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -40,7 +34,8 @@ Format the response with clear headings and bullet points for easy reading.`;
         messages: [
           {
             role: "system",
-            content: "You are an expert educator who provides detailed, practical activity instructions for teachers."
+            content:
+              "You are an expert educator who provides detailed, practical activity instructions for teachers.",
           },
           {
             role: "user",
@@ -58,13 +53,16 @@ Format the response with clear headings and bullet points for easy reading.`;
     }
 
     const data = await response.json();
-    const result = data.choices?.[0]?.message?.content;
-
-    if (!result) {
-      return generateFallbackExpansion(activity);
+    let result = data.choices?.[0]?.message?.content?.trim() || "";
+    if (result.includes("\n")) {
+      result = result.split(/\n+/)[0].trim();
+    }
+    const words = result.split(/\s+/);
+    if (words.length > 80) {
+      result = words.slice(0, 80).join(" ") + "…";
     }
 
-    return result.trim();
+    return result || generateFallbackExpansion(activity);
   } catch (error) {
     console.error("Error expanding activity:", error);
     return generateFallbackExpansion(activity);
@@ -72,27 +70,5 @@ Format the response with clear headings and bullet points for easy reading.`;
 }
 
 function generateFallbackExpansion(activity: string): string {
-  return `## ${activity}
-
-### Setup
-* Organize students into pairs or small groups
-* Materials needed: standard classroom equipment
-* Clear an appropriate space in the classroom
-
-### Procedure
-1. Explain the activity clearly to students
-2. Demonstrate the expected actions or outcomes
-3. Allow students to practice in pairs or small groups
-4. Provide feedback and guidance as students work
-5. Wrap up with a whole-class discussion about what was learned
-
-### Variations
-* For advanced students: Increase the complexity or speed
-* For struggling students: Provide additional support or simplify steps
-* Alternative approach: Try a collaborative version of the activity
-
-### Assessment
-* Observe students during the activity to assess understanding
-* Use peer feedback for additional insights
-* Have students reflect on their learning at the end`;
+  return `Extend the task "${activity}" by challenging yourself to analyse the strategy you used, explain why it works, and propose an improvement—all in one short paragraph.`;
 }

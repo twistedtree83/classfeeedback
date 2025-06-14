@@ -1,19 +1,19 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  BookOpen, 
+import React from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  BookOpen,
   BookMarked,
   Users,
   LogOut,
   User,
   Info,
-  LayoutGrid
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogoWrapper } from './LogoWrapper';
+  LayoutGrid,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LogoWrapper } from "./LogoWrapper";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,7 @@ export function MainNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  
+
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (!error) {
@@ -36,88 +36,116 @@ export function MainNav() {
         title: "Signed out",
         description: "You have been signed out successfully",
       });
-      navigate('/login');
+      navigate("/login");
     } else {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       toast({
         title: "Error",
         description: "Failed to sign out",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
-  
+
   const getInitials = (name: string) => {
-    return name.split(' ')
-      .map(part => part[0])
-      .join('')
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
       .toUpperCase();
   };
 
-  const userInitials = user?.user_metadata?.full_name 
-    ? getInitials(user.user_metadata.full_name) 
-    : user?.email ? user.email[0].toUpperCase() : 'U';
-  
-  const teacherTitle = user?.user_metadata?.title || '';
+  const userInitials = user?.user_metadata?.full_name
+    ? getInitials(user.user_metadata.full_name)
+    : user?.email
+    ? user.email[0].toUpperCase()
+    : "U";
 
-  // Check if we're on a main landing page (home, about, features) 
-  const isLandingPage = ['/', '/about', '/features'].includes(location.pathname);
+  const teacherTitle = user?.user_metadata?.title || "";
+
+  // Check if we're on a main landing page (home, about, features)
+  const isLandingPage = ["/", "/about", "/features"].includes(
+    location.pathname
+  );
 
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center mr-6">
-          <LogoWrapper className="mr-2" />
-          <span className="font-semibold hidden md:inline-block">CoTeach</span>
+          <LogoWrapper />
         </Link>
 
         {/* Navigation Links - Show full navigation on landing pages */}
         <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-          <Link 
-            to="/" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}
+          <Link
+            to="/"
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              location.pathname === "/"
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
           >
             Home
           </Link>
-          
+
           {/* Always show Features and About on the marketing pages */}
           {isLandingPage && (
             <>
-              <Link 
-                to="/features" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/features' ? 'text-primary' : 'text-muted-foreground'}`}
+              <Link
+                to="/features"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/features"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
               >
                 Features
               </Link>
-              <Link 
-                to="/about" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/about' ? 'text-primary' : 'text-muted-foreground'}`}
+              <Link
+                to="/about"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/about"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
               >
                 About
               </Link>
             </>
           )}
-          
+
           {user && (
             <>
-              <Link 
-                to="/dashboard" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground'}`}
+              <Link
+                to="/dashboard"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === "/dashboard"
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
               >
                 Dashboard
               </Link>
-              <Link 
-                to="/planner" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.includes('/planner') ? 'text-primary' : 'text-muted-foreground'}`}
+              <Link
+                to="/planner"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname.includes("/planner")
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
               >
                 Lesson Planner
               </Link>
             </>
           )}
-          <Link 
-            to="/join" 
-            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/join' ? 'text-primary' : 'text-muted-foreground'}`}
+          <Link
+            to="/join"
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              location.pathname === "/join"
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
           >
             Join Session
           </Link>
@@ -127,7 +155,10 @@ export function MainNav() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-10 w-10 rounded-full"
+                >
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {userInitials}
@@ -159,7 +190,10 @@ export function MainNav() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="cursor-pointer"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Sign Out</span>
                 </DropdownMenuItem>

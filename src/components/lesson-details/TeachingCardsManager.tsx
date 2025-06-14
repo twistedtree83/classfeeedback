@@ -1,27 +1,45 @@
-import React, { useState } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { EmptyState } from './EmptyState';
-import { FileUploadModal } from '@/components/FileUploadModal';
-import { DifferentiatedCardsSelector } from '@/components/DifferentiatedCardsSelector';
-import { 
-  Target, 
-  BookOpen, 
-  Lightbulb, 
-  BookMarked, 
-  FileEdit, 
-  PencilRuler, 
-  Wand2, 
-  ListChecks, 
-  Users, 
-  Loader2, 
-  Palette, 
-  Sparkles, 
+import React, { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "./EmptyState";
+import { FileUploadModal } from "@/components/FileUploadModal";
+import { DifferentiatedCardsSelector } from "@/components/DifferentiatedCardsSelector";
+import {
+  Target,
+  BookOpen,
+  Lightbulb,
+  BookMarked,
+  FileEdit,
+  PencilRuler,
+  Wand2,
+  ListChecks,
+  Users,
+  Loader2,
+  Palette,
+  Sparkles,
   Settings,
   ClipboardList,
   GripVertical,
@@ -31,11 +49,11 @@ import {
   UserCircle,
   Split,
   Paperclip,
-  Plus
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { sanitizeHtml } from '@/lib/utils';
-import type { LessonCard, ProcessedLesson, CardAttachment } from '@/lib/types';
+  Plus,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/utils";
+import type { LessonCard, ProcessedLesson, CardAttachment } from "@/lib/types";
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -43,22 +61,39 @@ interface TeachingCardsManagerProps {
   onSave: (cards: LessonCard[]) => void;
 }
 
-export function TeachingCardsManager({ lesson, selectedCards, onSave }: TeachingCardsManagerProps) {
+export function TeachingCardsManager({
+  lesson,
+  selectedCards,
+  onSave,
+}: TeachingCardsManagerProps) {
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [editDuration, setEditDuration] = useState('');
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editDuration, setEditDuration] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [currentCardForAttachment, setCurrentCardForAttachment] = useState<string | null>(null);
-  const [showDifferentiatedSelector, setShowDifferentiatedSelector] = useState(false);
+  const [currentCardForAttachment, setCurrentCardForAttachment] = useState<
+    string | null
+  >(null);
+  const [showDifferentiatedSelector, setShowDifferentiatedSelector] =
+    useState(false);
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
-  const [differentiatingCardId, setDifferentiatingCardId] = useState<string | null>(null);
+  const [differentiatingCardId, setDifferentiatingCardId] = useState<
+    string | null
+  >(null);
   const [processingAllCards, setProcessingAllCards] = useState(false);
   const [generatingCriteria, setGeneratingCriteria] = useState(false);
   const [improvingIntentions, setImprovingIntentions] = useState(false);
-  const [successCriteria, setSuccessCriteria] = useState<string[]>(lesson.success_criteria || []);
-  const [criteriaMessage, setCriteriaMessage] = useState<{text: string; type: 'success' | 'error'} | null>(null);
-  const [intentionsMessage, setIntentionsMessage] = useState<{text: string; type: 'success' | 'error'} | null>(null);
+  const [successCriteria, setSuccessCriteria] = useState<string[]>(
+    lesson.success_criteria || []
+  );
+  const [criteriaMessage, setCriteriaMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [intentionsMessage, setIntentionsMessage] = useState<{
+    text: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Set up DnD sensors
   const sensors = useSensors(
@@ -75,15 +110,15 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   // Handle drag end event
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-    
+
     if (active.id !== over.id) {
-      const oldIndex = selectedCards.findIndex(card => card.id === active.id);
-      const newIndex = selectedCards.findIndex(card => card.id === over.id);
-      
+      const oldIndex = selectedCards.findIndex((card) => card.id === active.id);
+      const newIndex = selectedCards.findIndex((card) => card.id === over.id);
+
       const newCards = [...selectedCards];
       const [movedCard] = newCards.splice(oldIndex, 1);
       newCards.splice(newIndex, 0, movedCard);
-      
+
       onSave(newCards);
     }
   };
@@ -92,9 +127,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const handleAddCustomCard = () => {
     const newCard: LessonCard = {
       id: crypto.randomUUID(),
-      type: 'custom',
-      title: 'Custom Card',
-      content: 'Enter content here...',
+      type: "custom",
+      title: "Custom Card",
+      content: "Enter content here...",
       duration: null,
       sectionId: null,
       activityIndex: null,
@@ -107,12 +142,12 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setEditingCardId(newCard.id);
     setEditTitle(newCard.title);
     setEditContent(newCard.content);
-    setEditDuration('');
+    setEditDuration("");
   };
 
   // Remove a card
   const handleRemoveCard = (id: string) => {
-    onSave(selectedCards.filter(card => card.id !== id));
+    onSave(selectedCards.filter((card) => card.id !== id));
 
     // If we're editing this card, stop editing
     if (editingCardId === id) {
@@ -125,12 +160,12 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setEditingCardId(card.id);
     setEditTitle(card.title);
     setEditContent(card.content);
-    setEditDuration(card.duration || '');
+    setEditDuration(card.duration || "");
   };
 
   // Save edited card
   const handleSaveEdit = (id: string) => {
-    const updatedCards = selectedCards.map(card => {
+    const updatedCards = selectedCards.map((card) => {
       if (card.id === id) {
         return {
           ...card,
@@ -149,20 +184,23 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   // Cancel editing
   const handleCancelEdit = () => {
     setEditingCardId(null);
-    setEditTitle('');
-    setEditContent('');
-    setEditDuration('');
+    setEditTitle("");
+    setEditContent("");
+    setEditDuration("");
   };
 
   // Toggle card mode (student-friendly/original)
   const toggleCardMode = (cardId: string) => {
-    const updatedCards = selectedCards.map(card => {
+    const updatedCards = selectedCards.map((card) => {
       if (card.id === cardId) {
         const newStudentFriendly = !card.studentFriendly;
         return {
           ...card,
           studentFriendly: newStudentFriendly,
-          content: newStudentFriendly && card.originalContent ? card.originalContent : card.content,
+          content:
+            newStudentFriendly && card.originalContent
+              ? card.originalContent
+              : card.content,
         };
       }
       return card;
@@ -172,7 +210,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
 
   // Toggle differentiated view
   const toggleDifferentiated = (cardId: string) => {
-    const updatedCards = selectedCards.map(card => {
+    const updatedCards = selectedCards.map((card) => {
       if (card.id === cardId) {
         return {
           ...card,
@@ -193,7 +231,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   const handleAttachmentAdded = (attachment: CardAttachment) => {
     if (!currentCardForAttachment) return;
 
-    const updatedCards = selectedCards.map(card => {
+    const updatedCards = selectedCards.map((card) => {
       if (card.id === currentCardForAttachment) {
         return {
           ...card,
@@ -209,11 +247,13 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
   };
 
   const handleDeleteAttachment = (cardId: string, attachmentId: string) => {
-    const updatedCards = selectedCards.map(card => {
+    const updatedCards = selectedCards.map((card) => {
       if (card.id === cardId) {
         return {
           ...card,
-          attachments: (card.attachments || []).filter(att => att.id !== attachmentId),
+          attachments: (card.attachments || []).filter(
+            (att) => att.id !== attachmentId
+          ),
         };
       }
       return card;
@@ -226,13 +266,13 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setProcessingCardId(cardId);
     // Simulate API call
     setTimeout(() => {
-      const updatedCards = selectedCards.map(card => {
+      const updatedCards = selectedCards.map((card) => {
         if (card.id === cardId) {
           return {
             ...card,
             originalContent: card.content,
             content: `Student-friendly version of: ${card.content}`,
-            studentFriendly: true
+            studentFriendly: true,
           };
         }
         return card;
@@ -246,11 +286,11 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setDifferentiatingCardId(cardId);
     // Simulate API call
     setTimeout(() => {
-      const updatedCards = selectedCards.map(card => {
+      const updatedCards = selectedCards.map((card) => {
         if (card.id === cardId) {
           return {
             ...card,
-            differentiatedContent: `Differentiated version of: ${card.content}`
+            differentiatedContent: `Differentiated version of: ${card.content}`,
           };
         }
         return card;
@@ -264,13 +304,13 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setProcessingAllCards(true);
     // Simulate API call
     setTimeout(() => {
-      const updatedCards = selectedCards.map(card => {
+      const updatedCards = selectedCards.map((card) => {
         if (!card.studentFriendly) {
           return {
             ...card,
             originalContent: card.content,
             content: `Student-friendly version of: ${card.content}`,
-            studentFriendly: true
+            studentFriendly: true,
           };
         }
         return card;
@@ -287,12 +327,12 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       const criteria = [
         "I can demonstrate proper dribbling technique",
         "I can pass the ball accurately to a teammate",
-        "I can maintain control of the ball while moving"
+        "I can maintain control of the ball while moving",
       ];
       setSuccessCriteria(criteria);
       setCriteriaMessage({
         text: "Success criteria generated successfully",
-        type: "success"
+        type: "success",
       });
       setGeneratingCriteria(false);
     }, 2000);
@@ -304,7 +344,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
     setTimeout(() => {
       setIntentionsMessage({
         text: "Learning intentions improved successfully",
-        type: "success"
+        type: "success",
       });
       setImprovingIntentions(false);
     }, 2000);
@@ -322,18 +362,18 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
       setNodeRef,
       transform,
       transition,
-      isDragging
+      isDragging,
     } = useSortable({ id: card.id });
-    
+
     const style = {
       transform: CSS.Transform.toString(transform),
       transition,
       zIndex: isDragging ? 10 : 1,
       opacity: isDragging ? 0.8 : 1,
     };
-    
+
     const isEditing = editingCardId === card.id;
-    
+
     const getCardIcon = (type: string) => {
       switch (type) {
         case "objective":
@@ -376,9 +416,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
         : card.content;
 
     return (
-      <div 
-        ref={setNodeRef} 
-        style={style} 
+      <div
+        ref={setNodeRef}
+        style={style}
         className={`mb-4 rounded-xl shadow-sm ${
           isDragging ? "shadow-lg rotate-2" : ""
         } transition-all duration-200 overflow-hidden touch-manipulation`}
@@ -413,7 +453,10 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     </h3>
                   )}
                   {card.duration && !isEditing && (
-                    <Badge variant="outline" className="text-xs bg-white dark:bg-gray-800">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-white dark:bg-gray-800"
+                    >
                       {card.duration}
                     </Badge>
                   )}
@@ -581,16 +624,22 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             )}
 
             {/* Content Type Indicators */}
-            {(card.studentFriendly && card.originalContent) || 
-             (card.isDifferentiated && card.differentiatedContent) ? (
+            {(card.studentFriendly && card.originalContent) ||
+            (card.isDifferentiated && card.differentiatedContent) ? (
               <div className="flex items-center gap-2 mt-3">
                 {card.studentFriendly && card.originalContent && (
-                  <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-100 text-green-700 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800"
+                  >
                     Student-Friendly
                   </Badge>
                 )}
                 {card.isDifferentiated && card.differentiatedContent && (
-                  <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
+                  <Badge
+                    variant="outline"
+                    className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800"
+                  >
                     Differentiated
                   </Badge>
                 )}
@@ -610,17 +659,17 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center gap-2 text-sm">
-                        {attachment.type === 'image' && (
+                        {attachment.type === "image" && (
                           <div className="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center text-green-700 dark:text-green-300">
                             📷
                           </div>
                         )}
-                        {attachment.type === 'file' && (
+                        {attachment.type === "file" && (
                           <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-blue-700 dark:text-blue-300">
                             📄
                           </div>
                         )}
-                        {attachment.type === 'link' && (
+                        {attachment.type === "link" && (
                           <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center text-purple-700 dark:text-purple-300">
                             🔗
                           </div>
@@ -630,7 +679,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                         </span>
                       </div>
                       <Button
-                        onClick={() => handleDeleteAttachment(card.id, attachment.id)}
+                        onClick={() =>
+                          handleDeleteAttachment(card.id, attachment.id)
+                        }
                         variant="ghost"
                         size="sm"
                         className="p-1 h-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
@@ -672,7 +723,7 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
             : "Add cards from the lesson to create your presentation"}
         </CardDescription>
       </CardHeader>
-      
+
       <CardContent>
         {selectedCards.length === 0 ? (
           <EmptyState
@@ -683,20 +734,29 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
         ) : (
           <Tabs defaultValue="cards">
             <TabsList className="w-full grid grid-cols-3 mb-4">
-              <TabsTrigger value="cards" className="flex items-center gap-1.5">
+              <TabsTrigger
+                value="cards"
+                className="flex items-center gap-1.5 whitespace-nowrap"
+              >
                 <Palette className="h-4 w-4" />
                 <span>Cards</span>
               </TabsTrigger>
-              <TabsTrigger value="ai" className="flex items-center gap-1.5">
+              <TabsTrigger
+                value="ai"
+                className="flex items-center gap-1.5 whitespace-nowrap"
+              >
                 <Sparkles className="h-4 w-4" />
                 <span>AI Tools</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-1.5">
+              <TabsTrigger
+                value="settings"
+                className="flex items-center gap-1.5 whitespace-nowrap"
+              >
                 <Settings className="h-4 w-4" />
                 <span>Options</span>
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="cards" className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Button
@@ -704,22 +764,27 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     const content = lesson.objectives
                       .map((obj) => `• ${obj}`)
                       .join("\n");
-                    onSave([...selectedCards, {
-                      id: crypto.randomUUID(),
-                      type: "objective",
-                      title: "Learning Intentions",
-                      content,
-                      duration: null,
-                      sectionId: null,
-                      activityIndex: null,
-                      attachments: [],
-                    }]);
+                    onSave([
+                      ...selectedCards,
+                      {
+                        id: crypto.randomUUID(),
+                        type: "objective",
+                        title: "Learning Intentions",
+                        content,
+                        duration: null,
+                        sectionId: null,
+                        activityIndex: null,
+                        attachments: [],
+                      },
+                    ]);
                   }}
                   variant="outline"
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-dark-purple/30 text-dark-purple hover:bg-dark-purple/10"
                 >
                   <Target className="h-6 w-6 text-dark-purple" />
-                  <span className="text-sm font-medium">Learning Objectives</span>
+                  <span className="text-xs font-medium leading-tight text-center">
+                    Learning Objectives
+                  </span>
                 </Button>
 
                 <Button
@@ -727,47 +792,59 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                     const content = lesson.materials
                       .map((mat) => `• ${mat}`)
                       .join("\n");
-                    onSave([...selectedCards, {
-                      id: crypto.randomUUID(),
-                      type: "material",
-                      title: "Required Materials",
-                      content,
-                      duration: null,
-                      sectionId: null,
-                      activityIndex: null,
-                      attachments: [],
-                    }]);
+                    onSave([
+                      ...selectedCards,
+                      {
+                        id: crypto.randomUUID(),
+                        type: "material",
+                        title: "Required Materials",
+                        content,
+                        duration: null,
+                        sectionId: null,
+                        activityIndex: null,
+                        attachments: [],
+                      },
+                    ]);
                   }}
                   variant="outline"
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-harvest-gold/30 text-harvest-gold hover:bg-harvest-gold/10"
                 >
                   <BookOpen className="h-6 w-6 text-harvest-gold" />
-                  <span className="text-sm font-medium">Materials</span>
+                  <span className="text-xs font-medium leading-tight text-center">
+                    Materials
+                  </span>
                 </Button>
 
                 <Button
                   onClick={() => {
-                    onSave([...selectedCards, {
-                      id: crypto.randomUUID(),
-                      type: "topic_background",
-                      title: "Topic Background",
-                      content: lesson.topic_background || "Background information for this topic...",
-                      duration: null,
-                      sectionId: null,
-                      activityIndex: null,
-                      attachments: [],
-                    }]);
+                    onSave([
+                      ...selectedCards,
+                      {
+                        id: crypto.randomUUID(),
+                        type: "topic_background",
+                        title: "Topic Background",
+                        content:
+                          lesson.topic_background ||
+                          "Background information for this topic...",
+                        duration: null,
+                        sectionId: null,
+                        activityIndex: null,
+                        attachments: [],
+                      },
+                    ]);
                   }}
                   variant="outline"
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-bice-blue/30 text-bice-blue hover:bg-bice-blue/10"
                 >
                   <Lightbulb className="h-6 w-6 text-bice-blue" />
-                  <span className="text-sm font-medium">Topic Background</span>
+                  <span className="text-xs font-medium leading-tight text-center">
+                    Topic Background
+                  </span>
                 </Button>
 
                 <Button
                   onClick={() => {
-                    const newCards = lesson.sections.flatMap(section => {
+                    const newCards = lesson.sections.flatMap((section) => {
                       return {
                         id: crypto.randomUUID(),
                         type: "section",
@@ -785,7 +862,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-deep-sky-blue/30 text-deep-sky-blue hover:bg-deep-sky-blue/10"
                 >
                   <BookMarked className="h-6 w-6 text-deep-sky-blue" />
-                  <span className="text-sm font-medium">All Sections</span>
+                  <span className="text-xs font-medium leading-tight text-center">
+                    All Sections
+                  </span>
                 </Button>
 
                 <Button
@@ -794,33 +873,31 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-muted-foreground/30 text-muted-foreground hover:bg-muted/10"
                 >
                   <FileEdit className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-sm font-medium">Custom Card</span>
+                  <span className="text-xs font-medium leading-tight text-center">
+                    Custom Card
+                  </span>
                 </Button>
               </div>
 
               <div className="max-h-[calc(100vh-25rem)] overflow-y-auto pr-2 mt-4">
-                <DndContext 
-                  sensors={sensors} 
+                <DndContext
+                  sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
                   modifiers={[restrictToVerticalAxis]}
                 >
-                  <SortableContext 
-                    items={selectedCards.map(card => card.id)}
+                  <SortableContext
+                    items={selectedCards.map((card) => card.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     {selectedCards.map((card, index) => (
-                      <SortableCard 
-                        key={card.id} 
-                        card={card} 
-                        index={index} 
-                      />
+                      <SortableCard key={card.id} card={card} index={index} />
                     ))}
                   </SortableContext>
                 </DndContext>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="ai" className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
@@ -895,7 +972,9 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                       ) : (
                         <Wand2 className="h-4 w-4" />
                       )}
-                      {processingAllCards ? "Processing..." : "Make All Student-Friendly"}
+                      {processingAllCards
+                        ? "Processing..."
+                        : "Make All Student-Friendly"}
                     </Button>
 
                     <Button
@@ -910,15 +989,19 @@ export function TeachingCardsManager({ lesson, selectedCards, onSave }: Teaching
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="settings" className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Presentation Options</CardTitle>
+                  <CardTitle className="text-base">
+                    Presentation Options
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Button
-                    onClick={() => setShowDifferentiatedSelector(!showDifferentiatedSelector)}
+                    onClick={() =>
+                      setShowDifferentiatedSelector(!showDifferentiatedSelector)
+                    }
                     variant="outline"
                     className="flex items-center gap-2 w-full"
                   >
