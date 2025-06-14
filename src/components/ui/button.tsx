@@ -50,7 +50,8 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, isLoading, children, disabled, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    // Define component type explicitly - this fixes the "Comp is not defined" error
+    const Component = asChild ? Slot : "button"
     
     const content = isLoading ? (
       <>
@@ -62,14 +63,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     )
     
     return (
-      <Comp
+      <Component
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={disabled || isLoading}
         {...props}
       >
         {content}
-      </Comp>
+      </Component>
     )
   }
 )

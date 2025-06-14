@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import TeacherDashboard from './pages/index';
 import JoinPage from './pages/join';
 import { StudentView } from './pages/StudentView';
@@ -26,14 +26,14 @@ import { AboutPage } from './pages/AboutPage';
 const PAGES_WITH_CUSTOM_NAV = ['/', '/features', '/about'];
 
 // Layout component to conditionally render the MainNav
-function Layout({ children }) {
+function Layout() {
   const location = useLocation();
   const shouldRenderNav = !PAGES_WITH_CUSTOM_NAV.includes(location.pathname);
 
   return (
     <>
       {shouldRenderNav && <MainNav />}
-      {children}
+      <Outlet />
     </>
   );
 }
@@ -43,7 +43,6 @@ function App() {
     <AuthProvider>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
-          {/* All routes wrapped with Layout component */}
           <Route element={<Layout />}>
             {/* Marketing pages with their own navigation */}
             <Route path="/" element={<HomePage />} />
