@@ -68,24 +68,6 @@ export function AboutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center">
-            <LogoWrapper size="md" />
-            <span className="ml-2 font-semibold text-dark-purple">CoTeach</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/join">
-              <Button variant="outline" size="sm">Join as Student</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto text-center max-w-4xl">
@@ -118,7 +100,7 @@ export function AboutPage() {
             </h2>
           </div>
           
-          <div className="prose prose-lg dark:prose-invert mx-auto">
+          <div className="prose prose-lg mx-auto">
             <p>
               CoTeach began in 2023 when our founder, Dr. Sarah Johnson, a high school teacher with 15 years of experience, became frustrated with the lack of real-time feedback tools in her classroom. She envisioned a platform that would allow students to communicate their understanding without disrupting the flow of the lesson.
             </p>
@@ -235,7 +217,7 @@ export function AboutPage() {
                     ))}
                   </div>
                 </div>
-                <blockquote className="flex-1 italic text-gray-700 dark:text-gray-300 mb-4">
+                <blockquote className="flex-1 italic text-gray-700 mb-4">
                   "CoTeach has completely transformed my classroom. I now have real-time insights into student understanding, which allows me to adjust my teaching on the fly. The AI-powered lesson planning tools have saved me countless hours of preparation time."
                 </blockquote>
                 <div className="flex items-center">
@@ -259,7 +241,7 @@ export function AboutPage() {
                     ))}
                   </div>
                 </div>
-                <blockquote className="flex-1 italic text-gray-700 dark:text-gray-300 mb-4">
+                <blockquote className="flex-1 italic text-gray-700 mb-4">
                   "As a special education teacher, I appreciate how CoTeach helps me create differentiated content for my students. The platform makes it easy to adapt materials to different learning needs, and the real-time feedback helps me identify which students need additional support."
                 </blockquote>
                 <div className="flex items-center">
@@ -343,40 +325,6 @@ export function AboutPage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-dark-purple text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div className="flex items-center mb-6 md:mb-0">
-              <LogoWrapper size="md" />
-              <span className="ml-2 font-semibold">CoTeach</span>
-            </div>
-            <div className="flex flex-wrap gap-6 justify-center">
-              <Link to="/" className="text-white/80 hover:text-white transition-colors">
-                Home
-              </Link>
-              <Link to="/features" className="text-white/80 hover:text-white transition-colors">
-                Features
-              </Link>
-              <Link to="/about" className="text-white/80 hover:text-white transition-colors">
-                About
-              </Link>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">
-                Contact
-              </a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">
-                Privacy
-              </a>
-            </div>
-          </div>
-          <div className="border-t border-white/20 pt-8 text-center text-white/60">
-            <p>
-              &copy; 2025 CoTeach. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

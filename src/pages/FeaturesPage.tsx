@@ -69,24 +69,6 @@ export function FeaturesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white">
-      {/* Header */}
-      <header className="bg-white shadow-sm py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="flex items-center">
-            <LogoWrapper size="md" />
-            <span className="ml-2 font-semibold text-dark-purple">CoTeach</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link to="/join">
-              <Button variant="outline" size="sm">Join as Student</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto text-center max-w-4xl">
@@ -219,40 +201,6 @@ export function FeaturesPage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-dark-purple text-white py-12 px-4">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div className="flex items-center mb-6 md:mb-0">
-              <LogoWrapper size="md" />
-              <span className="ml-2 font-semibold">CoTeach</span>
-            </div>
-            <div className="flex flex-wrap gap-6 justify-center">
-              <Link to="/" className="text-white/80 hover:text-white transition-colors">
-                Home
-              </Link>
-              <Link to="/features" className="text-white/80 hover:text-white transition-colors">
-                Features
-              </Link>
-              <Link to="/about" className="text-white/80 hover:text-white transition-colors">
-                About
-              </Link>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">
-                Contact
-              </a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">
-                Privacy
-              </a>
-            </div>
-          </div>
-          <div className="border-t border-white/20 pt-8 text-center text-white/60">
-            <p>
-              &copy; 2025 CoTeach. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

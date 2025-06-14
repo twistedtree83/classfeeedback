@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import TeacherDashboard from './pages/index';
 import JoinPage from './pages/join';
 import { StudentView } from './pages/StudentView';
@@ -22,17 +22,11 @@ import { LessonSummaryPage } from './pages/LessonSummaryPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { AboutPage } from './pages/AboutPage';
 
-// Pages that have their own navigation (don't need MainNav)
-const PAGES_WITH_CUSTOM_NAV = ['/', '/features', '/about'];
-
-// Layout component to conditionally render the MainNav
+// Layout component to render the MainNav on all pages
 function Layout() {
-  const location = useLocation();
-  const shouldRenderNav = !PAGES_WITH_CUSTOM_NAV.includes(location.pathname);
-
   return (
     <>
-      {shouldRenderNav && <MainNav />}
+      <MainNav />
       <Outlet />
     </>
   );
@@ -44,7 +38,7 @@ function App() {
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route element={<Layout />}>
-            {/* Marketing pages with their own navigation */}
+            {/* Marketing pages */}
             <Route path="/" element={<HomePage />} />
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/about" element={<AboutPage />} />
