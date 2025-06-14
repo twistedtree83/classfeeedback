@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, Sparkles, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { formatTime } from '../../../lib/utils';

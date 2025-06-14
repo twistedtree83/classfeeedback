@@ -40,8 +40,11 @@ export function TeachingModePage() {
     handleRejectParticipant,
   } = useTeacherParticipants(code);
 
-  const { hasNewQuestions, clearHasNewQuestions } =
-    useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
+  const { 
+    hasNewQuestions, 
+    hasNewExtensionRequests,
+    clearHasNewQuestions 
+  } = useTeacherFeedbackAndQuestions(presentation?.id, actualCardIndex);
 
   const {
     showMessageModal,
@@ -118,6 +121,7 @@ export function TeachingModePage() {
             teacherName={teacherName}
             pendingCount={pendingCount}
             hasNewQuestions={hasNewQuestions}
+            hasNewExtensionRequests={hasNewExtensionRequests}
             currentCardIndex={actualCardIndex}
             onEndSession={handleEndSession}
           />

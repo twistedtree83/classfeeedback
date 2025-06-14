@@ -9,7 +9,8 @@ import {
   Menu,
   Bell,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { 
   Sidebar, 
@@ -29,6 +30,7 @@ interface TeacherSidebarProps {
   teacherName: string;
   pendingCount: number;
   hasNewQuestions: boolean;
+  hasNewExtensionRequests?: boolean;
   currentCardIndex: number;
   onEndSession: () => void;
 }
@@ -38,13 +40,14 @@ export function TeacherSidebar({
   presentationId,
   teacherName,
   pendingCount,
-  hasNewQuestions, 
+  hasNewQuestions,
+  hasNewExtensionRequests = false, 
   currentCardIndex,
   onEndSession
 }: TeacherSidebarProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'feedback' | 'participants' | 'questions'>('feedback');
+  const [activeTab, setActiveTab] = useState<'feedback' | 'participants' | 'questions' | 'extensions'>('feedback');
   const { open } = useSidebar();
   
   const getInitials = (name: string) => {
@@ -84,6 +87,14 @@ export function TeacherSidebar({
       onClick: () => setActiveTab('questions'),
       active: activeTab === 'questions',
       notification: hasNewQuestions
+    },
+    {
+      label: "Extensions",
+      href: "#extensions",
+      icon: <Sparkles className="h-5 w-5" />,
+      onClick: () => setActiveTab('extensions'),
+      active: activeTab === 'extensions',
+      notification: hasNewExtensionRequests
     }
   ];
   
@@ -158,6 +169,13 @@ export function TeacherSidebar({
             )}
             
             {activeTab === 'questions' && (
+              <TeachingFeedbackPanel 
+                presentationId={presentationId}
+                currentCardIndex={currentCardIndex}
+              />
+            )}
+
+            {activeTab === 'extensions' && (
               <TeachingFeedbackPanel 
                 presentationId={presentationId}
                 currentCardIndex={currentCardIndex}
