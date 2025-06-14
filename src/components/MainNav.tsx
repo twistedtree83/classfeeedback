@@ -1,11 +1,13 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BookOpen, 
   BookMarked,
   Users,
   LogOut,
-  User
+  User,
+  Info,
+  LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,7 @@ import {
 export function MainNav() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const handleSignOut = async () => {
@@ -57,6 +60,9 @@ export function MainNav() {
   
   const teacherTitle = user?.user_metadata?.title || '';
 
+  // Check if we're on a main landing page (home, about, features) 
+  const isLandingPage = ['/', '/about', '/features'].includes(location.pathname);
+
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -66,22 +72,53 @@ export function MainNav() {
           <span className="font-semibold hidden md:inline-block">CoTeach</span>
         </Link>
 
-        {/* Navigation Links */}
+        {/* Navigation Links - Show full navigation on landing pages */}
         <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-          <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
+          <Link 
+            to="/" 
+            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/' ? 'text-primary' : 'text-muted-foreground'}`}
+          >
             Home
           </Link>
+          
+          {/* Always show Features and About on the marketing pages */}
+          {isLandingPage && (
+            <>
+              <Link 
+                to="/features" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/features' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Features
+              </Link>
+              <Link 
+                to="/about" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/about' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                About
+              </Link>
+            </>
+          )}
+          
           {user && (
             <>
-              <Link to="/dashboard" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              <Link 
+                to="/dashboard" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
                 Dashboard
               </Link>
-              <Link to="/planner" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              <Link 
+                to="/planner" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname.includes('/planner') ? 'text-primary' : 'text-muted-foreground'}`}
+              >
                 Lesson Planner
               </Link>
             </>
           )}
-          <Link to="/join" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+          <Link 
+            to="/join" 
+            className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/join' ? 'text-primary' : 'text-muted-foreground'}`}
+          >
             Join Session
           </Link>
         </nav>
@@ -105,7 +142,7 @@ export function MainNav() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/dashboard" className="w-full cursor-pointer">
-                    <BookOpen className="mr-2 h-4 w-4" />
+                    <LayoutGrid className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
                   </Link>
                 </DropdownMenuItem>

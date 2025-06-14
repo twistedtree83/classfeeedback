@@ -19,6 +19,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import { HomePage } from './pages/HomePage';
 import { LessonSummaryPage } from './pages/LessonSummaryPage';
+import { AboutPage } from './pages/AboutPage';
+import { FeaturesPage } from './pages/FeaturesPage';
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />

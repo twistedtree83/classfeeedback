@@ -11,6 +11,9 @@ import {
   Brain,
   Heart,
   ArrowRight,
+  Star,
+  CheckCircle,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +74,27 @@ export function HomePage() {
     },
   ];
 
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      role: "5th Grade Teacher",
+      content: "This platform has transformed how I teach. The real-time feedback lets me know exactly which concepts students are struggling with, so I can address issues immediately instead of discovering them later on tests.",
+      rating: 5
+    },
+    {
+      name: "Michael Rodriguez",
+      role: "High School Science Teacher",
+      content: "The AI-powered lesson planning saves me hours of work each week. I can quickly create engaging, differentiated content that reaches all my students at their level.",
+      rating: 5
+    },
+    {
+      name: "Priya Patel",
+      role: "Middle School Math Teacher",
+      content: "I love how easy it is for students to provide feedback. Even my most shy students participate now because they can share their confusion privately instead of raising their hand in front of everyone.",
+      rating: 5
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-slate-50/50 to-white">
       {/* Hero Section */}
@@ -110,6 +134,14 @@ export function HomePage() {
               Transform your classroom with cutting-edge tools designed for
               today's educators and students.
             </p>
+            <div className="mt-6">
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/features" className="gap-2">
+                  <span>Explore All Features</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -178,6 +210,109 @@ export function HomePage() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 text-sm font-semibold text-sea-green bg-sea-green/10 px-4 py-2 rounded-full mb-6">
+              <Star className="h-4 w-4" />
+              Educator Testimonials
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-dark-purple mb-6 text-balance">
+              Loved by teachers
+              <br />
+              <span className="gradient-text">across the globe</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              See what fellow educators are saying about our platform and how it has transformed their classrooms.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="modern-card p-8 bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-sm border border-white/30">
+                <div className="flex items-center mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-harvest-gold text-harvest-gold" />
+                  ))}
+                </div>
+                <p className="text-dark-purple/80 italic mb-6">"{testimonial.content}"</p>
+                <div>
+                  <h4 className="font-bold text-dark-purple">{testimonial.name}</h4>
+                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="py-20 px-4 bg-gradient-to-br from-dark-purple/5 to-harvest-gold/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center gap-12">
+            <div className="md:w-1/2">
+              <div className="inline-flex items-center gap-2 text-sm font-semibold text-deep-sky-blue bg-deep-sky-blue/10 px-4 py-2 rounded-full mb-6">
+                <Award className="h-4 w-4" />
+                Why Choose Us
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-dark-purple mb-6 text-balance">
+                Education that keeps pace with <span className="gradient-text">modern learning</span>
+              </h2>
+              <p className="text-xl text-muted-foreground mb-8">
+                Our platform is designed by educators, for educators. We understand the challenges of modern classrooms and build tools that make a real difference.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-sea-green/10 p-2 rounded-lg mt-1">
+                    <CheckCircle className="h-5 w-5 text-sea-green" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-dark-purple">Inclusive Design</h4>
+                    <p className="text-muted-foreground">Tools that support all students, regardless of ability or learning style.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="bg-deep-sky-blue/10 p-2 rounded-lg mt-1">
+                    <CheckCircle className="h-5 w-5 text-deep-sky-blue" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-dark-purple">Data-Driven Insights</h4>
+                    <p className="text-muted-foreground">Understand student engagement patterns to continuously improve your teaching.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="bg-harvest-gold/10 p-2 rounded-lg mt-1">
+                    <CheckCircle className="h-5 w-5 text-harvest-gold" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-dark-purple">Time-Saving Tools</h4>
+                    <p className="text-muted-foreground">AI-powered features that streamline preparation and allow you to focus on what matters - teaching.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-10">
+                <Button size="lg" asChild>
+                  <Link to="/about">Learn More About Us</Link>
+                </Button>
+              </div>
+            </div>
+            
+            <div className="md:w-1/2">
+              <img 
+                src="https://images.pexels.com/photos/3769981/pexels-photo-3769981.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
+                alt="Modern classroom" 
+                className="rounded-2xl shadow-xl w-full h-auto object-cover aspect-[4/3]"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -305,34 +440,22 @@ export function HomePage() {
               <LogoWrapper size="lg" variant="full" className="text-white" />
             </div>
             <div className="flex flex-wrap gap-8 justify-center md:justify-end">
-              <a
-                href="#"
-                className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white"
-              >
-                About
-              </a>
-              <a
-                href="#"
-                className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white"
-              >
+              <Link to="/" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
+                Home
+              </Link>
+              <Link to="/features" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
                 Features
-              </a>
-              <a
-                href="#"
-                className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white"
-              >
+              </Link>
+              <Link to="/about" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
+                About
+              </Link>
+              <a href="#" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
                 Pricing
               </a>
-              <a
-                href="#"
-                className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white"
-              >
+              <a href="#" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
                 Contact
               </a>
-              <a
-                href="#"
-                className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white"
-              >
+              <a href="#" className="hover:text-harvest-gold transition-colors text-white/80 hover:text-white">
                 Support
               </a>
             </div>
