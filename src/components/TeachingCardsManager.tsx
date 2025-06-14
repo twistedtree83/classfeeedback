@@ -21,6 +21,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Sparkles, Wand, Palette, Settings } from "lucide-react";
 
 interface TeachingCardsManagerProps {
@@ -321,4 +322,5 @@ import {
   ListChecks,
   Users,
   Loader2,
+  CheckSquare,
 } from "lucide-react";
