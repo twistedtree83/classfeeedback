@@ -11,7 +11,6 @@ import { StartButtonCard } from '@/components/lesson-details/StartButtonCard';
 import { EmptyState } from '@/components/lesson-details/EmptyState';
 import { CardSkeleton } from '@/components/lesson-details/CardSkeleton';
 import type { LessonCard, ProcessedLesson } from "../lib/types";
-import { MainNav } from '@/components/MainNav';
 import { useToast } from '@/components/ui/use-toast';
 import { ClipboardList } from 'lucide-react';
 
@@ -210,7 +209,6 @@ export function LessonDetails() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <MainNav />
       <main className="container grid lg:grid-cols-12 gap-6 pt-6 pb-12">
         {/* LEFT: lesson preview */}
         <section className="lg:col-span-8">
