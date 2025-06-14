@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
