@@ -111,9 +111,9 @@ export const getStudentExtensionRequestStatus = async (
       .eq('presentation_id', presentationId)
       .eq('student_name', studentName)
       .eq('card_index', cardIndex)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error checking extension request status:', error);
       return null;
     }
