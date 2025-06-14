@@ -1,3 +1,5 @@
+import type { CardAttachment } from './supabase/types';
+
 export interface LessonPlan {
   id: string;
   title: string;
@@ -31,16 +33,6 @@ export interface ProcessedLesson {
   success_criteria?: string[];
 }
 
-export interface CardAttachment {
-  id: string;
-  type: 'image' | 'file' | 'link';
-  name: string;
-  url: string;
-  fileType?: string; // mime type for files
-  size?: number; // size in bytes for files
-  previewUrl?: string; // thumbnail for images
-}
-
 export interface LessonCard {
   id: string;
   type: 'objective' | 'material' | 'section' | 'activity' | 'custom' | 'topic_background';
@@ -54,6 +46,7 @@ export interface LessonCard {
   differentiatedContent?: string;
   isDifferentiated?: boolean;
   attachments?: CardAttachment[];
+  extensionActivity?: string; // Extension activity for fast finishers
 }
 
 export interface LessonPresentation {

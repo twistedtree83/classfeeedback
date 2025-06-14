@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MessagePanel } from "../MessagePanel";
 import { StudentHeader } from "./StudentHeader";
 import { LessonContentDisplay } from "./LessonContentDisplay";
@@ -7,6 +7,7 @@ import { WaitingRoom } from "./WaitingRoom";
 import { CheckCircle2 } from "lucide-react";
 import type { LessonCard, TeacherMessage, CardAttachment } from "@/lib/types";
 import type { LessonPresentation } from "@/lib/supabase/presentations";
+import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
 
 interface StudentContentProps {
   studentName: string;
@@ -55,6 +56,25 @@ export function StudentContent({
   onSendFeedback,
   onSendQuestion,
 }: StudentContentProps) {
+  const [showExtensionActivity, setShowExtensionActivity] = useState(false);
+  const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
+  
+  // Check if current card has an extension activity
+  useEffect(() => {
+    if (currentCard) {
+      setHasExtensionActivity(!!currentCard.extensionActivity);
+      setShowExtensionActivity(false); // Reset on card change
+    } else {
+      setHasExtensionActivity(false);
+      setShowExtensionActivity(false);
+    }
+  }, [currentCard]);
+
+  // Handle extension activity request
+  const handleExtensionRequest = () => {
+    setShowExtensionActivity(true);
+  };
+
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
     console.log(
@@ -112,6 +132,8 @@ export function StudentContent({
                 ? currentCard.differentiatedContent
                 : currentCard.content
             }
+            extensionActivity={currentCard.extensionActivity}
+            showExtensionActivity={showExtensionActivity}
             attachments={currentCardAttachments}
             hasDifferentiatedContent={hasDifferentiatedContent}
             viewingDifferentiated={viewingDifferentiated}
@@ -120,11 +142,15 @@ export function StudentContent({
             onGenerateDifferentiated={onGenerateDifferentiated}
           />
 
-          <StudentInteractionPanel
-            onSendFeedback={onSendFeedback}
-            onSendQuestion={onSendQuestion}
-            isSending={isSending}
-            currentFeedback={currentFeedback}
+          <StudentFeedbackPanel
+            presentationId={presentation?.id || ""}
+            studentName={studentName}
+            currentCardIndex={presentation?.current_card_index || 0}
+            onFeedbackSubmitted={onSendFeedback}
+            onQuestionSubmitted={() => onSendQuestion("Sample question")}
+            onExtensionRequested={handleExtensionRequest}
+            showExtensionButton={currentCard.type === 'activity' && hasExtensionActivity && !showExtensionActivity}
+            extensionRequested={showExtensionActivity}
           />
         </div>
 

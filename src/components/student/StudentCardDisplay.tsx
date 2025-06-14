@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/Button";
-import { Split, Loader2 } from "lucide-react";
-import { generateDifferentiatedContent } from "../../lib/ai";
+import { Split, Loader2, Sparkles } from "lucide-react";
+import { generateDifferentiatedContent } from "../../lib/aiService";
 import { sanitizeHtml } from "../../lib/utils";
 import type { LessonCard } from "../../lib/types";
 
@@ -12,11 +12,13 @@ interface StudentCardDisplayProps {
 
 export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
-  const [generatingDifferentiated, setGeneratingDifferentiated] =
-    useState(false);
+  const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
+  const [showExtensionActivity, setShowExtensionActivity] = useState(false);
+  const [requestingExtension, setRequestingExtension] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const hasDifferentiatedContent = card?.differentiatedContent ? true : false;
+  const hasExtensionActivity = card?.extensionActivity ? true : false;
 
   // Scroll to top when card changes
   useEffect(() => {
@@ -25,6 +27,7 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
     }
     // Reset differentiated view when card changes
     setViewingDifferentiated(false);
+    setShowExtensionActivity(false);
   }, [card.id]);
 
   const toggleDifferentiatedView = () => {
@@ -57,9 +60,20 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
     }
   };
 
+  const handleRequestExtension = () => {
+    setRequestingExtension(true);
+    // Simulate a request to the teacher
+    setTimeout(() => {
+      setShowExtensionActivity(true);
+      setRequestingExtension(false);
+    }, 1000);
+  };
+
   const displayContent =
     viewingDifferentiated && card.differentiatedContent
       ? card.differentiatedContent
+      : card.studentFriendly && card.originalContent
+      ? card.content
       : card.content;
 
   // Enhanced content renderer with proper heading levels
@@ -141,6 +155,44 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
           {renderContent()}
         </div>
 
+        {/* Extension Activity Request Button */}
+        {card.type === 'activity' && hasExtensionActivity && !showExtensionActivity && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleRequestExtension}
+              disabled={requestingExtension}
+              className="flex items-center gap-2 text-purple-600 border-purple-200 hover:bg-purple-50"
+            >
+              {requestingExtension ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {requestingExtension ? "Requesting..." : "I've Finished - Request Extension Activity"}
+            </Button>
+          </div>
+        )}
+
+        {/* Extension Activity Display */}
+        {showExtensionActivity && hasExtensionActivity && (
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h3 className="text-lg font-semibold flex items-center text-purple-700 mb-3">
+              <Sparkles className="h-5 w-5 mr-2" />
+              Extension Activity
+            </h3>
+            <div className="p-4 bg-purple-50 border border-purple-100 rounded-lg">
+              <div 
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: sanitizeHtml(card.extensionActivity || '')
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Differentiated Content Indicator */}
         {viewingDifferentiated && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -166,17 +218,17 @@ export function StudentCardDisplay({ card, level }: StudentCardDisplayProps) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  {attachment.type === "image" && (
+                  {attachment.type === 'image' && (
                     <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                       📷
                     </div>
                   )}
-                  {attachment.type === "file" && (
+                  {attachment.type === 'file' && (
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                       📄
                     </div>
                   )}
-                  {attachment.type === "link" && (
+                  {attachment.type === 'link' && (
                     <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                       🔗
                     </div>

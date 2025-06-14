@@ -117,6 +117,31 @@ export function LessonDetails() {
       attachments: [],
     };
 
+    // If this is an activity card, generate an extension activity within the same card
+    if (cardType === "activity") {
+      try {
+        const { generateExtensionActivity } = await import(
+          "../lib/ai/extensionActivity"
+        );
+        const extensionContent = await generateExtensionActivity(
+          data.content || "",
+          lesson?.title,
+          lesson?.level
+        );
+
+        // Add extension activity to the same card
+        newCard.extensionActivity = extensionContent;
+        
+        toast({
+          title: "Extension Activity Added",
+          description: "Fast finisher extension activity has been added to this card",
+        });
+      } catch (e) {
+        console.error("Extension activity generation failed", e);
+        // Continue adding the card even if extension generation fails
+      }
+    }
+
     setSelectedCards((prev) => [...prev, newCard]);
   };
 
@@ -177,6 +202,11 @@ export function LessonDetails() {
     } finally {
       setIsGeneratingWord(false);
     }
+  };
+
+  // Navigate to the card sorter page
+  const goToCardSorter = () => {
+    navigate(`/card-sorter/${id}`);
   };
 
   const startTeaching = async () => {
@@ -253,11 +283,6 @@ export function LessonDetails() {
       });
       setIsStartingTeaching(false);
     }
-  };
-
-  // Navigate to the card sorter page
-  const goToCardSorter = () => {
-    navigate(`/card-sorter/${id}`);
   };
 
   return (

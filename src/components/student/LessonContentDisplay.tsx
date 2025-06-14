@@ -1,5 +1,5 @@
 import React from 'react';
-import { Split, Loader2, Paperclip, Clock } from 'lucide-react';
+import { Split, Loader2, Paperclip, Clock, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
 import { CardAttachment } from '@/lib/types';
@@ -9,6 +9,8 @@ interface LessonContentDisplayProps {
   title: string;
   duration?: string | null;
   content: string;
+  extensionActivity?: string;
+  showExtensionActivity?: boolean;
   attachments?: CardAttachment[];
   hasDifferentiatedContent: boolean;
   viewingDifferentiated: boolean;
@@ -21,6 +23,8 @@ export function LessonContentDisplay({
   title,
   duration,
   content,
+  extensionActivity,
+  showExtensionActivity = false,
   attachments = [],
   hasDifferentiatedContent,
   viewingDifferentiated,
@@ -48,6 +52,24 @@ export function LessonContentDisplay({
         className="prose max-w-none text-gray-800"
         dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
       />
+      
+      {/* Extension Activity */}
+      {showExtensionActivity && extensionActivity && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-semibold flex items-center text-purple-700 mb-3">
+            <Sparkles className="h-5 w-5 mr-2" />
+            Extension Activity
+          </h3>
+          <div className="p-5 bg-purple-50 border border-purple-100 rounded-lg shadow-sm">
+            <div 
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ 
+                __html: sanitizeHtml(extensionActivity)
+              }}
+            />
+          </div>
+        </div>
+      )}
       
       {/* Attachments section */}
       {attachments.length > 0 && (

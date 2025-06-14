@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2 } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles } from "lucide-react";
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
@@ -13,6 +13,9 @@ interface StudentFeedbackPanelProps {
   currentCardIndex: number;
   onFeedbackSubmitted?: (type: string) => void;
   onQuestionSubmitted?: () => void;
+  onExtensionRequested?: () => void;
+  showExtensionButton?: boolean;
+  extensionRequested?: boolean;
 }
 
 export function StudentFeedbackPanel({
@@ -21,6 +24,9 @@ export function StudentFeedbackPanel({
   currentCardIndex,
   onFeedbackSubmitted,
   onQuestionSubmitted,
+  onExtensionRequested,
+  showExtensionButton = false,
+  extensionRequested = false
 }: StudentFeedbackPanelProps) {
   const [question, setQuestion] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<string | null>(
@@ -29,6 +35,14 @@ export function StudentFeedbackPanel({
   const [feedbackCooldown, setFeedbackCooldown] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [requestingExtension, setRequestingExtension] = useState(false);
+
+  // Reset state when moving to a new card
+  useEffect(() => {
+    setFeedbackSubmitted(null);
+    setFeedbackCooldown(false);
+    setShowSuccessMessage(false);
+  }, [currentCardIndex]);
 
   const handleFeedback = async (type: string) => {
     if (feedbackCooldown) return;
@@ -81,6 +95,18 @@ export function StudentFeedbackPanel({
     }
 
     setSubmittingQuestion(false);
+  };
+
+  const handleRequestExtension = async () => {
+    if (requestingExtension || extensionRequested) return;
+    
+    setRequestingExtension(true);
+    
+    // Simulate a delay for network request
+    setTimeout(() => {
+      onExtensionRequested?.();
+      setRequestingExtension(false);
+    }, 1000);
   };
 
   return (
@@ -148,6 +174,33 @@ export function StudentFeedbackPanel({
             Thanks for the feedback! You can send more feedback in a few
             seconds.
           </p>
+        )}
+
+        {/* Extension Activity Button */}
+        {showExtensionButton && !extensionRequested && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <Button
+              onClick={handleRequestExtension}
+              disabled={requestingExtension}
+              className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {requestingExtension ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span>I'm Finished - Request Extension Activity</span>
+            </Button>
+          </div>
+        )}
+
+        {extensionRequested && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2 text-purple-700">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm">Extension activity is now available below!</span>
+            </div>
+          </div>
         )}
       </div>
 

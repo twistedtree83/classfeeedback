@@ -40,6 +40,7 @@ import {
   GripVertical,
   Search,
   SlidersHorizontal,
+  Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ import type { LessonCard, ProcessedLesson, CardAttachment } from "@/lib/types";
 import { getLessonPlanById } from "@/lib/supabase";
 import { sanitizeHtml } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { generateExtensionActivity } from "@/lib/ai/extensionActivity";
 
 export function CardSorterPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,6 +90,9 @@ export function CardSorterPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editDuration, setEditDuration] = useState("");
+  const [editExtensionActivity, setEditExtensionActivity] = useState("");
+  const [editingExtensionActivity, setEditingExtensionActivity] = useState(false);
+  const [generatingExtension, setGeneratingExtension] = useState(false);
   
   // Card modifications
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
@@ -222,7 +227,9 @@ export function CardSorterPage() {
     setEditTitle(card.title);
     setEditContent(card.content);
     setEditDuration(card.duration || "");
+    setEditExtensionActivity(card.extensionActivity || "");
     setEditMode(false);
+    setEditingExtensionActivity(false);
     setShowCardDialog(true);
   };
   
@@ -231,6 +238,7 @@ export function CardSorterPage() {
     setShowCardDialog(false);
     setActiveCard(null);
     setEditMode(false);
+    setEditingExtensionActivity(false);
   };
   
   // Toggle edit mode in dialog
@@ -253,6 +261,78 @@ export function CardSorterPage() {
     } else {
       // Enter edit mode
       setEditMode(true);
+      setEditingExtensionActivity(false);
+    }
+  };
+  
+  // Toggle extension activity edit mode
+  const toggleExtensionEditMode = () => {
+    if (editingExtensionActivity && activeCard) {
+      // Save changes
+      const updatedCards = selectedCards.map((card) => {
+        if (card.id === activeCard.id) {
+          return {
+            ...card,
+            extensionActivity: editExtensionActivity,
+          };
+        }
+        return card;
+      });
+      setSelectedCards(updatedCards);
+      setEditingExtensionActivity(false);
+    } else {
+      // Enter edit mode
+      setEditingExtensionActivity(true);
+      setEditMode(false);
+    }
+  };
+  
+  // Generate extension activity
+  const handleGenerateExtension = async () => {
+    if (!activeCard) return;
+    
+    setGeneratingExtension(true);
+    
+    try {
+      const extensionContent = await generateExtensionActivity(
+        activeCard.content,
+        lesson?.title,
+        lesson?.level
+      );
+      
+      setEditExtensionActivity(extensionContent);
+      
+      // Update the card
+      const updatedCards = selectedCards.map((card) => {
+        if (card.id === activeCard.id) {
+          return {
+            ...card,
+            extensionActivity: extensionContent,
+          };
+        }
+        return card;
+      });
+      
+      setSelectedCards(updatedCards);
+      setActiveCard({
+        ...activeCard,
+        extensionActivity: extensionContent,
+      });
+      
+      toast({
+        title: "Extension Activity Generated",
+        description: "Fast finisher activity has been added to this card",
+      });
+      
+    } catch (error) {
+      console.error("Error generating extension:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate extension activity",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingExtension(false);
     }
   };
   
@@ -475,6 +555,9 @@ export function CardSorterPage() {
       }
     };
     
+    // Indicates if card has extension activity
+    const hasExtension = card.extensionActivity && card.extensionActivity.length > 0;
+    
     // Grid view card
     if (layout === 'grid') {
       return (
@@ -526,6 +609,11 @@ export function CardSorterPage() {
                     Diff
                   </Badge>
                 )}
+                {hasExtension && (
+                  <Badge variant="outline" className="h-5 text-xs bg-purple-100 text-purple-700 border-purple-200">
+                    Ext
+                  </Badge>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -553,7 +641,7 @@ export function CardSorterPage() {
             >
               <div className="p-3 text-sm text-gray-600 h-full">
                 <div
-                  className={`prose prose-sm max-w-none overflow-hidden ${
+                  className={`prose prose-xs max-w-none overflow-hidden ${
                     !isExpanded && "line-clamp-3"
                   }`}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.content) }}
@@ -562,14 +650,22 @@ export function CardSorterPage() {
             </div>
             
             {/* Card footer */}
-            {(card.attachments?.length || isExpanded) && (
+            {(card.attachments?.length || isExpanded || hasExtension) && (
               <div className="border-t border-gray-200 p-3 flex justify-between items-center mt-auto">
-                {card.attachments?.length > 0 && (
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Paperclip className="h-3 w-3 mr-1" />
-                    {card.attachments.length}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  {card.attachments?.length > 0 && (
+                    <span className="flex items-center">
+                      <Paperclip className="h-3 w-3 mr-1" />
+                      {card.attachments.length}
+                    </span>
+                  )}
+                  {hasExtension && (
+                    <span className="flex items-center text-purple-600">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Fast Finisher
+                    </span>
+                  )}
+                </div>
                 <div className="ml-auto">
                   <Button 
                     size="sm"
@@ -634,6 +730,11 @@ export function CardSorterPage() {
                   Differentiated
                 </Badge>
               )}
+              {hasExtension && (
+                <Badge variant="outline" className="h-5 text-xs bg-purple-100 text-purple-700 border-purple-200">
+                  Fast Finisher
+                </Badge>
+              )}
               {card.attachments?.length > 0 && (
                 <div className="flex items-center text-xs text-gray-500">
                   <Paperclip className="h-3 w-3 mr-1" />
@@ -672,6 +773,19 @@ export function CardSorterPage() {
                 className="prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.content.substring(0, 200) + (card.content.length > 200 ? '...' : '')) }}
               />
+              
+              {hasExtension && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <div className="flex items-center text-xs text-purple-700 mb-1">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    <span className="font-semibold">Fast Finisher Activity:</span>
+                  </div>
+                  <div className="text-xs text-gray-600 italic">
+                    {card.extensionActivity?.substring(0, 100)}
+                    {(card.extensionActivity?.length || 0) > 100 ? '...' : ''}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -755,8 +869,78 @@ export function CardSorterPage() {
                 )}
               </div>
               
+              {/* Extension Activity Section */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold flex items-center">
+                    <Sparkles className="h-4 w-4 mr-1 text-purple-600" />
+                    Fast Finisher Activity
+                  </h3>
+                  <div className="flex gap-2">
+                    {activeCard.extensionActivity ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleExtensionEditMode}
+                        className="text-xs"
+                      >
+                        {editingExtensionActivity ? "Save" : "Edit"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateExtension}
+                        disabled={generatingExtension}
+                        className="text-xs"
+                      >
+                        {generatingExtension ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Generate
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {editingExtensionActivity ? (
+                  <Textarea
+                    value={editExtensionActivity}
+                    onChange={(e) => setEditExtensionActivity(e.target.value)}
+                    className="min-h-[150px] text-sm"
+                    placeholder="Enter extension activity for fast finishers..."
+                  />
+                ) : activeCard.extensionActivity ? (
+                  <div className="p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ 
+                        __html: sanitizeHtml(activeCard.extensionActivity)
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                    <p className="text-sm text-gray-500">
+                      No extension activity has been added yet. Generate one for fast finishers.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="mt-2 text-xs text-gray-500">
+                  Extension activities will only be shown to students who request additional work.
+                </div>
+              </div>
+              
               {/* Student-friendly version */}
-              {!editMode && activeCard.originalContent && (
+              {!editMode && !editingExtensionActivity && activeCard.originalContent && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold flex items-center">
@@ -792,7 +976,7 @@ export function CardSorterPage() {
               )}
               
               {/* Differentiated version */}
-              {!editMode && activeCard.differentiatedContent && (
+              {!editMode && !editingExtensionActivity && activeCard.differentiatedContent && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold flex items-center">
@@ -824,7 +1008,7 @@ export function CardSorterPage() {
               )}
               
               {/* Attachments */}
-              {!editMode && activeCard.attachments && activeCard.attachments.length > 0 && (
+              {!editMode && !editingExtensionActivity && activeCard.attachments && activeCard.attachments.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Attachments</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -850,93 +1034,159 @@ export function CardSorterPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Edit/Save */}
-                  <Button 
-                    className="w-full justify-start" 
-                    onClick={toggleEditMode}
-                    variant="outline"
-                  >
-                    {editMode ? (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Changes
-                      </>
-                    ) : (
-                      <>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Card
-                      </>
-                    )}
-                  </Button>
+                  {!editingExtensionActivity && (
+                    <Button 
+                      className="w-full justify-start" 
+                      onClick={toggleEditMode}
+                      variant="outline"
+                    >
+                      {editMode ? (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Card
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  
+                  {/* Extension Activity */}
+                  {!editMode && (
+                    <div>
+                      {activeCard.extensionActivity ? (
+                        <Button 
+                          className="w-full justify-start" 
+                          onClick={toggleExtensionEditMode}
+                          variant="outline"
+                        >
+                          {editingExtensionActivity ? (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Save Extension
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Extension
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={handleGenerateExtension}
+                          disabled={generatingExtension}
+                        >
+                          {generatingExtension ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Generate Extension
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   
                   {/* AI Actions */}
-                  <div className="space-y-2 pt-2">
-                    <h3 className="text-xs font-medium text-muted-foreground">AI Enhancements</h3>
-                    
-                    {!activeCard.originalContent && !editMode && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => makeCardStudentFriendly(activeCard.id)}
-                        disabled={processingCardId === activeCard.id}
-                      >
-                        {processingCardId === activeCard.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <UserCircle className="h-4 w-4 mr-2" />
-                        )}
-                        Make Student-Friendly
-                      </Button>
-                    )}
-                    
-                    {!activeCard.differentiatedContent && !editMode && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => createDifferentiatedContent(activeCard.id)}
-                        disabled={differentiatingCardId === activeCard.id}
-                      >
-                        {differentiatingCardId === activeCard.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Split className="h-4 w-4 mr-2" />
-                        )}
-                        Create Differentiated Version
-                      </Button>
-                    )}
-                  </div>
+                  {!editMode && !editingExtensionActivity && (
+                    <div className="space-y-2 pt-2">
+                      <h3 className="text-xs font-medium text-muted-foreground">AI Enhancements</h3>
+                      
+                      {!activeCard.originalContent && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => makeCardStudentFriendly(activeCard.id)}
+                          disabled={processingCardId === activeCard.id}
+                        >
+                          {processingCardId === activeCard.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <UserCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Make Student-Friendly
+                        </Button>
+                      )}
+                      
+                      {!activeCard.differentiatedContent && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => createDifferentiatedContent(activeCard.id)}
+                          disabled={differentiatingCardId === activeCard.id}
+                        >
+                          {differentiatingCardId === activeCard.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Split className="h-4 w-4 mr-2" />
+                          )}
+                          Create Differentiated Version
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Resource Management */}
-                  <div className="space-y-2 pt-2">
-                    <h3 className="text-xs font-medium text-muted-foreground">Resources</h3>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={handleAddAttachment}
-                      disabled={editMode}
-                    >
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Add Attachment
-                    </Button>
-                  </div>
+                  {!editMode && !editingExtensionActivity && (
+                    <div className="space-y-2 pt-2">
+                      <h3 className="text-xs font-medium text-muted-foreground">Resources</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={handleAddAttachment}
+                      >
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Add Attachment
+                      </Button>
+                    </div>
+                  )}
                   
                   <Separator className="my-2" />
                   
+                  {/* Cancel Editing */}
+                  {(editMode || editingExtensionActivity) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditingExtensionActivity(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  
                   {/* Danger Zone */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => {
-                      closeCardDialog();
-                      deleteCard(activeCard.id);
-                    }}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Delete Card
-                  </Button>
+                  {!editMode && !editingExtensionActivity && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        closeCardDialog();
+                        deleteCard(activeCard.id);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Delete Card
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -946,14 +1196,6 @@ export function CardSorterPage() {
             <Button variant="ghost" onClick={closeCardDialog}>
               Close
             </Button>
-            
-            <div className="flex gap-2">
-              {editMode && (
-                <Button variant="ghost" onClick={() => setEditMode(false)}>
-                  Cancel
-                </Button>
-              )}
-            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

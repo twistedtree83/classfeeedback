@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Clock, HelpCircle, Send } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Clock, HelpCircle, Send, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 
 interface StudentInteractionPanelProps {
   onSendFeedback: (type: string) => Promise<void>;
   onSendQuestion: (question: string) => Promise<boolean>;
+  onRequestExtension?: () => void;
   isSending: boolean;
   currentFeedback: string | null;
+  showExtensionButton?: boolean;
+  hasRequestedExtension?: boolean;
 }
 
 export function StudentInteractionPanel({
   onSendFeedback,
   onSendQuestion,
+  onRequestExtension,
   isSending,
-  currentFeedback
+  currentFeedback,
+  showExtensionButton = false,
+  hasRequestedExtension = false
 }: StudentInteractionPanelProps) {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [question, setQuestion] = useState('');
@@ -74,6 +80,21 @@ export function StudentInteractionPanel({
           Slow down
         </Button>
       </div>
+
+      {/* Extension Activity Button */}
+      {showExtensionButton && !hasRequestedExtension && onRequestExtension && (
+        <div className="mb-4">
+          <Button
+            onClick={onRequestExtension}
+            disabled={isSending}
+            variant="outline"
+            className="w-full bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200"
+          >
+            <Sparkles className="h-5 w-5 mr-2" />
+            I'm Finished - Request Extension Activity
+          </Button>
+        </div>
+      )}
 
       {showQuestionForm ? (
         <form onSubmit={handleSubmitQuestion} className="mt-6">
