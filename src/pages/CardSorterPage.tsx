@@ -11,10 +11,9 @@ import {
 import {
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowLeft,
@@ -434,6 +433,8 @@ export function CardSorterPage() {
       transition,
       zIndex: isDragging ? 10 : 1,
       opacity: isDragging ? 0.6 : 1,
+      width: '100%',
+      height: '100%',
     };
 
     const isExpanded = expandedCards.has(card.id);
@@ -480,11 +481,11 @@ export function CardSorterPage() {
         <div
           ref={setNodeRef}
           style={style}
-          className={`mb-4 p-0.5 group transition-shadow duration-200 ${
+          className={`h-full transition-shadow duration-200 group ${
             isDragging ? "z-10" : ""
           }`}
         >
-          <div className={`border rounded-lg shadow-sm overflow-hidden transition-all
+          <div className={`border rounded-lg shadow-sm overflow-hidden transition-all h-full flex flex-col
                           ${getCardBackground(card.type)}`}>
             {/* Card header with drag handle */}
             <div className="flex items-center p-3 border-b border-gray-200">
@@ -537,15 +538,15 @@ export function CardSorterPage() {
             
             {/* Card content preview */}
             <div 
-              className={`transition-all overflow-hidden cursor-pointer ${
-                isExpanded ? "max-h-60 overflow-y-auto" : "max-h-16"
+              className={`transition-all overflow-hidden cursor-pointer flex-grow ${
+                isExpanded ? "max-h-48 overflow-y-auto" : "max-h-24"
               }`}
               onClick={() => openCardDialog(card)}
             >
-              <div className="p-3 text-sm text-gray-600">
+              <div className="p-3 text-sm text-gray-600 h-full">
                 <div
                   className={`prose prose-sm max-w-none overflow-hidden ${
-                    !isExpanded && "line-clamp-2"
+                    !isExpanded && "line-clamp-3"
                   }`}
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(card.content) }}
                 />
@@ -554,7 +555,7 @@ export function CardSorterPage() {
             
             {/* Card footer */}
             {(card.attachments?.length || isExpanded) && (
-              <div className="border-t border-gray-200 p-3 flex justify-between items-center">
+              <div className="border-t border-gray-200 p-3 flex justify-between items-center mt-auto">
                 {card.attachments?.length > 0 && (
                   <div className="flex items-center text-xs text-gray-500">
                     <Paperclip className="h-3 w-3 mr-1" />
@@ -583,7 +584,7 @@ export function CardSorterPage() {
       <div
         ref={setNodeRef}
         style={style}
-        className={`mb-2 p-0.5 group transition-shadow duration-200 ${
+        className={`mb-2 transition-shadow duration-200 group ${
           isDragging ? "z-10" : ""
         }`}
       >
@@ -1143,26 +1144,26 @@ export function CardSorterPage() {
             )}
           </div>
         ) : (
-          <div className={layout === 'grid' 
-            ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" 
-            : "space-y-2"
-          }>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
-            >
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className={
+              layout === 'grid' 
+                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 auto-rows-fr"
+                : "space-y-2"
+            }>
               <SortableContext
                 items={filteredCards.map((card) => card.id)}
-                strategy={verticalListSortingStrategy}
+                strategy={layout === 'grid' ? rectSortingStrategy : verticalListSortingStrategy}
               >
                 {filteredCards.map((card) => (
                   <SortableCard key={card.id} card={card} />
                 ))}
               </SortableContext>
-            </DndContext>
-          </div>
+            </div>
+          </DndContext>
         )}
       </main>
       
