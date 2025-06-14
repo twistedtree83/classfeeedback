@@ -149,12 +149,12 @@ function ActivityExpansion({
         ></div>
         
         <div className="flex-shrink-0 flex gap-2">
-          {/* Expand Button - FIXED STYLING TO ENSURE VISIBILITY */}
+          {/* Expand Button - FIXED WITH HIGH CONTRAST STYLING */}
           <Button
-            variant="secondary"
+            variant="default"
             size="sm"
             onClick={handleExpand}
-            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+            className="bg-blue-600 hover:bg-blue-700 text-white border-0 px-3 py-1 h-auto"
             disabled={isGenerating}
           >
             {isGenerating ? (
@@ -164,8 +164,8 @@ function ActivityExpansion({
             ) : (
               <Wand className="h-3.5 w-3.5 mr-1" />
             )}
-            <span className="text-xs">
-              {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand"}
+            <span className="text-xs whitespace-nowrap">
+              {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand Activity"}
             </span>
           </Button>
 
