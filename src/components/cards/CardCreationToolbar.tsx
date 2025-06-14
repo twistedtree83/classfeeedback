@@ -112,7 +112,7 @@ export function CardCreationToolbar({
             <FileEdit className="h-6 w-6 text-muted-foreground" />
             <span className="text-sm font-medium">Custom Card</span>
           </Button>
-
+          
           {onExpandActivities && (
             <Button
               onClick={onExpandActivities}
@@ -234,6 +234,17 @@ export function CardCreationToolbar({
             <Users className="h-4 w-4" />
             Select Cards for Differentiation
           </Button>
+          
+          {onExpandActivities && (
+            <Button
+              onClick={onExpandActivities}
+              variant="outline" 
+              className="flex items-center gap-2 border-sea-green/30 text-sea-green hover:bg-sea-green/10"
+            >
+              <Wand className="h-4 w-4" />
+              Bulk Expand Activities
+            </Button>
+          )}
         </div>
       </div>
     </div>

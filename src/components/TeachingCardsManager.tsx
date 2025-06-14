@@ -5,7 +5,7 @@ import { CardCreationToolbar } from "./cards/CardCreationToolbar";
 import { CardsContainer } from "./cards/CardsContainer";
 import { FileUploadModal } from "./FileUploadModal";
 import { DifferentiatedCardsSelector } from "./DifferentiatedCardsSelector";
-import { ActivityBulkExpander } from "./ActivityBulkExpander"; // Import the new component
+import { ActivityBulkExpander } from "./ActivityBulkExpander";
 import {
   createObjectiveCard,
   createMaterialsCard,
@@ -34,6 +34,7 @@ import {
   FileEdit,
   PencilRuler,
   Wand2,
+  ListChecks,
   Users,
   Loader2,
   CheckSquare,
@@ -230,7 +231,7 @@ export function TeachingCardsManager({
                   <Users className="h-4 w-4" />
                   Create Differentiated Cards
                 </Button>
-
+                
                 <Button
                   onClick={() => cardManager.setShowActivityExpander(true)}
                   variant="outline" 

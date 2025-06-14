@@ -7,10 +7,7 @@ import {
   XCircle,
   Wand,
   BookOpen,
-  Copy,
-  CheckCheck,
 } from "lucide-react";
-import { sanitizeHtml } from "../lib/utils";
 
 interface Activity {
   id: string;
@@ -50,7 +47,6 @@ export function ActivityBulkExpander({
   const [isProcessing, setIsProcessing] = useState(false);
   const [expandedCount, setExpandedCount] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [copied, setCopied] = useState<Record<string, boolean>>({});
 
   // Flatten activities from sections into a single list
   useEffect(() => {
@@ -117,16 +113,6 @@ export function ActivityBulkExpander({
         ? prev - 1
         : prev + 1
     );
-  };
-
-  const handleCopyToClipboard = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied((prev) => ({ ...prev, [id]: true }));
-    
-    // Reset the copied state after 2 seconds
-    setTimeout(() => {
-      setCopied((prev) => ({ ...prev, [id]: false }));
-    }, 2000);
   };
 
   const handleExpandAll = async () => {
@@ -217,10 +203,10 @@ export function ActivityBulkExpander({
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <Wand className="h-5 w-5 text-teal" />
-            Expand Brief Activities with AI
+            Expand Brief Activities
           </h2>
           <p className="text-gray-600 mt-1">
-            Select activities to expand into detailed instructions
+            Enhance your activities with concise, detailed descriptions for better teacher guidance
           </p>
         </div>
 
@@ -256,7 +242,7 @@ export function ActivityBulkExpander({
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium text-gray-900">
-                  Activities ({activityList.length})
+                  Select Activities to Expand
                 </h3>
                 <div className="flex gap-2">
                   <Button
@@ -296,7 +282,7 @@ export function ActivityBulkExpander({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {activityList.map((activity) => (
                   <div
                     key={activity.id}
@@ -318,12 +304,12 @@ export function ActivityBulkExpander({
                           className="mt-1 h-4 w-4 text-teal"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                               {activity.section}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 line-clamp-2">
+                          <p className="text-sm text-gray-700">
                             {activity.content}
                           </p>
                           {activity.isExpanding && (
@@ -332,44 +318,16 @@ export function ActivityBulkExpander({
                               Expanding...
                             </div>
                           )}
+
+                          {activity.expanded && (
+                            <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                              <div className="text-xs text-teal font-medium mb-1">Expanded:</div>
+                              <p className="text-sm text-gray-700">{activity.expanded}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-
-                    {activity.expanded && (
-                      <div className="border-t border-gray-200 p-4 bg-gray-50">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="text-sm font-medium text-teal flex items-center">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Expanded Activity
-                          </h4>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyToClipboard(activity.id, activity.expanded)}
-                            className="h-8 px-2 text-xs text-gray-500"
-                          >
-                            {copied[activity.id] ? (
-                              <>
-                                <CheckCheck className="h-3 w-3 mr-1 text-green-600" />
-                                Copied
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3 mr-1" />
-                                Copy
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        <div 
-                          className="prose prose-sm max-h-40 overflow-y-auto p-2 bg-white border border-gray-100 rounded text-xs"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeHtml(activity.expanded)
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

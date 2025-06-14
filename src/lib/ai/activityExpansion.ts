@@ -11,22 +11,20 @@ export async function expandActivity(
       return generateFallbackExpansion(activity);
     }
 
-    const prompt = `Expand this brief classroom activity description into detailed, step-by-step instructions for teachers to implement. The activity should be educational, engaging, and practical for a classroom setting${
-      gradeLevel ? ` at the ${gradeLevel} level` : ""
-    }${subjectContext ? ` in the context of ${subjectContext}` : ""}.
+    const prompt = `Expand this brief classroom activity description into a concise, single paragraph with more details for teachers. Keep it brief but informative.
 
 Brief activity: "${activity}"
 
-Please provide a detailed expansion that includes:
-- Clear preparation instructions (materials, setup, timing)
-- Step-by-step implementation guide
-- Teacher facilitation notes
-- Expected student engagement and learning outcomes
-- Optional variations or adaptations for different learning styles or abilities
-- Safety considerations (if relevant)
+Consider:
+- How the teacher should organize and facilitate the activity
+- What students will do during the activity
+- What materials might be needed
+- Approximately how much time it should take
 
-Format your response with markdown using appropriate headers, bullet points, and organization.
-Make your answer comprehensive but practical for a real classroom.`;
+Make it a simple, straightforward paragraph that provides just enough additional detail for the teacher to understand and implement the activity efficiently. Do NOT create lengthy multi-step instructions or elaborate formatting - just a clear, focused paragraph.
+
+Context: ${subjectContext || "General education"}
+Grade level: ${gradeLevel || "Not specified"}`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -38,12 +36,16 @@ Make your answer comprehensive but practical for a real classroom.`;
         model: "gpt-4o",
         messages: [
           {
+            role: "system",
+            content: "You are an expert educator who provides concise, practical activity descriptions for teachers."
+          },
+          {
             role: "user",
             content: prompt,
           },
         ],
         temperature: 0.7,
-        max_tokens: 1200,
+        max_tokens: 300, // Limiting to keep it concise
       }),
     });
 
@@ -67,37 +69,5 @@ Make your answer comprehensive but practical for a real classroom.`;
 }
 
 function generateFallbackExpansion(activity: string): string {
-  return `
-## ${activity}
-
-### Preparation
-- **Materials needed**: General classroom materials
-- **Setup time**: 5-10 minutes
-- **Activity duration**: 15-20 minutes
-
-### Implementation Steps
-1. **Introduction** (2-3 minutes)
-   - Introduce the activity to students
-   - Explain the learning objectives
-   - Demonstrate if necessary
-
-2. **Main Activity** (10-15 minutes)
-   - Have students begin the activity: "${activity}"
-   - Monitor progress and provide guidance
-   - Encourage student participation and engagement
-
-3. **Wrap-up** (3-5 minutes)
-   - Discuss what students learned
-   - Connect the activity to learning objectives
-   - Provide feedback on student performance
-
-### Variations
-- For advanced students: Increase the complexity
-- For students who need additional support: Provide more structure
-
-### Learning Outcomes
-- Students will practice key concepts
-- Students will develop teamwork skills
-- Students will demonstrate understanding through application
-`;
+  return `${activity} - For this activity, the teacher should organize students appropriately and provide clear instructions. Students will engage with the content through this structured exercise, developing their understanding and skills. The activity should take approximately 10-15 minutes and requires standard classroom materials. Monitor student progress throughout and provide guidance as needed to ensure learning objectives are met.`;
 }
