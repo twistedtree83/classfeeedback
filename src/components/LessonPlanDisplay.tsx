@@ -148,14 +148,14 @@ function ActivityExpansion({
         ></div>
         
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleExpand}
-          className="ml-2 flex-shrink-0 text-secondary bg-secondary/10 border border-secondary/30 hover:bg-secondary/20"
+          className="ml-2 flex-shrink-0 bg-secondary text-white hover:bg-secondary-600 border-secondary"
           disabled={isGenerating}
         >
           {isGenerating ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-secondary border-t-transparent"></div>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
           ) : expanded ? (
             <Minimize2 className="h-3.5 w-3.5" />
           ) : (
