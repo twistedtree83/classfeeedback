@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { 
   Clock, 
   FileText, 
@@ -9,7 +9,8 @@ import {
   BookOpen, 
   List,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Wand
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { sanitizeHtml } from "../lib/utils";
+import { ActivityExpander } from "./ActivityExpander";
 import type { ProcessedLesson } from "../lib/types";
 
 interface LessonPlanDisplayProps {
@@ -98,6 +100,12 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     sections: false,
   });
 
+  const [expandingActivity, setExpandingActivity] = useState<{
+    sectionId: string;
+    activityIndex: number;
+    content: string;
+  } | null>(null);
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -116,6 +124,37 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       sections: newState,
     });
   };
+
+  const handleExpandActivity = useCallback((sectionId: string, activityIndex: number, content: string) => {
+    setExpandingActivity({
+      sectionId,
+      activityIndex,
+      content
+    });
+  }, []);
+
+  const handleExpandedActivity = useCallback((expanded: string) => {
+    if (!expandingActivity) return;
+    
+    // Find the section and update the activity
+    const sectionIndex = lesson.sections.findIndex(s => s.id === expandingActivity.sectionId);
+    if (sectionIndex !== -1) {
+      const updatedSections = [...lesson.sections];
+      updatedSections[sectionIndex] = {
+        ...updatedSections[sectionIndex],
+        activities: [
+          ...updatedSections[sectionIndex].activities.slice(0, expandingActivity.activityIndex),
+          expanded,
+          ...updatedSections[sectionIndex].activities.slice(expandingActivity.activityIndex + 1)
+        ]
+      };
+      
+      // TODO: In a real implementation, we would save this update to the database
+      // For now, we'll just close the expander
+    }
+    
+    setExpandingActivity(null);
+  }, [expandingActivity, lesson.sections]);
 
   // Map section names to their values
   const sectionValues = {
@@ -418,7 +457,7 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                               .map((activity, index) => (
                                 <li
                                   key={index}
-                                  className="flex items-start justify-between gap-3 p-2 bg-background/60 rounded-lg"
+                                  className="flex items-start justify-between gap-3 p-2 bg-background/60 rounded-lg group"
                                 >
                                   <span
                                     className="text-sm text-muted-foreground flex-1"
@@ -426,23 +465,35 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                                       __html: sanitizeHtml(activity),
                                     }}
                                   ></span>
-                                  {onAddToTeaching && (
+                                  <div className="flex items-center space-x-1">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() =>
-                                        onAddToTeaching("activity", {
-                                          title: `Activity: ${section.title}`,
-                                          content: activity,
-                                          sectionId: section.id,
-                                          activityIndex: index,
-                                        })
-                                      }
-                                      className="text-secondary flex-shrink-0"
+                                      onClick={() => handleExpandActivity(section.id, index, activity)}
+                                      className="text-sea-green opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Expand activity"
                                     >
-                                      <Plus className="h-4 w-4" />
+                                      <Wand className="h-4 w-4" />
                                     </Button>
-                                  )}
+                                    
+                                    {onAddToTeaching && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          onAddToTeaching("activity", {
+                                            title: `Activity: ${section.title}`,
+                                            content: activity,
+                                            sectionId: section.id,
+                                            activityIndex: index,
+                                          })
+                                        }
+                                        className="text-secondary"
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </li>
                               ))}
                           </ul>
@@ -472,6 +523,17 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
           </AccordionItem>
         </Accordion>
       </CardContent>
+      
+      {/* Activity Expander Modal */}
+      {expandingActivity && (
+        <ActivityExpander
+          activity={expandingActivity.content}
+          context={lesson.title}
+          level={lesson.level}
+          onExpandedActivity={handleExpandedActivity}
+          onClose={() => setExpandingActivity(null)}
+        />
+      )}
     </Card>
   );
 }
