@@ -9,14 +9,25 @@ import {
 import { generateWordleWord } from "../lib/ai";
 import { LessonHeader } from "@/components/lesson-details/LessonHeader";
 import { LessonPlan } from "@/components/lesson-details/LessonPlan";
-import { TeachingCardsManager } from "@/components/lesson-details/TeachingCardsManager";
 import { WordleConfigCard } from "@/components/lesson-details/WordleConfigCard";
 import { StartButtonCard } from "@/components/lesson-details/StartButtonCard";
 import { EmptyState } from "@/components/lesson-details/EmptyState";
 import { CardSkeleton } from "@/components/lesson-details/CardSkeleton";
 import type { LessonCard, ProcessedLesson } from "../lib/types";
 import { useToast } from "@/components/ui/use-toast";
-import { ClipboardList } from "lucide-react";
+import { 
+  ClipboardList,
+  Edit,
+  LayoutGrid,
+  Grip,
+  ArrowUp,
+  ArrowDown,
+  Plus
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { sanitizeHtml } from "@/lib/utils";
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -105,44 +116,31 @@ export function LessonDetails() {
       attachments: [],
     };
 
-    // If this is an activity card, also generate a fast-finisher extension
-    if (cardType === "activity") {
-      try {
-        const { generateExtensionActivity } = await import(
-          "../lib/ai/extensionActivity"
-        );
-        const extensionContent = await generateExtensionActivity(
-          data.content || "",
-          lesson?.title,
-          lesson?.level
-        );
-
-        const extensionCard: LessonCard = {
-          id: crypto.randomUUID(),
-          type: "activity",
-          title: `Fast Finisher: ${data.title || "Extension"}`,
-          content: extensionContent,
-          duration: null,
-          sectionId: data.sectionId || null,
-          activityIndex: null,
-          attachments: [],
-        };
-
-        setSelectedCards((prev) => [...prev, newCard, extensionCard]);
-        return;
-      } catch (e) {
-        console.error("Extension activity generation failed", e);
-        // fallback to just adding original
-      }
-    }
-
-    // default add only original card
     setSelectedCards((prev) => [...prev, newCard]);
   };
 
-  // Handle saving the list of selected cards
-  const handleSaveCards = (cards: LessonCard[]) => {
-    setSelectedCards(cards);
+  // Move a card up or down in the order
+  const moveCard = (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) || 
+      (direction === 'down' && index === selectedCards.length - 1)
+    ) {
+      return; // Can't move further up/down
+    }
+    
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    const newCards = [...selectedCards];
+    const card = newCards[index];
+    newCards.splice(index, 1);
+    newCards.splice(newIndex, 0, card);
+    setSelectedCards(newCards);
+  };
+
+  // Remove a card from the list
+  const removeCard = (index: number) => {
+    const newCards = [...selectedCards];
+    newCards.splice(index, 1);
+    setSelectedCards(newCards);
   };
 
   // Generate a wordle word based on the lesson content
@@ -256,6 +254,11 @@ export function LessonDetails() {
     }
   };
 
+  // Navigate to the card sorter page
+  const goToCardSorter = () => {
+    navigate(`/card-sorter/${id}`);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="container grid lg:grid-cols-12 gap-6 pt-6 pb-12">
@@ -307,14 +310,111 @@ export function LessonDetails() {
           ) : (
             lesson && (
               <>
-                <TeachingCardsManager
-                  lesson={lesson}
-                  selectedCards={selectedCards}
-                  onSave={handleSaveCards}
-                />
+                {/* Teaching Cards Card with Card Sorter Link */}
+                <Card className="shadow-md mb-6">
+                  <CardHeader className="pb-3 flex flex-row justify-between items-center">
+                    <CardTitle className="text-xl">Teaching Cards</CardTitle>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
+                      onClick={goToCardSorter}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                      Card Sorter
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedCards.length === 0 ? (
+                      <EmptyState 
+                        icon={ClipboardList}
+                        title="No cards yet"
+                        description="Add content from the lesson to create teaching cards."
+                        action={
+                          <Button onClick={goToCardSorter}>
+                            Manage Cards
+                          </Button>
+                        }
+                      />
+                    ) : (
+                      <>
+                        <div className="space-y-2 mb-4">
+                          {selectedCards.map((card, index) => (
+                            <div 
+                              key={card.id} 
+                              className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Grip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <div className="truncate font-medium text-gray-700">
+                                  {card.title}
+                                </div>
+                                {card.duration && (
+                                  <Badge variant="outline" className="hidden sm:inline-flex">
+                                    {card.duration}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => moveCard(index, 'up')}
+                                  disabled={index === 0}
+                                  className="h-7 w-7"
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => moveCard(index, 'down')}
+                                  disabled={index === selectedCards.length - 1}
+                                  className="h-7 w-7"
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => removeCard(index)}
+                                  className="h-7 w-7 text-red-500"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddToTeaching("custom", {
+                              title: "Custom Card",
+                              content: "Enter content here..."
+                            })}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Card
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            onClick={goToCardSorter}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit All Cards
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
 
                 <WordleConfigCard
-                  className="mt-6"
                   wordleEnabled={wordleEnabled}
                   wordleWord={wordleWord}
                   isGeneratingWord={isGeneratingWord}

@@ -7,6 +7,7 @@ import { LessonPlannerPage } from './pages/LessonPlannerPage';
 import { EditLesson } from './pages/EditLesson';
 import { CreateLesson } from './pages/CreateLesson';
 import { LessonDetails } from './pages/LessonDetails';
+import { CardSorterPage } from './pages/CardSorterPage';
 import { TeachingModePage } from './pages/TeachingModePage';
 import { MainNav } from './components/MainNav';
 import { Login } from './pages/Login';
@@ -77,6 +78,11 @@ function App() {
             <Route path="/planner/:id" element={
               <ProtectedRoute>
                 <LessonDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/card-sorter/:id" element={
+              <ProtectedRoute>
+                <CardSorterPage />
               </ProtectedRoute>
             } />
             <Route path="/teach/:code" element={
