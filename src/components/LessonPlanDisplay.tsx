@@ -11,7 +11,8 @@ import {
   Maximize2,
   Minimize2,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Wand
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -141,31 +142,52 @@ function ActivityExpansion({
 
   return (
     <div className="relative">
-      <div className="flex items-start">
+      <div className="flex items-center gap-3">
         <div 
           className="flex-1 text-sm text-muted-foreground"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(expanded ? expandedActivity : activity) }}
         ></div>
         
-        {/* COMPLETELY SOLID BUTTON WITH NO TRANSPARENCY */}
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handleExpand}
-          className="ml-2 flex-shrink-0 bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-md"
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-          ) : expanded ? (
-            <Minimize2 className="h-3.5 w-3.5" />
-          ) : (
-            <ExternalLink className="h-3.5 w-3.5" />
+        <div className="flex-shrink-0 flex gap-2">
+          {/* Expand Button - FIXED STYLING TO ENSURE VISIBILITY */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleExpand}
+            className="bg-blue-600 hover:bg-blue-700 text-white border-0"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></div>
+            ) : expanded ? (
+              <Minimize2 className="h-3.5 w-3.5 mr-1" />
+            ) : (
+              <Wand className="h-3.5 w-3.5 mr-1" />
+            )}
+            <span className="text-xs">
+              {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand"}
+            </span>
+          </Button>
+
+          {/* Add to Teaching Button */}
+          {onAddToTeaching && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                onAddToTeaching("activity", {
+                  title: `Activity: ${sectionTitle}`,
+                  content: expanded ? expandedActivity : activity,
+                  sectionId: sectionId,
+                  activityIndex: activityIndex,
+                })
+              }
+              className="text-secondary"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           )}
-          <span className="ml-1 text-xs font-medium">
-            {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand"}
-          </span>
-        </Button>
+        </div>
       </div>
       
       {expanded && (
@@ -176,7 +198,7 @@ function ActivityExpansion({
             onClick={handleUseExpanded}
             className="text-xs border-success text-success hover:bg-success/10"
           >
-            Use Expanded Activity
+            Use Expanded Version
           </Button>
         </div>
       )}
