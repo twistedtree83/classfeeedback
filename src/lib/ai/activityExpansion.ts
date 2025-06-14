@@ -1,5 +1,3 @@
-import { sanitizeHtml } from "../utils";
-
 export async function expandActivity(
   activity: string,
   subjectContext?: string,
