@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Clock, 
   FileText, 
@@ -147,11 +147,12 @@ function ActivityExpansion({
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(expanded ? expandedActivity : activity) }}
         ></div>
         
+        {/* COMPLETELY SOLID BUTTON WITH NO TRANSPARENCY */}
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           onClick={handleExpand}
-          className="ml-2 flex-shrink-0 bg-secondary text-white hover:bg-secondary-600 border-secondary"
+          className="ml-2 flex-shrink-0 bg-blue-600 text-white hover:bg-blue-700 border-0 shadow-md"
           disabled={isGenerating}
         >
           {isGenerating ? (
