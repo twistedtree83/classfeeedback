@@ -151,7 +151,7 @@ function ActivityExpansion({
           variant="ghost"
           size="sm"
           onClick={handleExpand}
-          className="ml-2 flex-shrink-0 text-secondary border border-secondary/20 bg-secondary/5 hover:bg-secondary/10"
+          className="ml-2 flex-shrink-0 text-secondary bg-secondary/10 border border-secondary/30 hover:bg-secondary/20"
           disabled={isGenerating}
         >
           {isGenerating ? (
@@ -161,7 +161,7 @@ function ActivityExpansion({
           ) : (
             <ExternalLink className="h-3.5 w-3.5" />
           )}
-          <span className="ml-1 text-xs">
+          <span className="ml-1 text-xs font-medium">
             {isGenerating ? "Expanding..." : expanded ? "Collapse" : "Expand"}
           </span>
         </Button>
