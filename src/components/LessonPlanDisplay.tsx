@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { sanitizeHtml } from "../lib/utils";
 import type { ProcessedLesson } from "../lib/types";
 import { ActivityExpander } from "./ActivityExpander";
+import { ActivityExpandButton } from "./activity/ActivityExpandButton";
 
 interface LessonPlanDisplayProps {
   lesson: ProcessedLesson;
@@ -36,89 +37,6 @@ interface LessonPlanDisplayProps {
 
 interface LessonStatsProps {
   lesson: ProcessedLesson;
-}
-
-// Activity expansion component
-interface ActivityExpandProps {
-  activity: string;
-  sectionId: string;
-  sectionTitle: string;
-  activityIndex: number;
-  onAddToTeaching?: (
-    cardType: "objective" | "material" | "section" | "activity" | "topic_background",
-    data: any
-  ) => void;
-}
-
-function ActivityExpand({ 
-  activity, 
-  sectionId, 
-  sectionTitle,
-  activityIndex, 
-  onAddToTeaching 
-}: ActivityExpandProps) {
-  const [showExpander, setShowExpander] = useState(false);
-  const [expandedContent, setExpandedContent] = useState<string | null>(null);
-
-  const handleExpandActivity = () => {
-    setShowExpander(true);
-  };
-
-  const handleExpandedActivity = (expanded: string) => {
-    setExpandedContent(expanded);
-    setShowExpander(false);
-  };
-
-  return (
-    <div className="group">
-      <div className="flex items-start justify-between gap-2 w-full">
-        <div 
-          className="flex-1 text-sm text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(expandedContent || activity) }}
-        ></div>
-        
-        <div className="flex gap-1">
-          {/* Highly visible expand button with strong visual styling */}
-          <Button
-            onClick={handleExpandActivity}
-            variant="default"
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1 h-auto"
-          >
-            <Wand className="h-4 w-4 mr-1" />
-            Expand Activity
-          </Button>
-
-          {onAddToTeaching && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                onAddToTeaching("activity", {
-                  title: `Activity: ${sectionTitle}`,
-                  content: expandedContent || activity,
-                  sectionId: sectionId,
-                  activityIndex: activityIndex,
-                })
-              }
-              className="text-secondary flex-shrink-0"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {showExpander && (
-        <ActivityExpander
-          activity={activity}
-          context={sectionTitle}
-          onExpandedActivity={handleExpandedActivity}
-          onClose={() => setShowExpander(false)}
-        />
-      )}
-    </div>
-  );
 }
 
 function LessonStatistics({ lesson }: LessonStatsProps) {
@@ -183,6 +101,13 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
     materials: false,
     sections: false,
   });
+  
+  const [expandingActivity, setExpandingActivity] = useState<{
+    activity: string; 
+    sectionId: string; 
+    sectionTitle: string;
+    activityIndex: number;
+  } | null>(null);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({
@@ -201,6 +126,36 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
       materials: newState,
       sections: newState,
     });
+  };
+
+  const handleExpandActivity = (activity: string, sectionId: string, sectionTitle: string, activityIndex: number) => {
+    setExpandingActivity({
+      activity,
+      sectionId,
+      sectionTitle,
+      activityIndex
+    });
+  };
+
+  const handleExpandedActivity = (expanded: string) => {
+    if (!expandingActivity) return;
+
+    // Update the lesson with expanded activity content
+    // This is a placeholder since we're not actually updating the lesson in this component
+    console.log("Activity expanded:", expanded);
+
+    // If we have an onAddToTeaching prop, we can immediately add this to teaching
+    if (onAddToTeaching) {
+      onAddToTeaching("activity", {
+        title: `Activity: ${expandingActivity.sectionTitle}`,
+        content: expanded,
+        sectionId: expandingActivity.sectionId,
+        activityIndex: expandingActivity.activityIndex
+      });
+    }
+
+    // Reset the expanding activity state
+    setExpandingActivity(null);
   };
 
   return (
@@ -498,13 +453,43 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
                                   key={index}
                                   className="p-3 bg-background/60 rounded-lg border border-border/40"
                                 >
-                                  <ActivityExpand
-                                    activity={activity}
-                                    sectionId={section.id}
-                                    sectionTitle={section.title}
-                                    activityIndex={index}
-                                    onAddToTeaching={onAddToTeaching}
-                                  />
+                                  <div className="flex items-start justify-between gap-3">
+                                    <span
+                                      className="text-sm text-muted-foreground"
+                                      dangerouslySetInnerHTML={{
+                                        __html: sanitizeHtml(activity),
+                                      }}
+                                    ></span>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {/* This is the expand activity button the user wants */}
+                                      <ActivityExpandButton 
+                                        onClick={() => handleExpandActivity(
+                                          activity, 
+                                          section.id, 
+                                          section.title, 
+                                          index
+                                        )}
+                                      />
+                                      
+                                      {onAddToTeaching && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            onAddToTeaching("activity", {
+                                              title: `Activity: ${section.title}`,
+                                              content: activity,
+                                              sectionId: section.id,
+                                              activityIndex: index,
+                                            })
+                                          }
+                                          className="text-secondary flex-shrink-0"
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                                 </li>
                               ))}
                           </ul>
@@ -534,6 +519,17 @@ export function LessonPlanDisplay({ lesson, onAddToTeaching }: LessonPlanDisplay
           </AccordionItem>
         </Accordion>
       </CardContent>
+
+      {/* Activity expander modal */}
+      {expandingActivity && (
+        <ActivityExpander
+          activity={expandingActivity.activity}
+          context={expandingActivity.sectionTitle}
+          level={lesson.level}
+          onExpandedActivity={handleExpandedActivity}
+          onClose={() => setExpandingActivity(null)}
+        />
+      )}
     </Card>
   );
 }

@@ -1,4 +1,4 @@
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 
 export async function expandActivity(
   activity: string,
@@ -13,7 +13,10 @@ export async function expandActivity(
       return generateFallbackExpansion(activity);
     }
 
-    const openai = new OpenAI({ apiKey });
+    const openai = new OpenAI({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true
+    });
 
     const prompt = `Expand this brief classroom activity description into detailed teaching instructions:
 
@@ -30,8 +33,8 @@ Grade level: ${gradeLevel || "Not specified"}
 
 Format the response with clear headings and bullet points for easy reading.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -46,7 +49,7 @@ Format the response with clear headings and bullet points for easy reading.`;
       max_tokens: 800,
     });
 
-    const result = completion.choices[0].message.content;
+    const result = response.choices[0].message.content;
 
     if (!result) {
       return generateFallbackExpansion(activity);
