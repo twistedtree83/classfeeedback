@@ -21,6 +21,8 @@ export function ExtensionRequestsView({
 }: ExtensionRequestsViewProps) {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   
+  console.log("[ExtensionRequestsView] Rendering with requests:", extensionRequests);
+  
   // Filter requests based on currentCard if needed
   const filteredRequests = filterCurrentCard && currentCardIndex !== undefined
     ? extensionRequests.filter(req => req.card_index === currentCardIndex)
@@ -34,6 +36,7 @@ export function ExtensionRequestsView({
   const handleApprove = async (requestId: string) => {
     setProcessingIds(prev => new Set([...prev, requestId]));
     try {
+      console.log("[ExtensionRequestsView] Approving request:", requestId);
       await onApprove(requestId);
     } finally {
       setProcessingIds(prev => {
@@ -47,6 +50,7 @@ export function ExtensionRequestsView({
   const handleReject = async (requestId: string) => {
     setProcessingIds(prev => new Set([...prev, requestId]));
     try {
+      console.log("[ExtensionRequestsView] Rejecting request:", requestId);
       await onReject(requestId);
     } finally {
       setProcessingIds(prev => {

@@ -1,11 +1,12 @@
 import React from 'react';
-import { MessageSquare, Menu, X } from 'lucide-react';
+import { MessageSquare, Menu, X, Bell } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface TeachingHeaderProps {
   sessionCode: string;
   lessonTitle?: string;
   hasNewQuestions: boolean;
+  hasNewExtensionRequests?: boolean; // Add this prop
   pendingCount: number;
   showSidebar: boolean;
   onToggleSidebar: () => void;
@@ -17,12 +18,16 @@ export function TeachingHeader({
   sessionCode,
   lessonTitle,
   hasNewQuestions,
+  hasNewExtensionRequests = false, // Default to false
   pendingCount,
   showSidebar,
   onToggleSidebar,
   onOpenMessageModal,
   onEndSession
 }: TeachingHeaderProps) {
+  // Determine if there are any new notifications
+  const hasNotifications = hasNewQuestions || hasNewExtensionRequests || pendingCount > 0;
+
   return (
     <div className="bg-white shadow-sm sticky top-0 z-10">
       <div className="px-4 py-4">
@@ -32,10 +37,17 @@ export function TeachingHeader({
               variant="ghost"
               size="sm"
               onClick={onToggleSidebar}
-              className="p-1.5 text-teal hover:bg-teal/10"
+              className={`p-1.5 ${hasNotifications ? "text-red" : "text-teal"} hover:bg-teal/10 relative`}
               aria-label={showSidebar ? "Hide sidebar" : "Show sidebar"}
             >
               {showSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              
+              {/* Notification indicator */}
+              {hasNotifications && (
+                <span className="absolute -top-1 -right-1 bg-red text-white text-xs rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
+                  {pendingCount || "!"}
+                </span>
+              )}
             </Button>
           </div>
           

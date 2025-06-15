@@ -44,6 +44,7 @@ export function TeachingModePage() {
     hasNewQuestions, 
     hasNewExtensionRequests,
     clearHasNewQuestions,
+    clearHasNewExtensionRequests,
     pendingExtensionRequests,
     handleApproveExtension,
     handleRejectExtension
@@ -56,6 +57,25 @@ export function TeachingModePage() {
     openMessageModal,
     closeMessageModal,
   } = useTeacherMessaging(presentation?.id, teacherName);
+
+  // Add console logging for debugging
+  useEffect(() => {
+    console.log("[TeachingModePage] Current state:", {
+      presentationId: presentation?.id,
+      currentCardIndex: actualCardIndex,
+      hasNewQuestions,
+      hasNewExtensionRequests,
+      pendingCount,
+      pendingExtensionRequests: pendingExtensionRequests?.length
+    });
+  }, [
+    presentation?.id,
+    actualCardIndex,
+    hasNewQuestions,
+    hasNewExtensionRequests,
+    pendingCount,
+    pendingExtensionRequests
+  ]);
 
   const handleToggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -109,6 +129,7 @@ export function TeachingModePage() {
         sessionCode={presentation.session_code}
         lessonTitle={lessonTitle}
         hasNewQuestions={hasNewQuestions}
+        hasNewExtensionRequests={hasNewExtensionRequests}
         pendingCount={pendingCount}
         showSidebar={showSidebar}
         onToggleSidebar={handleToggleSidebar}

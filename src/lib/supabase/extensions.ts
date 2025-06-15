@@ -8,6 +8,13 @@ export const submitExtensionRequest = async (
   cardIndex: number
 ): Promise<ExtensionRequest | null> => {
   try {
+    console.log('Submitting extension request:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      card_index: cardIndex,
+      status: 'pending'
+    });
+    
     const { data, error } = await supabase
       .from('extension_requests')
       .insert({
@@ -24,6 +31,7 @@ export const submitExtensionRequest = async (
       return null;
     }
 
+    console.log('Extension request submitted successfully:', data);
     return data;
   } catch (err) {
     console.error('Exception submitting extension request:', err);
@@ -130,29 +138,45 @@ export const subscribeToExtensionRequests = (
   presentationId: string,
   callback: (request: ExtensionRequest) => void
 ) => {
-  const channelName = `extension_requests:${presentationId}`;
+  // Generate a more unique channel name
+  const channelName = `extension_requests_${presentationId}_${Date.now()}`;
   
-  // Add console log to confirm subscription is being created
-  console.log("Subscribing to extension requests channel:", channelName);
-  
+  // Comprehensive logging to diagnose subscription issues
+  console.log(`[Extension] Creating subscription on channel: ${channelName}`);
+  console.log(`[Extension] For presentation ID: ${presentationId}`);
+
+  // Create and configure the subscription
   const subscription = supabase
     .channel(channelName)
     .on(
       'postgres_changes',
       {
-        event: '*',
+        event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
         schema: 'public',
         table: 'extension_requests',
         filter: `presentation_id=eq.${presentationId}`
       },
       (payload) => {
-        console.log('Extension request change:', payload);
+        console.log('[Extension] Received event:', payload.eventType);
+        console.log('[Extension] Payload:', payload);
+        
         if (payload.new) {
-          callback(payload.new as ExtensionRequest);
+          // Ensure we have a properly typed object
+          const request = payload.new as ExtensionRequest;
+          console.log('[Extension] Processing request:', request);
+          callback(request);
         }
       }
     )
-    .subscribe();
+    .subscribe((status, err) => {
+      // Log subscription status for debugging
+      console.log(`[Extension] Subscription status: ${status}`);
+      if (err) {
+        console.error('[Extension] Subscription error:', err);
+      } else {
+        console.log('[Extension] Subscription successfully established');
+      }
+    });
 
   return subscription;
 };

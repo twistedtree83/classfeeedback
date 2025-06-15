@@ -41,6 +41,8 @@ export function useTeacherFeedbackAndQuestions(
         setQuestions(questionsData);
         setExtensionRequests(extensionData);
         
+        console.log("[Teacher] Loaded initial extension requests:", extensionData);
+        
         // Check if there are new questions or extension requests
         setHasNewQuestions(questionsData.some(q => !q.answered));
         setHasNewExtensionRequests(extensionData.some(e => e.status === 'pending'));
@@ -98,24 +100,30 @@ export function useTeacherFeedbackAndQuestions(
     };
   }, [presentationId, cardIndex]);
   
-  // Subscribe to extension requests
+  // Subscribe to extension requests - Enhanced with robust logging
   useEffect(() => {
     if (!presentationId) return;
+    
+    console.log(`[Teacher] Setting up extension requests subscription for presentation: ${presentationId}`);
     
     const extensionSubscription = subscribeToExtensionRequests(
       presentationId,
       (newRequest) => {
+        console.log("[Teacher] Received extension request update:", newRequest);
+        
         // Handle new or updated extension requests
         setExtensionRequests(prev => {
           // Check if this is an update to an existing request
           const existingIndex = prev.findIndex(r => r.id === newRequest.id);
           
           if (existingIndex >= 0) {
+            console.log("[Teacher] Updating existing request:", newRequest);
             // Update existing request
             const updated = [...prev];
             updated[existingIndex] = newRequest;
             return updated;
           } else {
+            console.log("[Teacher] Adding new request:", newRequest);
             // Add new request
             if (newRequest.status === 'pending') {
               setHasNewExtensionRequests(true);
@@ -126,7 +134,9 @@ export function useTeacherFeedbackAndQuestions(
       }
     );
     
+    // Return cleanup function
     return () => {
+      console.log(`[Teacher] Cleaning up extension requests subscription for ${presentationId}`);
       extensionSubscription.unsubscribe();
     };
   }, [presentationId]);
@@ -161,8 +171,11 @@ export function useTeacherFeedbackAndQuestions(
   // Handler for approving extension requests
   const handleApproveExtension = async (requestId: string) => {
     try {
+      console.log("[Teacher] Approving extension request:", requestId);
       const success = await approveExtensionRequest(requestId);
       if (success) {
+        console.log("[Teacher] Extension request approved successfully");
+        
         // Update local state
         setExtensionRequests(prev => 
           prev.map(request => 
@@ -192,8 +205,11 @@ export function useTeacherFeedbackAndQuestions(
   // Handler for rejecting extension requests
   const handleRejectExtension = async (requestId: string) => {
     try {
+      console.log("[Teacher] Rejecting extension request:", requestId);
       const success = await rejectExtensionRequest(requestId);
       if (success) {
+        console.log("[Teacher] Extension request rejected successfully");
+        
         // Update local state
         setExtensionRequests(prev => 
           prev.map(request => 
@@ -234,6 +250,22 @@ export function useTeacherFeedbackAndQuestions(
   // Pending extension requests count
   const pendingExtensionCount = extensionRequests.filter(r => r.status === 'pending').length;
 
+  // Map student feedback for the current card
+  const studentFeedbackMap = feedback.reduce((map, item) => {
+    // Only include feedback for the current card if filtering is enabled
+    if (cardIndex !== undefined && item.card_index !== cardIndex) {
+      return map;
+    }
+    
+    // Add or update the student's feedback
+    map[item.student_name] = {
+      feedback_type: item.feedback_type,
+      timestamp: item.created_at
+    };
+    
+    return map;
+  }, {});
+
   return {
     feedback,
     questions,
@@ -250,6 +282,6 @@ export function useTeacherFeedbackAndQuestions(
     handleRejectExtension,
     clearHasNewQuestions: () => setHasNewQuestions(false),
     clearHasNewExtensionRequests: () => setHasNewExtensionRequests(false),
-    studentFeedbackMap: {} // This needs to be properly implemented
+    studentFeedbackMap
   };
 }
