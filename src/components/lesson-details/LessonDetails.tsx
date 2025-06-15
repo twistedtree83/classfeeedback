@@ -18,6 +18,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { LessonCard, ProcessedLesson } from "../lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { ClipboardList, LayoutGrid, List } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  addToLearningIntentionsCard, 
+  addToSuccessCriteriaCard 
+} from "@/lib/cardFactory";
 
 export function LessonDetails() {
   const { id } = useParams<{ id: string }>();
@@ -91,6 +97,40 @@ export function LessonDetails() {
       | "topic_background",
     data: any
   ) => {
+    // Check if we need to add to an existing card
+    if (data.addToCard === "learning_intentions") {
+      // Add to a group learning intentions card
+      const updatedCards = addToLearningIntentionsCard(selectedCards, data.content.replace('• ', ''));
+      setSelectedCards(updatedCards);
+      return;
+    } else if (data.addToCard === "success_criteria") {
+      // Add to a group success criteria card
+      const updatedCards = addToSuccessCriteriaCard(selectedCards, data.content.replace('• ', ''));
+      setSelectedCards(updatedCards);
+      return;
+    } else if (data.addToCard === "materials") {
+      // Find existing materials card
+      const materialsCardIndex = selectedCards.findIndex(
+        card => card.type === "material" && card.title === "Required Materials"
+      );
+
+      if (materialsCardIndex >= 0) {
+        // Add to existing card
+        const updatedCards = [...selectedCards];
+        const card = updatedCards[materialsCardIndex];
+        
+        // Check if this material is already in the card
+        if (!card.content.includes(data.content.replace('• ', ''))) {
+          updatedCards[materialsCardIndex] = {
+            ...card,
+            content: card.content + `\n${data.content}`
+          };
+          setSelectedCards(updatedCards);
+        }
+        return;
+      }
+    }
+
     // Create a unique ID for the new card
     const newCardId = crypto.randomUUID();
 
@@ -107,12 +147,32 @@ export function LessonDetails() {
       attachments: [],
     };
 
-    setSelectedCards((prev) => [...prev, newCard]);
-  };
+    // If this is an activity card, generate an extension activity within the same card
+    if (cardType === "activity") {
+      try {
+        const { generateExtensionActivity } = await import(
+          "../lib/ai/extensionActivity"
+        );
+        const extensionContent = await generateExtensionActivity(
+          data.content || "",
+          lesson?.title,
+          lesson?.level
+        );
 
-  // Handle saving the list of selected cards
-  const handleSaveCards = (cards: LessonCard[]) => {
-    setSelectedCards(cards);
+        // Add extension activity to the same card
+        newCard.extensionActivity = extensionContent;
+        
+        toast({
+          title: "Extension Activity Added",
+          description: "Fast finisher extension activity has been added to this card",
+        });
+      } catch (e) {
+        console.error("Extension activity generation failed", e);
+        // Continue adding the card even if extension generation fails
+      }
+    }
+
+    setSelectedCards((prev) => [...prev, newCard]);
   };
 
   // Generate a wordle word based on the lesson content
@@ -352,7 +412,7 @@ export function LessonDetails() {
                   <TeachingCardsManager
                     lesson={lesson}
                     selectedCards={selectedCards}
-                    onSave={handleSaveCards}
+                    onSave={setSelectedCards}
                   />
                   
                   <div className="mt-6">

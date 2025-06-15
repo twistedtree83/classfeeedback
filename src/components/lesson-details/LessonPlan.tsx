@@ -129,7 +129,7 @@ export function LessonPlan({
                     .map((objective, index) => (
                       <li
                         key={index}
-                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group"
+                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group relative"
                       >
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1">
@@ -142,22 +142,58 @@ export function LessonPlan({
                           
                           {/* Individual add button */}
                           {onAddToTeaching && (
-                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onAddToTeaching("objective", {
-                                    title: "Learning Intention",
-                                    content: `• ${objective}`,
-                                  });
-                                }}
-                                className="text-xs h-7"
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Add to Teaching
-                              </Button>
+                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToTeaching("objective", {
+                                          title: "Learning Intentions",
+                                          content: `• ${objective}`,
+                                          addToCard: "learning_intentions"
+                                        });
+                                      }}
+                                      className="text-xs h-7"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add to Intentions Card
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Add to group learning intentions card
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToTeaching("objective", {
+                                          title: "Learning Intention",
+                                          content: `• ${objective}`,
+                                          addToCard: "separate"
+                                        });
+                                      }}
+                                      className="text-xs h-7"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Create Separate Card
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Create a separate card for this intention
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           )}
                         </div>
@@ -208,7 +244,7 @@ export function LessonPlan({
                           .map((criteria, index) => (
                             <li
                               key={index}
-                              className="flex items-start gap-3 p-2 bg-background/40 rounded-lg group"
+                              className="flex items-start gap-3 p-2 bg-background/40 rounded-lg group relative"
                             >
                               <div className="w-2 h-2 bg-success rounded-full mt-2 flex-shrink-0"></div>
                               <div className="flex-1">
@@ -219,24 +255,60 @@ export function LessonPlan({
                                   }}
                                 ></span>
                                 
-                                {/* Individual add button for success criterion */}
+                                {/* Individual add buttons for success criterion */}
                                 {onAddToTeaching && (
-                                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAddToTeaching("objective", {
-                                          title: "Success Criterion",
-                                          content: `• ${criteria}`,
-                                        });
-                                      }}
-                                      className="text-xs h-7"
-                                    >
-                                      <Plus className="h-3 w-3 mr-1" />
-                                      Add to Teaching
-                                    </Button>
+                                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onAddToTeaching("objective", {
+                                                title: "Success Criteria",
+                                                content: `• ${criteria}`,
+                                                addToCard: "success_criteria"
+                                              });
+                                            }}
+                                            className="text-xs h-7"
+                                          >
+                                            <Plus className="h-3 w-3 mr-1" />
+                                            Add to Criteria Card
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          Add to group success criteria card
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onAddToTeaching("objective", {
+                                                title: "Success Criterion",
+                                                content: `• ${criteria}`,
+                                                addToCard: "separate"
+                                              });
+                                            }}
+                                            className="text-xs h-7"
+                                          >
+                                            <Plus className="h-3 w-3 mr-1" />
+                                            Create Separate Card
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          Create a separate card for this criterion
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </div>
                                 )}
                               </div>
@@ -334,7 +406,7 @@ export function LessonPlan({
                     .map((material, index) => (
                       <li
                         key={index}
-                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group"
+                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group relative"
                       >
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1">
@@ -347,22 +419,58 @@ export function LessonPlan({
                           
                           {/* Individual add button for material */}
                           {onAddToTeaching && (
-                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onAddToTeaching("material", {
-                                    title: "Material",
-                                    content: `• ${material}`,
-                                  });
-                                }}
-                                className="text-xs h-7"
-                              >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Add to Teaching
-                              </Button>
+                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToTeaching("material", {
+                                          title: "Required Materials",
+                                          content: `• ${material}`,
+                                          addToCard: "materials"
+                                        });
+                                      }}
+                                      className="text-xs h-7"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add to Materials Card
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Add to group materials card
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToTeaching("material", {
+                                          title: "Material",
+                                          content: `• ${material}`,
+                                          addToCard: "separate"
+                                        });
+                                      }}
+                                      className="text-xs h-7"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Create Separate Card
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Create a separate card for this material
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
                           )}
                         </div>
@@ -573,3 +681,5 @@ export function LessonPlan({
     </Card>
   );
 }
+
+import { CheckSquare } from 'lucide-react';
