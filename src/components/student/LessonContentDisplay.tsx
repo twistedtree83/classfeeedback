@@ -32,6 +32,14 @@ export function LessonContentDisplay({
   onToggleDifferentiatedView,
   onGenerateDifferentiated
 }: LessonContentDisplayProps) {
+  // For debugging
+  console.log("LessonContentDisplay props:", {
+    title,
+    hasExtension: !!extensionActivity,
+    showExtension: showExtensionActivity,
+    extensionContent: extensionActivity?.substring(0, 50) + "..."
+  });
+  
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
       {/* Card Header */}

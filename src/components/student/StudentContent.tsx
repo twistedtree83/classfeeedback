@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { MessagePanel } from "../MessagePanel";
 import { StudentHeader } from "./StudentHeader";
 import { LessonContentDisplay } from "./LessonContentDisplay";
-import { StudentInteractionPanel } from "./StudentInteractionPanel";
+import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
 import { WaitingRoom } from "./WaitingRoom";
 import { CheckCircle2 } from "lucide-react";
 import type { LessonCard, TeacherMessage, CardAttachment } from "@/lib/types";
 import type { LessonPresentation } from "@/lib/supabase/presentations";
-import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
 
 interface StudentContentProps {
   studentName: string;
@@ -25,12 +24,16 @@ interface StudentContentProps {
   lessonStarted: boolean;
   currentFeedback: string | null;
   isSending: boolean;
+  extensionRequested: boolean;
+  extensionPending: boolean;
+  extensionApproved: boolean;
   presentation?: LessonPresentation | null;
   onToggleMessagePanel: () => void;
   onToggleDifferentiatedView: () => void;
   onGenerateDifferentiated: () => Promise<void>;
   onSendFeedback: (type: string) => Promise<void>;
   onSendQuestion: (question: string) => Promise<boolean>;
+  onRequestExtension: () => Promise<void>;
 }
 
 export function StudentContent({
@@ -49,51 +52,37 @@ export function StudentContent({
   lessonStarted,
   currentFeedback,
   isSending,
+  extensionRequested,
+  extensionPending,
+  extensionApproved,
   presentation,
   onToggleMessagePanel,
   onToggleDifferentiatedView,
   onGenerateDifferentiated,
   onSendFeedback,
   onSendQuestion,
+  onRequestExtension,
 }: StudentContentProps) {
-  const [extensionRequested, setExtensionRequested] = useState(false);
-  const [extensionPending, setExtensionPending] = useState(false);
-  const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
   
   // Check if current card has an extension activity
   useEffect(() => {
     if (currentCard) {
-      setHasExtensionActivity(!!currentCard.extensionActivity);
-      // Reset extension states when changing cards
-      setExtensionRequested(false);
-      setExtensionPending(false);
-      setExtensionApproved(false);
+      const hasExtension = !!currentCard.extensionActivity;
+      console.log(`Current card has extension: ${hasExtension}`);
+      setHasExtensionActivity(hasExtension);
     } else {
+      console.log("No current card");
       setHasExtensionActivity(false);
     }
   }, [currentCard]);
-
-  // Handle extension activity request
-  const handleExtensionRequest = () => {
-    setExtensionRequested(true);
-    setExtensionPending(true);
-    
-    // In a real implementation, we would send a request to the backend
-    // For now, we'll simulate a pending state that would wait for teacher approval
-    
-    // Mock API call to request extension
-    console.log(`Student ${studentName} requested extension activity for card index ${presentation?.current_card_index}`);
-    
-    // For demonstration purposes, after 5 seconds we'll simulate the teacher approving the request
-    // In a real implementation, this would happen through a real-time subscription
-    setTimeout(() => {
-      if (extensionRequested) {
-        setExtensionPending(false);
-        setExtensionApproved(true);
-      }
-    }, 5000);
-  };
+  
+  console.log("StudentContent state:", {
+    extensionRequested,
+    extensionPending,
+    extensionApproved,
+    hasExtensionActivity
+  });
 
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
@@ -167,8 +156,8 @@ export function StudentContent({
             studentName={studentName}
             currentCardIndex={presentation?.current_card_index || 0}
             onFeedbackSubmitted={onSendFeedback}
-            onQuestionSubmitted={() => onSendQuestion("Sample question")}
-            onExtensionRequested={handleExtensionRequest}
+            onQuestionSubmitted={onSendQuestion}
+            onExtensionRequested={onRequestExtension}
             showExtensionButton={currentCard.type === 'activity' && hasExtensionActivity && !extensionRequested}
             extensionRequested={extensionRequested}
             extensionPending={extensionPending}
