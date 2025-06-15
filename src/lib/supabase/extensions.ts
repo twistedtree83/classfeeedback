@@ -132,6 +132,9 @@ export const subscribeToExtensionRequests = (
 ) => {
   const channelName = `extension_requests:${presentationId}`;
   
+  // Add console log to confirm subscription is being created
+  console.log("Subscribing to extension requests channel:", channelName);
+  
   const subscription = supabase
     .channel(channelName)
     .on(
