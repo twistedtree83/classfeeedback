@@ -5,7 +5,6 @@ import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } fr
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
-  submitExtensionRequest,
 } from "../../lib/supabase";
 
 interface StudentFeedbackPanelProps {
@@ -41,6 +40,16 @@ export function StudentFeedbackPanel({
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [requestingExtension, setRequestingExtension] = useState(false);
+
+  // Debug log
+  useEffect(() => {
+    console.log("StudentFeedbackPanel props:", {
+      showExtensionButton,
+      extensionRequested,
+      extensionPending,
+      extensionApproved
+    });
+  }, [showExtensionButton, extensionRequested, extensionPending, extensionApproved]);
 
   // Reset state when moving to a new card
   useEffect(() => {
@@ -87,8 +96,10 @@ export function StudentFeedbackPanel({
     let success = false;
     
     if (onQuestionSubmitted) {
+      // Use the callback from props
       success = await onQuestionSubmitted(question.trim());
     } else {
+      // Fallback to direct submission
       success = await submitTeachingQuestion(
         presentationId,
         studentName,
@@ -119,22 +130,9 @@ export function StudentFeedbackPanel({
         cardIndex: currentCardIndex
       });
       
-      // Submit the extension request to the database
-      const result = await submitExtensionRequest(
-        presentationId,
-        studentName,
-        currentCardIndex
-      );
-      
-      console.log("Extension request result:", result);
-      
-      if (result) {
-        // Call the parent handler if provided
-        if (onExtensionRequested) {
-          onExtensionRequested();
-        }
-      } else {
-        console.error("Failed to submit extension request");
+      // Call the callback if provided
+      if (onExtensionRequested) {
+        await onExtensionRequested();
       }
     } catch (error) {
       console.error("Error requesting extension:", error);
@@ -228,7 +226,7 @@ export function StudentFeedbackPanel({
           </div>
         )}
 
-        {extensionRequested && !extensionApproved && (
+        {extensionRequested && extensionPending && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2 text-yellow-700">
               <Clock className="h-4 w-4" />

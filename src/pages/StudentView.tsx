@@ -151,7 +151,6 @@ export function StudentView() {
         currentCard={content.currentCard}
         currentCardAttachments={content.currentCardAttachments}
         messages={content.messages}
-        newMessage={content.newMessage || null}
         newMessageCount={content.newMessageCount}
         showMessagePanel={content.showMessagePanel}
         viewingDifferentiated={content.viewingDifferentiated}
@@ -160,11 +159,15 @@ export function StudentView() {
         lessonStarted={content.lessonStarted}
         currentFeedback={content.currentFeedback}
         isSending={content.isSending}
+        extensionRequested={content.extensionRequested}
+        extensionPending={content.extensionPending}
+        extensionApproved={content.extensionApproved}
         onToggleMessagePanel={content.toggleMessagePanel}
         onToggleDifferentiatedView={content.handleToggleDifferentiatedView}
         onGenerateDifferentiated={content.handleGenerateDifferentiated}
         onSendFeedback={content.sendFeedback}
         onSendQuestion={content.sendQuestion}
+        onRequestExtension={content.handleExtensionRequest}
         presentation={content.presentation}
       />
     );
