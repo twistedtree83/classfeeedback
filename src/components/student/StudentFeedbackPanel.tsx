@@ -202,7 +202,7 @@ export function StudentFeedbackPanel({
           <div className="mt-4 pt-4 border-t border-gray-200">
             <Button
               onClick={handleRequestExtension}
-              disabled={requestingExtension}
+              disabled={requestingExtension || extensionRequested}
               className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
             >
               {requestingExtension ? (

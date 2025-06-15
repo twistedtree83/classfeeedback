@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MessagePanel } from "../MessagePanel";
 import { StudentHeader } from "./StudentHeader";
 import { LessonContentDisplay } from "./LessonContentDisplay";
@@ -61,6 +61,7 @@ export function StudentContent({
   const [extensionPending, setExtensionPending] = useState(false);
   const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   
   // Check if current card has an extension activity
   useEffect(() => {
@@ -102,7 +103,64 @@ export function StudentContent({
     }
   }, [currentCard, presentation?.id, presentation?.current_card_index, studentName]);
 
-  // Handle extension activity request
+  // Scroll to top when card changes
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+    // Reset differentiated view when card changes
+    setViewingDifferentiated(false);
+  }, [presentation?.current_card_index]);
+
+  // Reset message count when panel is opened
+  useEffect(() => {
+    if (showMessagePanel) {
+      setNewMessageCount(0);
+    }
+  }, [showMessagePanel]);
+
+  // Effect to update new message count and handle message display
+  useEffect(() => {
+    if (newMessage && !showMessagePanel) {
+      setNewMessageCount(prev => prev + 1);
+    }
+  }, [newMessage, showMessagePanel]);
+
+  const handleToggleDifferentiatedView = () => {
+    setViewingDifferentiated(!viewingDifferentiated);
+  };
+  
+  const handleGenerateDifferentiated = async () => {
+    if (!currentCard || generatingDifferentiated) return false;
+    
+    try {
+      // Create a differentiated version of the current card
+      const differentiatedContent = await generateDifferentiated(
+        currentCard.content,
+        currentCard.type
+      );
+      
+      // Update the card with differentiated content
+      if (presentation && currentCard && differentiatedContent) {
+        const updatedCards = [...presentation.cards];
+        const cardIndex = presentation.current_card_index;
+        
+        updatedCards[cardIndex] = {
+          ...updatedCards[cardIndex],
+          differentiatedContent
+        };
+        
+        // Switch to differentiated view
+        setViewingDifferentiated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error generating differentiated content:', error);
+      return false;
+    }
+  };
+
   const handleExtensionRequest = async () => {
     if (!presentation?.id || presentation.current_card_index === undefined) {
       console.error('Cannot request extension - presentation data missing');
@@ -128,39 +186,21 @@ export function StudentContent({
       
       console.log('Extension request submitted successfully:', result);
       
-      // In a production implementation, we would set up a real-time subscription
-      // For now, we'll poll for status changes every 5 seconds
-      const checkInterval = setInterval(async () => {
-        try {
-          const status = await getStudentExtensionRequestStatus(
-            presentation.id,
-            studentName,
-            presentation.current_card_index
-          );
-          
-          console.log('Extension request status:', status);
-          
-          if (status === 'approved') {
-            clearInterval(checkInterval);
-            setExtensionPending(false);
-            setExtensionApproved(true);
-          } else if (status === 'rejected') {
-            clearInterval(checkInterval);
-            setExtensionRequested(false);
-            setExtensionPending(false);
-            setExtensionApproved(false);
-          }
-        } catch (error) {
-          console.error('Error checking extension request status:', error);
-        }
-      }, 5000);
+      if (onExtensionRequested) {
+        onExtensionRequested();
+      }
       
-      // Clean up interval on component unmount
-      return () => clearInterval(checkInterval);
     } catch (error) {
       console.error('Error requesting extension activity:', error);
       setExtensionRequested(false);
       setExtensionPending(false);
+    }
+  };
+
+  const toggleMessagePanel = () => {
+    setShowMessagePanel(prev => !prev);
+    if (!showMessagePanel) {
+      setNewMessageCount(0);
     }
   };
 

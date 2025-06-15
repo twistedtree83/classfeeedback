@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight, Play, Paperclip, UserCheck, UserX, Sparkles, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play, Paperclip, UserCheck, UserX, Sparkles, Clock, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { sanitizeHtml } from '../../lib/utils';
 import type { LessonCard, SessionParticipant, ExtensionRequest } from '../../lib/types';
@@ -204,7 +204,7 @@ export function TeachingContentArea({
                       className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       {processingExtensionIds.has(request.id) ? (
-                        <Clock className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                       ) : (
                         <Sparkles className="h-4 w-4 mr-1" />
                       )}

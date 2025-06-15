@@ -22,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   addToLearningIntentionsCard, 
-  addToSuccessCriteriaCard 
+  addToSuccessCriteriaCard,
+  createSingleObjectiveCard,
+  createSingleSuccessCriterionCard
 } from "@/lib/cardFactory";
 
 export function LessonDetails() {
@@ -97,16 +99,55 @@ export function LessonDetails() {
       | "topic_background",
     data: any
   ) => {
-    // Check if we need to add to an existing card
+    // Check if we need to add to an existing card or create a single-item card
     if (data.addToCard === "learning_intentions") {
       // Add to a group learning intentions card
       const updatedCards = addToLearningIntentionsCard(selectedCards, data.content.replace('• ', ''));
       setSelectedCards(updatedCards);
+      
+      toast({
+        title: "Added to Learning Intentions",
+        description: "The learning intention was added to the group card"
+      });
       return;
     } else if (data.addToCard === "success_criteria") {
       // Add to a group success criteria card
       const updatedCards = addToSuccessCriteriaCard(selectedCards, data.content.replace('• ', ''));
       setSelectedCards(updatedCards);
+      
+      toast({
+        title: "Added to Success Criteria",
+        description: "The success criterion was added to the group card"
+      });
+      return;
+    } else if (data.addToCard === "separate" && cardType === "objective") {
+      // Create a separate card for this specific objective or criterion
+      let newCard;
+      
+      if (data.title === "Learning Intention") {
+        newCard = createSingleObjectiveCard(data.content.replace('• ', ''));
+      } else if (data.title === "Success Criterion") {
+        newCard = createSingleSuccessCriterionCard(data.content.replace('• ', ''));
+      } else {
+        // Fallback to default objective card
+        newCard = {
+          id: crypto.randomUUID(),
+          type: cardType,
+          title: data.title || `New ${cardType} Card`,
+          content: data.content || "",
+          duration: data.duration || null,
+          sectionId: data.sectionId || null,
+          activityIndex: data.activityIndex !== undefined ? data.activityIndex : null,
+          attachments: [],
+        };
+      }
+      
+      setSelectedCards(prev => [...prev, newCard]);
+      
+      toast({
+        title: "Added as Separate Card",
+        description: `Created a new card for this ${data.title.toLowerCase()}`
+      });
       return;
     } else if (data.addToCard === "materials") {
       // Find existing materials card
@@ -126,6 +167,11 @@ export function LessonDetails() {
             content: card.content + `\n${data.content}`
           };
           setSelectedCards(updatedCards);
+          
+          toast({
+            title: "Added to Materials",
+            description: "The material was added to the group card"
+          });
         }
         return;
       }
@@ -142,8 +188,7 @@ export function LessonDetails() {
       content: data.content || "",
       duration: data.duration || null,
       sectionId: data.sectionId || null,
-      activityIndex:
-        data.activityIndex !== undefined ? data.activityIndex : null,
+      activityIndex: data.activityIndex !== undefined ? data.activityIndex : null,
       attachments: [],
     };
 
