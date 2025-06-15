@@ -8,7 +8,7 @@ export const submitExtensionRequest = async (
   cardIndex: number
 ): Promise<ExtensionRequest | null> => {
   try {
-    console.log('Submitting extension request:', {
+    console.log('[Extensions] Submitting extension request:', {
       presentation_id: presentationId,
       student_name: studentName,
       card_index: cardIndex,
@@ -27,14 +27,14 @@ export const submitExtensionRequest = async (
       .single();
 
     if (error) {
-      console.error('Error submitting extension request:', error);
+      console.error('[Extensions] Error submitting extension request:', error);
       return null;
     }
 
-    console.log('Extension request submitted successfully:', data);
+    console.log('[Extensions] Request submitted successfully:', data);
     return data;
   } catch (err) {
-    console.error('Exception submitting extension request:', err);
+    console.error('[Extensions] Exception submitting extension request:', err);
     return null;
   }
 };
@@ -44,21 +44,22 @@ export const approveExtensionRequest = async (
   requestId: string
 ): Promise<boolean> => {
   try {
-    console.log('Approving extension request:', requestId);
+    console.log('[Extensions] Approving extension request:', requestId);
+    
     const { error } = await supabase
       .from('extension_requests')
       .update({ status: 'approved' })
       .eq('id', requestId);
 
     if (error) {
-      console.error('Error approving extension request:', error);
+      console.error('[Extensions] Error approving extension request:', error);
       return false;
     }
 
-    console.log('Extension request approved successfully');
+    console.log('[Extensions] Request approved successfully');
     return true;
   } catch (err) {
-    console.error('Exception approving extension request:', err);
+    console.error('[Extensions] Exception approving extension request:', err);
     return false;
   }
 };
@@ -68,21 +69,22 @@ export const rejectExtensionRequest = async (
   requestId: string
 ): Promise<boolean> => {
   try {
-    console.log('Rejecting extension request:', requestId);
+    console.log('[Extensions] Rejecting extension request:', requestId);
+    
     const { error } = await supabase
       .from('extension_requests')
       .update({ status: 'rejected' })
       .eq('id', requestId);
 
     if (error) {
-      console.error('Error rejecting extension request:', error);
+      console.error('[Extensions] Error rejecting extension request:', error);
       return false;
     }
 
-    console.log('Extension request rejected successfully');
+    console.log('[Extensions] Request rejected successfully');
     return true;
   } catch (err) {
-    console.error('Exception rejecting extension request:', err);
+    console.error('[Extensions] Exception rejecting extension request:', err);
     return false;
   }
 };
@@ -92,7 +94,8 @@ export const getExtensionRequestsForPresentation = async (
   presentationId: string
 ): Promise<ExtensionRequest[]> => {
   try {
-    console.log('Getting extension requests for presentation:', presentationId);
+    console.log('[Extensions] Getting all extension requests for presentation:', presentationId);
+    
     const { data, error } = await supabase
       .from('extension_requests')
       .select('*')
@@ -100,14 +103,14 @@ export const getExtensionRequestsForPresentation = async (
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error getting extension requests:', error);
+      console.error('[Extensions] Error getting extension requests:', error);
       return [];
     }
 
-    console.log('Retrieved extension requests:', data);
+    console.log(`[Extensions] Retrieved ${data?.length || 0} extension requests`);
     return data || [];
   } catch (err) {
-    console.error('Exception getting extension requests:', err);
+    console.error('[Extensions] Exception getting extension requests:', err);
     return [];
   }
 };
@@ -119,7 +122,7 @@ export const getStudentExtensionRequestStatus = async (
   cardIndex: number
 ): Promise<'pending' | 'approved' | 'rejected' | null> => {
   try {
-    console.log('Checking extension request status for:', {
+    console.log('[Extensions] Checking request status for:', {
       presentationId,
       studentName,
       cardIndex
@@ -134,62 +137,79 @@ export const getStudentExtensionRequestStatus = async (
       .maybeSingle();
 
     if (error) {
-      console.error('Error checking extension request status:', error);
+      console.error('[Extensions] Error checking extension request status:', error);
       return null;
     }
 
-    console.log('Extension request status:', data?.status || null);
+    console.log('[Extensions] Request status result:', data?.status || null);
     return data?.status || null;
   } catch (err) {
-    console.error('Exception checking extension request status:', err);
+    console.error('[Extensions] Exception checking extension request status:', err);
     return null;
   }
 };
 
-// Subscribe to extension request updates - FIXED IMPLEMENTATION
+// Completely rewritten subscription function for extension requests
 export const subscribeToExtensionRequests = (
   presentationId: string,
   callback: (request: ExtensionRequest) => void
 ) => {
-  // Generate a more unique channel name
-  const channelName = `extension_requests_${presentationId}_${Date.now()}`;
+  // Create unique channel name
+  const timestamp = Date.now();
+  const channelName = `extension_requests_${presentationId}_${timestamp}`;
   
-  // Comprehensive logging to diagnose subscription issues
-  console.log(`[Extension] Creating subscription on channel: ${channelName}`);
-  console.log(`[Extension] For presentation ID: ${presentationId}`);
-
-  // Create and configure the subscription
-  const subscription = supabase
-    .channel(channelName)
-    .on(
-      'postgres_changes',
-      {
-        event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-        schema: 'public',
-        table: 'extension_requests',
-        filter: `presentation_id=eq.${presentationId}`
-      },
-      (payload) => {
-        console.log('[Extension] Received event:', payload.eventType);
-        console.log('[Extension] Payload:', payload);
-        
-        if (payload.new) {
-          // Ensure we have a properly typed object
-          const request = payload.new as ExtensionRequest;
-          console.log('[Extension] Processing request:', request);
-          callback(request);
-        }
+  console.log(`[Extensions] Creating subscription on channel: ${channelName}`);
+  console.log(`[Extensions] For presentation ID: ${presentationId}`);
+  
+  const channel = supabase.channel(channelName);
+  
+  // Listen for INSERT events
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'extension_requests',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Extensions] Received INSERT event:', payload);
+      if (payload.new) {
+        const request = payload.new as ExtensionRequest;
+        console.log('[Extensions] Processing insert request:', request);
+        callback(request);
       }
-    )
-    .subscribe((status, err) => {
-      // Log subscription status for debugging
-      console.log(`[Extension] Subscription status: ${status}`);
-      if (err) {
-        console.error('[Extension] Subscription error:', err);
-      } else {
-        console.log('[Extension] Subscription successfully established');
+    }
+  );
+  
+  // Listen for UPDATE events
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'extension_requests',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Extensions] Received UPDATE event:', payload);
+      if (payload.new) {
+        const request = payload.new as ExtensionRequest;
+        console.log('[Extensions] Processing update request:', request);
+        callback(request);
       }
-    });
-
-  return subscription;
+    }
+  );
+  
+  // Subscribe and log status
+  const subscription = channel.subscribe((status, err) => {
+    console.log(`[Extensions] Subscription status: ${status}`);
+    if (err) {
+      console.error('[Extensions] Subscription error:', err);
+    } else {
+      console.log('[Extensions] Subscription successfully established');
+    }
+  });
+  
+  return { unsubscribe: () => subscription.unsubscribe() };
 };

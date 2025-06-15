@@ -99,56 +99,26 @@ export const submitTeachingFeedback = async (
       card_index: cardIndex
     });
     
-    // First, check if a record already exists
-    let existingQuery = supabase
+    // Build the insert object
+    const insertData = {
+      presentation_id: presentationId,
+      student_name: studentName,
+      feedback_type: feedbackType,
+      content: content,
+      card_index: cardIndex !== undefined ? cardIndex : null
+    };
+    
+    // Insert data without using ON CONFLICT, just a simple insert
+    const { error } = await supabase
       .from('teaching_feedback')
-      .select('id')
-      .eq('presentation_id', presentationId)
-      .eq('student_name', studentName);
+      .insert(insertData);
     
-    if (cardIndex !== undefined) {
-      existingQuery = existingQuery.eq('card_index', cardIndex);
-    } else {
-      existingQuery = existingQuery.is('card_index', null);
-    }
-    
-    const { data: existing, error: selectError } = await existingQuery.maybeSingle();
-    
-    if (selectError && selectError.code !== 'PGRST116') {
-      console.error('Error checking existing teaching feedback:', selectError);
-      return false;
-    }
-    
-    let result;
-    
-    if (existing) {
-      // Update existing record
-      result = await supabase
-        .from('teaching_feedback')
-        .update({
-          feedback_type: feedbackType,
-          content: content,
-        })
-        .eq('id', existing.id);
-    } else {
-      // Insert new record
-      result = await supabase
-        .from('teaching_feedback')
-        .insert({
-          presentation_id: presentationId,
-          student_name: studentName,
-          feedback_type: feedbackType,
-          content: content,
-          card_index: cardIndex !== undefined ? cardIndex : null
-        });
-    }
-
-    if (result.error) {
-      console.error('Error submitting teaching feedback:', result.error);
+    if (error) {
+      console.error('Error submitting teaching feedback:', error);
       return false;
     }
 
-    console.log('Teaching feedback submitted successfully:', result.data);
+    console.log('Teaching feedback submitted successfully');
     return true;
   } catch (err) {
     console.error('Exception submitting teaching feedback:', err);
@@ -185,105 +155,82 @@ export const getTeachingFeedbackForPresentation = async (
   }
 };
 
-// Subscribe to teaching feedback updates - FIXED FILTER IMPLEMENTATION
+// Subscribe to teaching feedback updates - Completely revised implementation
 export const subscribeToTeachingFeedback = (
   presentationId: string,
   callback: (feedback: TeachingFeedbackRow) => void,
   cardIndex?: number
 ) => {
-  // Create a unique channel name with timestamp to avoid conflicts
+  // Generate a unique channel name to avoid conflicts
   const timestamp = Date.now();
-  const channelName = `teaching_feedback_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}_${timestamp}`;
+  const channelName = `teaching_feedback_${presentationId}_${timestamp}`;
   
-  console.log(`Setting up teaching feedback subscription on channel: ${channelName}`);
-  console.log(`Parameters: presentationId=${presentationId}, cardIndex=${cardIndex}`);
+  console.log(`[Feedback] Setting up subscription on channel: ${channelName}`);
+  console.log(`[Feedback] For presentationId: ${presentationId}, cardIndex: ${cardIndex}`);
   
-  // Create the filter configuration correctly
-  let filterConfig = {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'teaching_feedback',
-    filter: `presentation_id=eq.${presentationId}`
-  };
+  const channel = supabase.channel(channelName);
   
-  // Add card index as a separate filter if provided
-  if (cardIndex !== undefined) {
-    // Create a different channel for filters with card index
-    const subscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'teaching_feedback',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("New teaching feedback event received:", payload);
-          // Only process if it matches our card index
-          if (payload.new && payload.new.card_index === cardIndex) {
-            callback(payload.new as TeachingFeedbackRow);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'teaching_feedback',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("Updated teaching feedback event received:", payload);
-          // Only process if it matches our card index
-          if (payload.new && payload.new.card_index === cardIndex) {
-            callback(payload.new as TeachingFeedbackRow);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Teaching feedback subscription status: ${status}`);
-      });
-
-    return subscription;
-  } else {
-    // For subscriptions without card index filter
-    const subscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'teaching_feedback',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("New teaching feedback:", payload);
+  // First, listen for inserts with just the presentation_id filter
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'teaching_feedback',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Feedback] Received INSERT event:', payload);
+      
+      // If cardIndex is specified, check if it matches
+      if (cardIndex !== undefined) {
+        if (payload.new && payload.new.card_index === cardIndex) {
           callback(payload.new as TeachingFeedbackRow);
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'teaching_feedback',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("Updated teaching feedback:", payload);
+      } else {
+        if (payload.new) {
           callback(payload.new as TeachingFeedbackRow);
         }
-      )
-      .subscribe((status) => {
-        console.log(`Teaching feedback subscription status: ${status}`);
-      });
-
-    return subscription;
-  }
+      }
+    }
+  );
+  
+  // Then listen for updates
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'teaching_feedback',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Feedback] Received UPDATE event:', payload);
+      
+      // If cardIndex is specified, check if it matches
+      if (cardIndex !== undefined) {
+        if (payload.new && payload.new.card_index === cardIndex) {
+          callback(payload.new as TeachingFeedbackRow);
+        }
+      } else {
+        if (payload.new) {
+          callback(payload.new as TeachingFeedbackRow);
+        }
+      }
+    }
+  );
+  
+  // Subscribe and log the result
+  const subscription = channel.subscribe((status, err) => {
+    console.log(`[Feedback] Subscription status: ${status}`);
+    if (err) {
+      console.error('[Feedback] Subscription error:', err);
+    } else {
+      console.log('[Feedback] Subscription successfully established');
+    }
+  });
+  
+  return { unsubscribe: () => subscription.unsubscribe() };
 };
 
 // Get feedback for a specific card by student name

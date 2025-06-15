@@ -27,6 +27,7 @@ export const submitTeachingQuestion = async (
       return false;
     }
 
+    console.log("Teaching question submitted successfully");
     return true;
   } catch (err) {
     console.error("Exception submitting teaching question:", err);
@@ -38,6 +39,8 @@ export const markQuestionAsAnswered = async (
   questionId: string
 ): Promise<boolean> => {
   try {
+    console.log('Marking question as answered:', questionId);
+    
     const { error } = await supabase
       .from("teaching_questions")
       .update({ answered: true })
@@ -48,6 +51,7 @@ export const markQuestionAsAnswered = async (
       return false;
     }
 
+    console.log("Question marked as answered successfully");
     return true;
   } catch (err) {
     console.error("Exception marking question as answered:", err);
@@ -59,6 +63,8 @@ export const getTeachingQuestionsForPresentation = async (
   presentationId: string
 ): Promise<any[]> => {
   try {
+    console.log('Getting teaching questions for presentation:', presentationId);
+    
     const { data, error } = await supabase
       .from("teaching_questions")
       .select("*")
@@ -70,6 +76,7 @@ export const getTeachingQuestionsForPresentation = async (
       return [];
     }
 
+    console.log(`Retrieved ${data?.length || 0} teaching questions`);
     return data || [];
   } catch (err) {
     console.error("Exception fetching teaching questions:", err);
@@ -77,94 +84,80 @@ export const getTeachingQuestionsForPresentation = async (
   }
 };
 
-// FIXED IMPLEMENTATION - correct handling of cardIndex filter
+// Completely rewritten implementation that avoids filter string problems
 export const subscribeToTeachingQuestions = (
   presentationId: string,
   callback: (question: any) => void,
   cardIndex?: number
 ) => {
-  // Create a unique channel name with timestamp to avoid conflicts
+  // Generate unique channel name
   const timestamp = Date.now();
-  const channelName = `teaching_questions_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}_${timestamp}`;
+  const channelName = `teaching_questions_${presentationId}_${timestamp}`;
   
-  console.log(`Setting up teaching questions subscription on channel: ${channelName}`);
-  console.log(`Parameters: presentationId=${presentationId}, cardIndex=${cardIndex}`);
+  console.log(`[Questions] Setting up subscription on channel: ${channelName}`);
+  console.log(`[Questions] For presentationId: ${presentationId}, cardIndex: ${cardIndex}`);
   
-  if (cardIndex !== undefined) {
-    // For subscriptions with card index filter - handle in callback
-    const subscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'teaching_questions',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("New teaching question event received:", payload);
-          // Only process if it matches our card index
-          if (payload.new && payload.new.card_index === cardIndex) {
-            callback(payload.new);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'teaching_questions',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("Updated teaching question event received:", payload);
-          // Only process if it matches our card index
-          if (payload.new && payload.new.card_index === cardIndex) {
-            callback(payload.new);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Teaching questions subscription status: ${status}`);
-      });
-
-    return subscription;
-  } else {
-    // For subscriptions without card index filter
-    const subscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'teaching_questions',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("New teaching question:", payload);
+  const channel = supabase.channel(channelName);
+  
+  // Listen for INSERT events with only presentation_id filter
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'teaching_questions',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Questions] Received INSERT event:', payload);
+      
+      // If cardIndex is specified, filter in the callback
+      if (cardIndex !== undefined) {
+        if (payload.new && payload.new.card_index === cardIndex) {
           callback(payload.new);
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'teaching_questions',
-          filter: `presentation_id=eq.${presentationId}`
-        },
-        (payload) => {
-          console.log("Updated teaching question:", payload);
+      } else {
+        if (payload.new) {
           callback(payload.new);
         }
-      )
-      .subscribe((status) => {
-        console.log(`Teaching questions subscription status: ${status}`);
-      });
-
-    return subscription;
-  }
+      }
+    }
+  );
+  
+  // Listen for UPDATE events with only presentation_id filter
+  channel.on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'teaching_questions',
+      filter: `presentation_id=eq.${presentationId}`
+    },
+    (payload) => {
+      console.log('[Questions] Received UPDATE event:', payload);
+      
+      // If cardIndex is specified, filter in the callback
+      if (cardIndex !== undefined) {
+        if (payload.new && payload.new.card_index === cardIndex) {
+          callback(payload.new);
+        }
+      } else {
+        if (payload.new) {
+          callback(payload.new);
+        }
+      }
+    }
+  );
+  
+  // Subscribe and log status
+  const subscription = channel.subscribe((status, err) => {
+    console.log(`[Questions] Subscription status: ${status}`);
+    if (err) {
+      console.error('[Questions] Subscription error:', err);
+    } else {
+      console.log('[Questions] Subscription successfully established');
+    }
+  });
+  
+  return { unsubscribe: () => subscription.unsubscribe() };
 };

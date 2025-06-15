@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } fr
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
+  submitExtensionRequest
 } from "../../lib/supabase";
 
 interface StudentFeedbackPanelProps {
@@ -57,7 +58,7 @@ export function StudentFeedbackPanel({
     setError(null);
     
     try {
-      console.log('Submitting feedback:', {
+      console.log('[Student] Submitting feedback:', {
         presentationId, 
         studentName, 
         type, 
@@ -88,7 +89,7 @@ export function StudentFeedbackPanel({
         setFeedbackCooldown(false);
       }
     } catch (err) {
-      console.error('Error submitting feedback:', err);
+      console.error('[Student] Error submitting feedback:', err);
       setError("An error occurred. Please try again.");
       setFeedbackCooldown(false);
     }
@@ -102,7 +103,7 @@ export function StudentFeedbackPanel({
     setError(null);
     
     try {
-      console.log("Submitting question:", {
+      console.log("[Student] Submitting question:", {
         presentationId,
         studentName,
         question: question.trim(),
@@ -117,14 +118,14 @@ export function StudentFeedbackPanel({
       );
 
       if (success) {
-        console.log("Question submitted successfully");
+        console.log("[Student] Question submitted successfully");
         setQuestion("");
         onQuestionSubmitted?.();
       } else {
         setError("Failed to submit question. Please try again.");
       }
     } catch (err) {
-      console.error("Failed to submit question:", err);
+      console.error("[Student] Failed to submit question:", err);
       setError("An error occurred while submitting your question.");
     } finally {
       setSubmittingQuestion(false);
@@ -138,17 +139,30 @@ export function StudentFeedbackPanel({
     setError(null);
     
     try {
-      console.log('Requesting extension activity:', {
+      console.log('[Student] Requesting extension activity:', {
         presentationId,
         studentName,
         currentCardIndex
       });
       
+      // Submit the actual extension request to the database
+      const result = await submitExtensionRequest(
+        presentationId,
+        studentName,
+        currentCardIndex
+      );
+      
+      if (!result) {
+        throw new Error('Failed to submit extension request');
+      }
+      
+      console.log('[Student] Extension request submitted successfully:', result);
+      
       if (onExtensionRequested) {
         onExtensionRequested();
       }
     } catch (error) {
-      console.error("Error requesting extension:", error);
+      console.error("[Student] Error requesting extension:", error);
       setError("Failed to request extension activity. Please try again.");
     } finally {
       setRequestingExtension(false);
