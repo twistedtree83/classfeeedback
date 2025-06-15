@@ -233,15 +233,11 @@ export function useTeacherFeedbackAndQuestions(
   
   // Pending extension requests count
   const pendingExtensionCount = extensionRequests.filter(r => r.status === 'pending').length;
-  
-  // Get only pending extension requests for display
-  const pendingExtensionRequests = extensionRequests.filter(r => r.status === 'pending');
 
   return {
     feedback,
     questions,
     extensionRequests,
-    pendingExtensionRequests,
     feedbackCounts,
     newQuestionsCount,
     pendingExtensionCount,
@@ -253,6 +249,7 @@ export function useTeacherFeedbackAndQuestions(
     handleApproveExtension,
     handleRejectExtension,
     clearHasNewQuestions: () => setHasNewQuestions(false),
-    clearHasNewExtensionRequests: () => setHasNewExtensionRequests(false)
+    clearHasNewExtensionRequests: () => setHasNewExtensionRequests(false),
+    studentFeedbackMap: {} // This needs to be properly implemented
   };
 }

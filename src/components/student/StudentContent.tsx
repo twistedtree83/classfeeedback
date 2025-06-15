@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MessagePanel } from "../MessagePanel";
 import { StudentHeader } from "./StudentHeader";
 import { LessonContentDisplay } from "./LessonContentDisplay";
@@ -8,7 +8,6 @@ import { CheckCircle2 } from "lucide-react";
 import type { LessonCard, TeacherMessage, CardAttachment } from "@/lib/types";
 import type { LessonPresentation } from "@/lib/supabase/presentations";
 import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
-import { submitExtensionRequest, getStudentExtensionRequestStatus } from "@/lib/supabase";
 
 interface StudentContentProps {
   studentName: string;
@@ -18,7 +17,6 @@ interface StudentContentProps {
   currentCard: LessonCard | null;
   currentCardAttachments: CardAttachment[];
   messages: TeacherMessage[];
-  newMessage: TeacherMessage | null;
   newMessageCount: number;
   showMessagePanel: boolean;
   viewingDifferentiated: boolean;
@@ -43,7 +41,6 @@ export function StudentContent({
   currentCard,
   currentCardAttachments,
   messages,
-  newMessage,
   newMessageCount,
   showMessagePanel,
   viewingDifferentiated,
@@ -63,88 +60,39 @@ export function StudentContent({
   const [extensionPending, setExtensionPending] = useState(false);
   const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  // Ensure newMessage is properly handled
-  const safeNewMessage = newMessage || null;
   
   // Check if current card has an extension activity
   useEffect(() => {
     if (currentCard) {
       setHasExtensionActivity(!!currentCard.extensionActivity);
-      
-      // If we have a presentation, check for existing extension request status
-      if (presentation?.id && presentation.current_card_index !== undefined) {
-        getStudentExtensionRequestStatus(
-          presentation.id, 
-          studentName, 
-          presentation.current_card_index
-        ).then(status => {
-          if (status === 'pending') {
-            setExtensionRequested(true);
-            setExtensionPending(true);
-            setExtensionApproved(false);
-          } else if (status === 'approved') {
-            setExtensionRequested(true);
-            setExtensionPending(false);
-            setExtensionApproved(true);
-          } else {
-            // Reset states if no existing request or it was rejected
-            setExtensionRequested(false);
-            setExtensionPending(false);
-            setExtensionApproved(false);
-          }
-        }).catch(err => {
-          console.error('Error checking extension request status:', err);
-        });
-      } else {
-        // Reset extension states when changing cards
-        setExtensionRequested(false);
-        setExtensionPending(false);
-        setExtensionApproved(false);
-      }
+      // Reset extension states when changing cards
+      setExtensionRequested(false);
+      setExtensionPending(false);
+      setExtensionApproved(false);
     } else {
       setHasExtensionActivity(false);
     }
-  }, [currentCard, presentation?.id, presentation?.current_card_index, studentName]);
+  }, [currentCard]);
 
-  // Scroll to top when card changes
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
-    }
-  }, [presentation?.current_card_index]);
-
-  const handleExtensionRequest = async () => {
-    if (!presentation?.id || presentation.current_card_index === undefined) {
-      console.error('Cannot request extension - presentation data missing');
-      return;
-    }
-    
+  // Handle extension activity request
+  const handleExtensionRequest = () => {
     setExtensionRequested(true);
     setExtensionPending(true);
     
-    try {
-      console.log(`Student ${studentName} requesting extension activity for card index ${presentation.current_card_index}`);
-      
-      // Submit the extension request
-      const result = await submitExtensionRequest(
-        presentation.id,
-        studentName,
-        presentation.current_card_index
-      );
-      
-      if (!result) {
-        throw new Error('Failed to submit extension request');
+    // In a real implementation, we would send a request to the backend
+    // For now, we'll simulate a pending state that would wait for teacher approval
+    
+    // Mock API call to request extension
+    console.log(`Student ${studentName} requested extension activity for card index ${presentation?.current_card_index}`);
+    
+    // For demonstration purposes, after 5 seconds we'll simulate the teacher approving the request
+    // In a real implementation, this would happen through a real-time subscription
+    setTimeout(() => {
+      if (extensionRequested) {
+        setExtensionPending(false);
+        setExtensionApproved(true);
       }
-      
-      console.log('Extension request submitted successfully:', result);
-      
-    } catch (error) {
-      console.error('Error requesting extension activity:', error);
-      setExtensionRequested(false);
-      setExtensionPending(false);
-    }
+    }, 5000);
   };
 
   // Show waiting room when lesson hasn't started yet
@@ -170,6 +118,10 @@ export function StudentContent({
     return null;
   }
 
+  const hasDifferentiatedContent = currentCard?.differentiatedContent
+    ? true
+    : false;
+
   return (
     <div className="min-h-screen bg-teal/5 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10 py-3 px-4">
@@ -190,7 +142,7 @@ export function StudentContent({
         </div>
       )}
 
-      <main className="flex-1 flex" ref={contentRef}>
+      <main className="flex-1 flex">
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
           <LessonContentDisplay
             title={currentCard.title}
@@ -203,7 +155,7 @@ export function StudentContent({
             extensionActivity={currentCard.extensionActivity}
             showExtensionActivity={extensionApproved}
             attachments={currentCardAttachments}
-            hasDifferentiatedContent={!!currentCard.differentiatedContent}
+            hasDifferentiatedContent={hasDifferentiatedContent}
             viewingDifferentiated={viewingDifferentiated}
             generatingDifferentiated={generatingDifferentiated}
             onToggleDifferentiatedView={onToggleDifferentiatedView}

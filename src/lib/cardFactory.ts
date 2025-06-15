@@ -26,126 +26,6 @@ export function createObjectiveCard(
   };
 }
 
-// New function to create a card with a single learning intention
-export function createSingleObjectiveCard(
-  objective: string
-): LessonCard {
-  return {
-    id: crypto.randomUUID(),
-    type: "objective",
-    title: "Learning Intention",
-    content: `• ${objective}`,
-    duration: null,
-    sectionId: null,
-    activityIndex: null,
-    attachments: [],
-  };
-}
-
-// New function to create a card with a single success criterion
-export function createSingleSuccessCriterionCard(
-  criterion: string
-): LessonCard {
-  return {
-    id: crypto.randomUUID(),
-    type: "objective",
-    title: "Success Criterion",
-    content: `• ${criterion}`,
-    duration: null,
-    sectionId: null,
-    activityIndex: null,
-    attachments: [],
-  };
-}
-
-/**
- * Finds or creates a learning intentions card
- * @param cards Array of existing cards
- * @param objective New objective to add
- * @returns Updated array of cards with the objective added
- */
-export function addToLearningIntentionsCard(
-  cards: LessonCard[],
-  objective: string
-): LessonCard[] {
-  // Find existing learning intentions card
-  const intentionsCardIndex = cards.findIndex(
-    card => card.type === "objective" && card.title === "Learning Intentions"
-  );
-
-  if (intentionsCardIndex >= 0) {
-    // Add to existing card
-    const updatedCards = [...cards];
-    const card = updatedCards[intentionsCardIndex];
-    
-    // Check if this objective is already in the card
-    if (!card.content.includes(objective)) {
-      updatedCards[intentionsCardIndex] = {
-        ...card,
-        content: card.content + `\n• ${objective}`
-      };
-    }
-    
-    return updatedCards;
-  } else {
-    // Create a new card
-    return [...cards, {
-      id: crypto.randomUUID(),
-      type: "objective",
-      title: "Learning Intentions",
-      content: `• ${objective}`,
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: []
-    }];
-  }
-}
-
-/**
- * Finds or creates a success criteria card
- * @param cards Array of existing cards
- * @param criterion New criterion to add
- * @returns Updated array of cards with the criterion added
- */
-export function addToSuccessCriteriaCard(
-  cards: LessonCard[],
-  criterion: string
-): LessonCard[] {
-  // Find existing success criteria card
-  const criteriaCardIndex = cards.findIndex(
-    card => card.type === "objective" && card.title === "Success Criteria"
-  );
-
-  if (criteriaCardIndex >= 0) {
-    // Add to existing card
-    const updatedCards = [...cards];
-    const card = updatedCards[criteriaCardIndex];
-    
-    // Check if this criterion is already in the card
-    if (!card.content.includes(criterion)) {
-      updatedCards[criteriaCardIndex] = {
-        ...card,
-        content: card.content + `\n• ${criterion}`
-      };
-    }
-    
-    return updatedCards;
-  } else {
-    // Create a new card
-    return [...cards, {
-      id: crypto.randomUUID(),
-      type: "objective",
-      title: "Success Criteria",
-      content: `• ${criterion}`,
-      duration: null,
-      sectionId: null,
-      activityIndex: null,
-      attachments: []
-    }];
-  }
-}
-
 export function createMaterialsCard(lesson: ProcessedLesson): LessonCard {
   return {
     id: crypto.randomUUID(),
@@ -206,7 +86,7 @@ export function createActivityCard(
     duration: null,
     sectionId: sectionId,
     activityIndex: activityIndex,
-    extensionActivity: "Complete an extension of this activity by applying the concept to a new context or problem.",
+    extensionActivity: "Finish early? Try extending this activity by applying the concepts to a new situation or creating your own example.",
     attachments: [],
   };
 }

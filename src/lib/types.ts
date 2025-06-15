@@ -59,6 +59,8 @@ export interface LessonPresentation {
   active: boolean;
   created_at: string;
   realtime_enabled: boolean;
+  wordle_word?: string | null;
+  lesson_state: boolean;
 }
 
 export interface TeacherMessage {

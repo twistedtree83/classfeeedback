@@ -5,7 +5,6 @@ import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } fr
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
-  submitExtensionRequest,
 } from "../../lib/supabase";
 
 interface StudentFeedbackPanelProps {
@@ -53,33 +52,26 @@ export function StudentFeedbackPanel({
     if (feedbackCooldown) return;
 
     setFeedbackCooldown(true);
-    setError(null);
+    const success = await submitTeachingFeedback(
+      presentationId,
+      studentName,
+      type,
+      currentCardIndex
+    );
 
-    try {
-      const success = await submitTeachingFeedback(
-        presentationId,
-        studentName,
-        type,
-        currentCardIndex
-      );
+    if (success) {
+      setFeedbackSubmitted(type);
+      setShowSuccessMessage(true);
+      onFeedbackSubmitted?.(type);
 
-      if (success) {
-        setFeedbackSubmitted(type);
-        setShowSuccessMessage(true);
-        onFeedbackSubmitted?.(type);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 2000);
 
-        setTimeout(() => {
-          setShowSuccessMessage(false);
-        }, 2000);
-
-        setTimeout(() => {
-          setFeedbackCooldown(false);
-        }, 3000);
-      } else {
+      setTimeout(() => {
         setFeedbackCooldown(false);
-      }
-    } catch (err) {
-      console.error("Error submitting feedback:", err);
+      }, 3000);
+    } else {
       setFeedbackCooldown(false);
     }
   };
@@ -110,29 +102,21 @@ export function StudentFeedbackPanel({
   };
 
   const handleRequestExtension = async () => {
-    if (requestingExtension) return;
+    if (requestingExtension || extensionRequested) return;
     
     setRequestingExtension(true);
     
     try {
-      // Submit the extension request to the database
-      const success = await submitExtensionRequest(
-        presentationId,
-        studentName,
-        currentCardIndex
-      );
-      
-      if (success) {
-        console.log("Extension request submitted successfully");
+      // In a real implementation, we would call an API to save the extension request
+      // For now, we'll simulate the request with a setTimeout
+      setTimeout(() => {
         if (onExtensionRequested) {
           onExtensionRequested();
         }
-      } else {
-        console.error("Failed to submit extension request");
-      }
+        setRequestingExtension(false);
+      }, 1000);
     } catch (error) {
       console.error("Error requesting extension:", error);
-    } finally {
       setRequestingExtension(false);
     }
   };
@@ -205,11 +189,11 @@ export function StudentFeedbackPanel({
         )}
 
         {/* Extension Activity Button */}
-        {showExtensionButton && (
+        {showExtensionButton && !extensionRequested && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <Button
               onClick={handleRequestExtension}
-              disabled={requestingExtension || extensionRequested}
+              disabled={requestingExtension}
               className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
             >
               {requestingExtension ? (
@@ -222,7 +206,7 @@ export function StudentFeedbackPanel({
           </div>
         )}
 
-        {extensionRequested && extensionPending && (
+        {extensionRequested && !extensionApproved && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2 text-yellow-700">
               <Clock className="h-4 w-4" />

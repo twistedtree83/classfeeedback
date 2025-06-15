@@ -8,12 +8,14 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "../ui/Button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTeacherFeedbackAndQuestions } from "../../hooks/useTeacherFeedbackAndQuestions";
 import { FeedbackChartView } from "../feedback/FeedbackChartView";
 import { FeedbackQuestionsView } from "../feedback/FeedbackQuestionsView";
 import { FeedbackStudentsView } from "../feedback/FeedbackStudentsView";
 import { FeedbackListView } from "../feedback/FeedbackListView";
 import { ExtensionRequestsView } from "./feedback/ExtensionRequestsView";
+import { ExtensionRequest } from "../../lib/supabase/types";
 
 interface TeachingFeedbackPanelProps {
   presentationId: string;

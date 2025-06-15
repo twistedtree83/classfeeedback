@@ -8,12 +8,6 @@ export const submitExtensionRequest = async (
   cardIndex: number
 ): Promise<ExtensionRequest | null> => {
   try {
-    console.log('Submitting extension request:', {
-      presentation_id: presentationId,
-      student_name: studentName,
-      card_index: cardIndex
-    });
-    
     const { data, error } = await supabase
       .from('extension_requests')
       .insert({
@@ -119,7 +113,7 @@ export const getStudentExtensionRequestStatus = async (
       .eq('card_index', cardIndex)
       .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error checking extension request status:', error);
       return null;
     }
