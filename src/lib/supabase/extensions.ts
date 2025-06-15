@@ -14,16 +14,20 @@ export const submitExtensionRequest = async (
       cardIndex
     });
     
+    // Use upsert with onConflict to handle the unique constraint
     const { data, error } = await supabase
       .from('extension_requests')
-      .upsert({
-        presentation_id: presentationId,
-        student_name: studentName,
-        card_index: cardIndex,
-        status: 'pending'
-      }, {
-        onConflict: 'presentation_id,student_name,card_index'
-      })
+      .upsert(
+        {
+          presentation_id: presentationId,
+          student_name: studentName,
+          card_index: cardIndex,
+          status: 'pending'
+        }, 
+        {
+          onConflict: 'presentation_id,student_name,card_index'
+        }
+      )
       .select()
       .single();
 
@@ -129,6 +133,8 @@ export const getStudentExtensionRequestStatus = async (
       cardIndex
     });
     
+    // Use limit(1) and order by created_at to get only the most recent request
+    // This avoids the multiple rows error
     const { data, error } = await supabase
       .from('extension_requests')
       .select('status')
@@ -152,7 +158,7 @@ export const getStudentExtensionRequestStatus = async (
   }
 };
 
-// Subscribe to extension request updates - COMPLETELY REWRITTEN
+// Subscribe to extension request updates
 export const subscribeToExtensionRequests = (
   presentationId: string,
   callback: (request: ExtensionRequest) => void

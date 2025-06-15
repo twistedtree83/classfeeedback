@@ -1,9 +1,9 @@
-import React from 'react';
-import { Split, Loader2, Paperclip, Clock, Sparkles } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { sanitizeHtml } from '../../lib/utils';
-import { CardAttachment } from '@/lib/types';
-import { AttachmentDisplay } from '../AttachmentDisplay';
+import React, { useState, useEffect } from "react";
+import { Split, Loader2, Paperclip, Clock, Sparkles } from "lucide-react";
+import { Button } from "../ui/Button";
+import { sanitizeHtml } from "../../lib/utils";
+import { CardAttachment } from "@/lib/types";
+import { AttachmentDisplay } from "../AttachmentDisplay";
 
 interface LessonContentDisplayProps {
   title: string;
@@ -33,13 +33,15 @@ export function LessonContentDisplay({
   onGenerateDifferentiated
 }: LessonContentDisplayProps) {
   // For debugging
-  console.log("LessonContentDisplay props:", {
-    title,
-    hasExtension: !!extensionActivity,
-    showExtension: showExtensionActivity,
-    extensionContent: extensionActivity?.substring(0, 50) + "..."
-  });
-  
+  useEffect(() => {
+    console.log("LessonContentDisplay props:", {
+      title,
+      hasExtension: !!extensionActivity,
+      showExtension: showExtensionActivity,
+      extensionContent: extensionActivity?.substring(0, 50) + "..."
+    });
+  }, [title, extensionActivity, showExtensionActivity]);
+
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
       {/* Card Header */}

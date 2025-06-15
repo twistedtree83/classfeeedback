@@ -86,10 +86,7 @@ export function StudentContent({
 
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
-    console.log(
-      "StudentContent: showing waiting room, presentation:",
-      presentation
-    );
+    console.log("StudentContent: showing waiting room, presentation:", presentation);
     return (
       <WaitingRoom
         studentName={studentName}
@@ -107,9 +104,7 @@ export function StudentContent({
     return null;
   }
 
-  const hasDifferentiatedContent = currentCard?.differentiatedContent
-    ? true
-    : false;
+  const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
 
   return (
     <div className="min-h-screen bg-teal/5 flex flex-col">

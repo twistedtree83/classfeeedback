@@ -13,7 +13,7 @@ interface StudentFeedbackPanelProps {
   studentName: string;
   currentCardIndex: number;
   onFeedbackSubmitted?: (type: string) => void;
-  onQuestionSubmitted?: () => void;
+  onQuestionSubmitted?: (question: string) => Promise<boolean>;
   onExtensionRequested?: () => void;
   showExtensionButton?: boolean;
   extensionRequested?: boolean;
@@ -84,17 +84,22 @@ export function StudentFeedbackPanel({
     setSubmittingQuestion(true);
     console.log("Submitting question:", question);
 
-    const success = await submitTeachingQuestion(
-      presentationId,
-      studentName,
-      question.trim(),
-      currentCardIndex
-    );
+    let success = false;
+    
+    if (onQuestionSubmitted) {
+      success = await onQuestionSubmitted(question.trim());
+    } else {
+      success = await submitTeachingQuestion(
+        presentationId,
+        studentName,
+        question.trim(),
+        currentCardIndex
+      );
+    }
 
     if (success) {
       console.log("Question submitted successfully");
       setQuestion("");
-      onQuestionSubmitted?.();
     } else {
       console.error("Failed to submit question");
     }

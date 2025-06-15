@@ -11,6 +11,7 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
   const [extensionRequested, setExtensionRequested] = useState(false);
   const [extensionPending, setExtensionPending] = useState(false);
   const [extensionApproved, setExtensionApproved] = useState(false);
+  const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Use existing custom hooks for session data and feedback
@@ -46,10 +47,10 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
   }, [presentation?.current_card_index, setCurrentCardIndex]);
 
-  // Check for existing extension request
+  // Check for existing extension request and set up polling
   useEffect(() => {
     const checkExtensionStatus = async () => {
-      if (presentation?.id && currentCard && currentCard.extensionActivity && presentation.current_card_index !== undefined) {
+      if (presentation?.id && currentCard && presentation.current_card_index !== undefined) {
         try {
           console.log("Checking extension request status:", {
             presentationId: presentation.id,
@@ -84,8 +85,41 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
       }
     };
     
+    // Initial check
     checkExtensionStatus();
+    
+    // Set up polling for regular updates
+    const pollInterval = setInterval(checkExtensionStatus, 3000); // Poll every 3 seconds
+    
+    return () => clearInterval(pollInterval);
   }, [presentation?.id, presentation?.current_card_index, currentCard, studentName]);
+
+  // Update hasExtensionActivity when card changes
+  useEffect(() => {
+    if (currentCard) {
+      const hasExtension = !!currentCard.extensionActivity;
+      console.log(`Current card has extension: ${hasExtension}`);
+      setHasExtensionActivity(hasExtension);
+      
+      // Reset extension status flags when changing cards only if no existing status
+      getStudentExtensionRequestStatus(
+        presentation?.id || '',
+        studentName,
+        presentation?.current_card_index || 0
+      ).then(status => {
+        if (!status) {
+          setExtensionRequested(false);
+          setExtensionPending(false);
+          setExtensionApproved(false);
+        }
+      }).catch(err => {
+        console.error("Error checking initial extension status:", err);
+      });
+    } else {
+      console.log("No current card");
+      setHasExtensionActivity(false);
+    }
+  }, [currentCard, presentation?.id, presentation?.current_card_index, studentName]);
 
   // Scroll to top when card changes
   useEffect(() => {
@@ -94,11 +128,6 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
     // Reset differentiated view when card changes
     setViewingDifferentiated(false);
-    
-    // Reset extension states when changing cards
-    setExtensionRequested(false);
-    setExtensionPending(false);
-    setExtensionApproved(false);
   }, [presentation?.current_card_index]);
 
   // Reset message count when panel is opened
@@ -213,7 +242,7 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
         throw new Error('Failed to submit extension request');
       }
       
-      // Start polling for updates
+      // Start polling for approval status
     } catch (error) {
       console.error('Error requesting extension activity:', error);
       setExtensionRequested(false);
@@ -257,6 +286,7 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     extensionRequested,
     extensionPending,
     extensionApproved,
+    hasExtensionActivity,
     
     // Methods
     handleToggleDifferentiatedView,
