@@ -18,6 +18,7 @@ interface StudentContentProps {
   currentCard: LessonCard | null;
   currentCardAttachments: CardAttachment[];
   messages: TeacherMessage[];
+  newMessage: TeacherMessage | null;
   newMessageCount: number;
   showMessagePanel: boolean;
   viewingDifferentiated: boolean;
@@ -42,6 +43,7 @@ export function StudentContent({
   currentCard,
   currentCardAttachments,
   messages,
+  newMessage,
   newMessageCount,
   showMessagePanel,
   viewingDifferentiated,
@@ -108,58 +110,7 @@ export function StudentContent({
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
-    // Reset differentiated view when card changes
-    setViewingDifferentiated(false);
   }, [presentation?.current_card_index]);
-
-  // Reset message count when panel is opened
-  useEffect(() => {
-    if (showMessagePanel) {
-      setNewMessageCount(0);
-    }
-  }, [showMessagePanel]);
-
-  // Effect to update new message count and handle message display
-  useEffect(() => {
-    if (newMessage && !showMessagePanel) {
-      setNewMessageCount(prev => prev + 1);
-    }
-  }, [newMessage, showMessagePanel]);
-
-  const handleToggleDifferentiatedView = () => {
-    setViewingDifferentiated(!viewingDifferentiated);
-  };
-  
-  const handleGenerateDifferentiated = async () => {
-    if (!currentCard || generatingDifferentiated) return false;
-    
-    try {
-      // Create a differentiated version of the current card
-      const differentiatedContent = await generateDifferentiated(
-        currentCard.content,
-        currentCard.type
-      );
-      
-      // Update the card with differentiated content
-      if (presentation && currentCard && differentiatedContent) {
-        const updatedCards = [...presentation.cards];
-        const cardIndex = presentation.current_card_index;
-        
-        updatedCards[cardIndex] = {
-          ...updatedCards[cardIndex],
-          differentiatedContent
-        };
-        
-        // Switch to differentiated view
-        setViewingDifferentiated(true);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error generating differentiated content:', error);
-      return false;
-    }
-  };
 
   const handleExtensionRequest = async () => {
     if (!presentation?.id || presentation.current_card_index === undefined) {
@@ -186,21 +137,10 @@ export function StudentContent({
       
       console.log('Extension request submitted successfully:', result);
       
-      if (onExtensionRequested) {
-        onExtensionRequested();
-      }
-      
     } catch (error) {
       console.error('Error requesting extension activity:', error);
       setExtensionRequested(false);
       setExtensionPending(false);
-    }
-  };
-
-  const toggleMessagePanel = () => {
-    setShowMessagePanel(prev => !prev);
-    if (!showMessagePanel) {
-      setNewMessageCount(0);
     }
   };
 
