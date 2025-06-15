@@ -151,6 +151,7 @@ export function StudentView() {
         currentCard={content.currentCard}
         currentCardAttachments={content.currentCardAttachments}
         messages={content.messages}
+        newMessage={content.newMessage}
         newMessageCount={content.newMessageCount}
         showMessagePanel={content.showMessagePanel}
         viewingDifferentiated={content.viewingDifferentiated}
