@@ -1,4 +1,4 @@
-import { supabase } from "./client";
+import { supabase } from './client';
 
 export const submitTeachingQuestion = async (
   presentationId: string,
@@ -7,6 +7,13 @@ export const submitTeachingQuestion = async (
   cardIndex?: number
 ): Promise<boolean> => {
   try {
+    console.log('Submitting teaching question:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      question,
+      card_index: cardIndex
+    });
+    
     const { error } = await supabase.from("teaching_questions").insert({
       presentation_id: presentationId,
       student_name: studentName,
@@ -70,48 +77,94 @@ export const getTeachingQuestionsForPresentation = async (
   }
 };
 
+// FIXED IMPLEMENTATION - correct handling of cardIndex filter
 export const subscribeToTeachingQuestions = (
   presentationId: string,
   callback: (question: any) => void,
   cardIndex?: number
 ) => {
-  let channel = `teaching_questions:${presentationId}`;
+  // Create a unique channel name with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  const channelName = `teaching_questions_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}_${timestamp}`;
+  
+  console.log(`Setting up teaching questions subscription on channel: ${channelName}`);
+  console.log(`Parameters: presentationId=${presentationId}, cardIndex=${cardIndex}`);
+  
   if (cardIndex !== undefined) {
-    channel += `:${cardIndex}`;
-  }
+    // For subscriptions with card index filter - handle in callback
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'teaching_questions',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("New teaching question event received:", payload);
+          // Only process if it matches our card index
+          if (payload.new && payload.new.card_index === cardIndex) {
+            callback(payload.new);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'teaching_questions',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("Updated teaching question event received:", payload);
+          // Only process if it matches our card index
+          if (payload.new && payload.new.card_index === cardIndex) {
+            callback(payload.new);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Teaching questions subscription status: ${status}`);
+      });
 
-  let filter = `presentation_id=eq.${presentationId}`;
-  if (cardIndex !== undefined) {
-    filter += `,card_index=eq.${cardIndex}`;
-  }
+    return subscription;
+  } else {
+    // For subscriptions without card index filter
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'teaching_questions',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("New teaching question:", payload);
+          callback(payload.new);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'teaching_questions',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("Updated teaching question:", payload);
+          callback(payload.new);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Teaching questions subscription status: ${status}`);
+      });
 
-  return supabase
-    .channel(channel)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "teaching_questions",
-        filter,
-      },
-      (payload) => {
-        console.log("New teaching question:", payload);
-        callback(payload.new);
-      }
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "teaching_questions",
-        filter,
-      },
-      (payload) => {
-        console.log("Updated teaching question:", payload);
-        callback(payload.new);
-      }
-    )
-    .subscribe();
+    return subscription;
+  }
 };

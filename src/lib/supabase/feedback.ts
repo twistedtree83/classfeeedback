@@ -185,53 +185,105 @@ export const getTeachingFeedbackForPresentation = async (
   }
 };
 
-// Subscribe to teaching feedback updates
+// Subscribe to teaching feedback updates - FIXED FILTER IMPLEMENTATION
 export const subscribeToTeachingFeedback = (
   presentationId: string,
   callback: (feedback: TeachingFeedbackRow) => void,
   cardIndex?: number
 ) => {
-  let filter = `presentation_id=eq.${presentationId}`;
-  if (cardIndex !== undefined) {
-    filter += `,card_index=eq.${cardIndex}`;
-  }
-
-  const channelName = `teaching_feedback_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}`;
-  console.log(`Setting up teaching feedback subscription on channel: ${channelName}`);
+  // Create a unique channel name with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  const channelName = `teaching_feedback_${presentationId}_${cardIndex !== undefined ? cardIndex : 'all'}_${timestamp}`;
   
-  const subscription = supabase
-    .channel(channelName)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'teaching_feedback',
-        filter
-      },
-      (payload) => {
-        console.log("New teaching feedback:", payload);
-        callback(payload.new as TeachingFeedbackRow);
-      }
-    )
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'teaching_feedback',
-        filter
-      },
-      (payload) => {
-        console.log("Updated teaching feedback:", payload);
-        callback(payload.new as TeachingFeedbackRow);
-      }
-    )
-    .subscribe((status) => {
-      console.log(`Teaching feedback subscription status: ${status}`);
-    });
+  console.log(`Setting up teaching feedback subscription on channel: ${channelName}`);
+  console.log(`Parameters: presentationId=${presentationId}, cardIndex=${cardIndex}`);
+  
+  // Create the filter configuration correctly
+  let filterConfig = {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'teaching_feedback',
+    filter: `presentation_id=eq.${presentationId}`
+  };
+  
+  // Add card index as a separate filter if provided
+  if (cardIndex !== undefined) {
+    // Create a different channel for filters with card index
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'teaching_feedback',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("New teaching feedback event received:", payload);
+          // Only process if it matches our card index
+          if (payload.new && payload.new.card_index === cardIndex) {
+            callback(payload.new as TeachingFeedbackRow);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'teaching_feedback',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("Updated teaching feedback event received:", payload);
+          // Only process if it matches our card index
+          if (payload.new && payload.new.card_index === cardIndex) {
+            callback(payload.new as TeachingFeedbackRow);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Teaching feedback subscription status: ${status}`);
+      });
 
-  return subscription;
+    return subscription;
+  } else {
+    // For subscriptions without card index filter
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'teaching_feedback',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("New teaching feedback:", payload);
+          callback(payload.new as TeachingFeedbackRow);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'teaching_feedback',
+          filter: `presentation_id=eq.${presentationId}`
+        },
+        (payload) => {
+          console.log("Updated teaching feedback:", payload);
+          callback(payload.new as TeachingFeedbackRow);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Teaching feedback subscription status: ${status}`);
+      });
+
+    return subscription;
+  }
 };
 
 // Get feedback for a specific card by student name

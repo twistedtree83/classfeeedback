@@ -44,6 +44,7 @@ export const approveExtensionRequest = async (
   requestId: string
 ): Promise<boolean> => {
   try {
+    console.log('Approving extension request:', requestId);
     const { error } = await supabase
       .from('extension_requests')
       .update({ status: 'approved' })
@@ -54,6 +55,7 @@ export const approveExtensionRequest = async (
       return false;
     }
 
+    console.log('Extension request approved successfully');
     return true;
   } catch (err) {
     console.error('Exception approving extension request:', err);
@@ -66,6 +68,7 @@ export const rejectExtensionRequest = async (
   requestId: string
 ): Promise<boolean> => {
   try {
+    console.log('Rejecting extension request:', requestId);
     const { error } = await supabase
       .from('extension_requests')
       .update({ status: 'rejected' })
@@ -76,6 +79,7 @@ export const rejectExtensionRequest = async (
       return false;
     }
 
+    console.log('Extension request rejected successfully');
     return true;
   } catch (err) {
     console.error('Exception rejecting extension request:', err);
@@ -88,6 +92,7 @@ export const getExtensionRequestsForPresentation = async (
   presentationId: string
 ): Promise<ExtensionRequest[]> => {
   try {
+    console.log('Getting extension requests for presentation:', presentationId);
     const { data, error } = await supabase
       .from('extension_requests')
       .select('*')
@@ -99,6 +104,7 @@ export const getExtensionRequestsForPresentation = async (
       return [];
     }
 
+    console.log('Retrieved extension requests:', data);
     return data || [];
   } catch (err) {
     console.error('Exception getting extension requests:', err);
@@ -113,6 +119,12 @@ export const getStudentExtensionRequestStatus = async (
   cardIndex: number
 ): Promise<'pending' | 'approved' | 'rejected' | null> => {
   try {
+    console.log('Checking extension request status for:', {
+      presentationId,
+      studentName,
+      cardIndex
+    });
+    
     const { data, error } = await supabase
       .from('extension_requests')
       .select('status')
@@ -126,6 +138,7 @@ export const getStudentExtensionRequestStatus = async (
       return null;
     }
 
+    console.log('Extension request status:', data?.status || null);
     return data?.status || null;
   } catch (err) {
     console.error('Exception checking extension request status:', err);
@@ -133,7 +146,7 @@ export const getStudentExtensionRequestStatus = async (
   }
 };
 
-// Subscribe to extension request updates
+// Subscribe to extension request updates - FIXED IMPLEMENTATION
 export const subscribeToExtensionRequests = (
   presentationId: string,
   callback: (request: ExtensionRequest) => void
