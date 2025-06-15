@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Split, Loader2, Paperclip, Clock, Sparkles } from "lucide-react";
-import { Button } from "../ui/Button";
-import { sanitizeHtml } from "../../lib/utils";
-import { CardAttachment } from "@/lib/types";
-import { AttachmentDisplay } from "../AttachmentDisplay";
+import React, { useEffect } from 'react';
+import { Split, Loader2, Paperclip, Clock, Sparkles } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { CardAttachment } from '@/lib/types';
+import { AttachmentDisplay } from '../AttachmentDisplay';
+import { VocabularyHighlighter } from '../vocabulary/VocabularyHighlighter';
 
 interface LessonContentDisplayProps {
   title: string;
@@ -17,6 +17,8 @@ interface LessonContentDisplayProps {
   generatingDifferentiated: boolean;
   onToggleDifferentiatedView: () => void;
   onGenerateDifferentiated: () => Promise<void>;
+  lessonId?: string;
+  level?: string;
 }
 
 export function LessonContentDisplay({
@@ -30,7 +32,9 @@ export function LessonContentDisplay({
   viewingDifferentiated,
   generatingDifferentiated,
   onToggleDifferentiatedView,
-  onGenerateDifferentiated
+  onGenerateDifferentiated,
+  lessonId,
+  level
 }: LessonContentDisplayProps) {
   // For debugging
   useEffect(() => {
@@ -57,10 +61,11 @@ export function LessonContentDisplay({
         </div>
       </div>
       
-      {/* Card Content */}
-      <div 
-        className="prose max-w-none text-gray-800"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || '') }}
+      {/* Card Content - Using VocabularyHighlighter instead of sanitizeHtml */}
+      <VocabularyHighlighter 
+        content={content || ''}
+        level={level}
+        lessonId={lessonId}
       />
       
       {/* Extension Activity */}
@@ -71,11 +76,10 @@ export function LessonContentDisplay({
             Extension Activity
           </h3>
           <div className="p-5 bg-purple-50 border border-purple-100 rounded-lg shadow-sm">
-            <div 
-              className="prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ 
-                __html: sanitizeHtml(extensionActivity)
-              }}
+            <VocabularyHighlighter 
+              content={extensionActivity}
+              level={level}
+              lessonId={lessonId}
             />
           </div>
         </div>

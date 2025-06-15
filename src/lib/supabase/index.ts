@@ -27,6 +27,7 @@ export {
   approveParticipant,
   rejectParticipant,
   subscribeToParticipantStatus,
+  getParticipantByCodeAndName,
 } from "./sessions";
 
 // Re-export lesson plans functions
@@ -37,6 +38,7 @@ export {
   createLessonPresentation,
   getLessonPresentationByCode,
   updateLessonPresentationCardIndex,
+  updateLessonPresentation,
   endLessonPresentation,
   subscribeToLessonPresentation,
 } from "./presentations";
@@ -77,6 +79,14 @@ export {
   getStudentExtensionRequestStatus,
   subscribeToExtensionRequests,
 } from "./extensions";
+
+// Re-export vocabulary functions
+export {
+  saveVocabularyTerms,
+  getVocabularyTermsForLesson,
+  deleteVocabularyTermsForLesson,
+  getVocabularyTermById,
+} from "./vocabulary";
 
 // Re-export utility functions
 export { generateRandomName } from "./utils";

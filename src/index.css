@@ -193,6 +193,36 @@
   .section-title {
     @apply text-xl font-semibold font-display flex items-center gap-2 text-dark-purple mb-4;
   }
+  
+  /* Vocabulary term styling */
+  .vocabulary-term {
+    position: relative;
+    color: #0a8754; /* sea-green / teal color */
+    border-bottom: 1px dotted #0a8754;
+    cursor: help;
+    transition: background-color 0.2s ease;
+  }
+
+  .vocabulary-term:hover {
+    background-color: rgba(10, 135, 84, 0.1);
+  }
+
+  .vocabulary-popup {
+    animation: popup-fade-in 0.2s ease-out;
+    box-shadow: 0 4px 25px 0 rgba(22, 16, 50, 0.15);
+    z-index: 100;
+  }
+
+  @keyframes popup-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 @layer utilities {

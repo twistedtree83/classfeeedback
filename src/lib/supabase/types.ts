@@ -104,3 +104,12 @@ export interface ExtensionRequest {
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }
+
+// Vocabulary terms
+export interface VocabularyTerm {
+  id: string;
+  lesson_id: string;
+  word: string;
+  definition: string;
+  created_at: string;
+}

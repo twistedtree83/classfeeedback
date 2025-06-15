@@ -9,3 +9,4 @@ export * from "./sectionImprovement";
 export * from "./wordleGenerator";
 export * from "./activityExpansion"; // detailed expansion
 export * from "./extensionActivity"; // fast finisher extension
+export * from "./vocabularyAnalysis"; // vocabulary analysis for students

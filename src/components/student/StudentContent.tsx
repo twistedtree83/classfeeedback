@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { MessagePanel } from "../MessagePanel";
 import { StudentHeader } from "./StudentHeader";
 import { LessonContentDisplay } from "./LessonContentDisplay";
-import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
 import { WaitingRoom } from "./WaitingRoom";
 import { CheckCircle2 } from "lucide-react";
 import type { LessonCard, TeacherMessage, CardAttachment } from "@/lib/types";
 import type { LessonPresentation } from "@/lib/supabase/presentations";
+import { StudentFeedbackPanel } from "./StudentFeedbackPanel";
 
 interface StudentContentProps {
   studentName: string;
@@ -144,6 +144,8 @@ export function StudentContent({
             generatingDifferentiated={generatingDifferentiated}
             onToggleDifferentiatedView={onToggleDifferentiatedView}
             onGenerateDifferentiated={onGenerateDifferentiated}
+            lessonId={presentation?.lesson_id}
+            level={presentation?.level}
           />
 
           <StudentFeedbackPanel
