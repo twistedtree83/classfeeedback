@@ -11,6 +11,7 @@ interface CardsContainerProps {
   editDuration: string;
   processingCardId: string | null;
   differentiatingCardId: string | null;
+  generatingRemedialId?: string | null;
   onDragEnd: (result: DropResult) => void;
   onEdit: (card: LessonCard) => void;
   onSave: (id: string) => void;
@@ -18,8 +19,10 @@ interface CardsContainerProps {
   onRemove: (id: string) => void;
   onToggleMode: (cardId: string) => void;
   onToggleDifferentiated: (cardId: string) => void;
+  onToggleRemedial?: (cardId: string) => void;
   onMakeStudentFriendly: (cardId: string) => void;
   onCreateDifferentiated: (cardId: string) => void;
+  onCreateRemedial?: (cardId: string) => void;
   onAddAttachment: (cardId: string) => void;
   onDeleteAttachment: (cardId: string, attachmentId: string) => void;
   onTitleChange: (title: string) => void;
@@ -35,6 +38,7 @@ export function CardsContainer({
   editDuration,
   processingCardId,
   differentiatingCardId,
+  generatingRemedialId,
   onDragEnd,
   onEdit,
   onSave,
@@ -42,8 +46,10 @@ export function CardsContainer({
   onRemove,
   onToggleMode,
   onToggleDifferentiated,
+  onToggleRemedial,
   onMakeStudentFriendly,
   onCreateDifferentiated,
+  onCreateRemedial,
   onAddAttachment,
   onDeleteAttachment,
   onTitleChange,
@@ -104,14 +110,17 @@ export function CardsContainer({
                 editDuration={editDuration}
                 processingCardId={processingCardId}
                 differentiatingCardId={differentiatingCardId}
+                generatingRemedialId={generatingRemedialId}
                 onEdit={onEdit}
                 onSave={onSave}
                 onCancel={onCancel}
                 onRemove={onRemove}
                 onToggleMode={onToggleMode}
                 onToggleDifferentiated={onToggleDifferentiated}
+                onToggleRemedial={onToggleRemedial}
                 onMakeStudentFriendly={onMakeStudentFriendly}
                 onCreateDifferentiated={onCreateDifferentiated}
+                onCreateRemedial={onCreateRemedial}
                 onAddAttachment={onAddAttachment}
                 onDeleteAttachment={onDeleteAttachment}
                 onTitleChange={onTitleChange}

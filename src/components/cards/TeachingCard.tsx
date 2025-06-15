@@ -15,6 +15,8 @@ import {
   Users,
   Loader2,
   RefreshCw,
+  BookText,
+  Toggle
 } from "lucide-react";
 import { sanitizeHtml } from "../../lib/utils";
 import { AttachmentDisplay } from "../AttachmentDisplay";
@@ -37,14 +39,17 @@ interface TeachingCardProps {
   editDuration: string;
   processingCardId: string | null;
   differentiatingCardId: string | null;
+  generatingRemedialId?: string | null;
   onEdit: (card: LessonCard) => void;
   onSave: (id: string) => void;
   onCancel: () => void;
   onRemove: (id: string) => void;
   onToggleMode: (cardId: string) => void;
   onToggleDifferentiated: (cardId: string) => void;
+  onToggleRemedial?: (cardId: string) => void;
   onMakeStudentFriendly: (cardId: string) => void;
   onCreateDifferentiated: (cardId: string) => void;
+  onCreateRemedial?: (cardId: string) => void;
   onAddAttachment: (cardId: string) => void;
   onDeleteAttachment: (cardId: string, attachmentId: string) => void;
   onTitleChange: (title: string) => void;
@@ -61,14 +66,17 @@ export function TeachingCard({
   editDuration,
   processingCardId,
   differentiatingCardId,
+  generatingRemedialId,
   onEdit,
   onSave,
   onCancel,
   onRemove,
   onToggleMode,
   onToggleDifferentiated,
+  onToggleRemedial,
   onMakeStudentFriendly,
   onCreateDifferentiated,
+  onCreateRemedial,
   onAddAttachment,
   onDeleteAttachment,
   onTitleChange,
@@ -229,6 +237,27 @@ export function TeachingCard({
                       </Button>
                     )}
 
+                    {/* Remedial toggle */}
+                    {card.remedialActivity && onToggleRemedial && (
+                      <Button
+                        onClick={() => onToggleRemedial(card.id)}
+                        variant="ghost"
+                        size="sm"
+                        className={`p-1 h-auto rounded-full ${
+                          card.isRemedialEnabled
+                            ? "bg-purple-100 text-purple-700"
+                            : "text-gray-500"
+                        }`}
+                        title={
+                          card.isRemedialEnabled
+                            ? "Disable remedial version"
+                            : "Enable remedial version"
+                        }
+                      >
+                        <Toggle className="h-4 w-4" />
+                      </Button>
+                    )}
+
                     {/* Make student-friendly */}
                     {!card.originalContent && (
                       <Button
@@ -261,6 +290,24 @@ export function TeachingCard({
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Users className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
+
+                    {/* Create remedial version */}
+                    {!card.remedialActivity && onCreateRemedial && (
+                      <Button
+                        onClick={() => onCreateRemedial(card.id)}
+                        disabled={generatingRemedialId === card.id}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-auto rounded-full text-gray-500 hover:text-purple-600"
+                        title="Create simplified version for remedial support"
+                      >
+                        {generatingRemedialId === card.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <BookText className="h-4 w-4" />
                         )}
                       </Button>
                     )}
@@ -334,8 +381,9 @@ export function TeachingCard({
 
               {/* Content Type Indicators */}
               {(card.studentFriendly && card.originalContent) || 
-               (card.isDifferentiated && card.differentiatedContent) ? (
-                <div className="flex items-center gap-2 mt-3">
+               (card.isDifferentiated && card.differentiatedContent) ||
+               (card.isRemedialEnabled && card.remedialActivity) ? (
+                <div className="flex items-center gap-2 mt-3 flex-wrap">
                   {card.studentFriendly && card.originalContent && (
                     <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200">
                       Student-Friendly
@@ -344,6 +392,11 @@ export function TeachingCard({
                   {card.isDifferentiated && card.differentiatedContent && (
                     <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
                       Differentiated
+                    </Badge>
+                  )}
+                  {card.isRemedialEnabled && card.remedialActivity && (
+                    <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">
+                      Remedial Support
                     </Badge>
                   )}
                 </div>

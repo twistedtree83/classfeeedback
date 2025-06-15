@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Split, Loader2, Paperclip, Clock, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Split, Loader2, Paperclip, Clock, Sparkles, BookText } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { CardAttachment } from '@/lib/types';
 import { AttachmentDisplay } from '../AttachmentDisplay';
@@ -19,6 +19,10 @@ interface LessonContentDisplayProps {
   onGenerateDifferentiated: () => Promise<void>;
   lessonId?: string;
   level?: string;
+  remedialActivity?: string;
+  isRemedialEnabled?: boolean;
+  viewingRemedial?: boolean;
+  onToggleRemedialView?: () => void;
 }
 
 export function LessonContentDisplay({
@@ -34,17 +38,48 @@ export function LessonContentDisplay({
   onToggleDifferentiatedView,
   onGenerateDifferentiated,
   lessonId,
-  level
+  level,
+  remedialActivity,
+  isRemedialEnabled = false,
+  viewingRemedial = false,
+  onToggleRemedialView
 }: LessonContentDisplayProps) {
+  const [showInstructionType, setShowInstructionType] = useState<'standard' | 'simplified' | 'differentiated'>('standard');
+
   // For debugging
   useEffect(() => {
     console.log("LessonContentDisplay props:", {
       title,
       hasExtension: !!extensionActivity,
       showExtension: showExtensionActivity,
-      extensionContent: extensionActivity?.substring(0, 50) + "..."
+      extensionContent: extensionActivity?.substring(0, 50) + "...",
+      hasRemedial: !!remedialActivity,
+      isRemedialEnabled,
+      viewingRemedial
     });
-  }, [title, extensionActivity, showExtensionActivity]);
+  }, [title, extensionActivity, showExtensionActivity, remedialActivity, isRemedialEnabled, viewingRemedial]);
+
+  // Update content display type based on props
+  useEffect(() => {
+    if (viewingRemedial && remedialActivity) {
+      setShowInstructionType('simplified');
+    } else if (viewingDifferentiated && hasDifferentiatedContent) {
+      setShowInstructionType('differentiated');
+    } else {
+      setShowInstructionType('standard');
+    }
+  }, [viewingRemedial, viewingDifferentiated, hasDifferentiatedContent, remedialActivity]);
+
+  // Determine which content to display
+  const displayContent = () => {
+    if (showInstructionType === 'simplified' && remedialActivity) {
+      return remedialActivity;
+    } 
+    if (showInstructionType === 'differentiated' && hasDifferentiatedContent) {
+      return content; // The differentiated content is already in the content prop when viewingDifferentiated is true
+    }
+    return content;
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-teal/20">
@@ -61,9 +96,9 @@ export function LessonContentDisplay({
         </div>
       </div>
       
-      {/* Card Content - Using VocabularyHighlighter instead of sanitizeHtml */}
+      {/* Card Content */}
       <VocabularyHighlighter 
-        content={content || ''}
+        content={displayContent()}
         level={level}
         lessonId={lessonId}
       />
@@ -103,22 +138,41 @@ export function LessonContentDisplay({
         </div>
       )}
       
-      {/* Differentiation Controls */}
-      {hasDifferentiatedContent ? (
-        <div className="mt-4 flex justify-end">
+      {/* Content Display Options */}
+      <div className="mt-4 flex flex-wrap gap-2 justify-end">
+        {/* Simplified/Remedial View Button */}
+        {remedialActivity && isRemedialEnabled && onToggleRemedialView && (
+          <Button
+            onClick={onToggleRemedialView}
+            variant={showInstructionType === 'simplified' ? "primary" : "outline"}
+            size="sm"
+            className={showInstructionType === 'simplified' ? 
+              "bg-purple-600 hover:bg-purple-700 text-white" : 
+              "border-purple-600 text-purple-600 hover:bg-purple-50 flex items-center gap-1"}
+          >
+            <BookText className="h-4 w-4 mr-1" />
+            {showInstructionType === 'simplified' ? "Standard View" : "Simplified View"}
+          </Button>
+        )}
+        
+        {/* Differentiated View Button */}
+        {hasDifferentiatedContent && (
           <Button
             onClick={onToggleDifferentiatedView}
-            variant={viewingDifferentiated ? "primary" : "outline"}
+            variant={showInstructionType === 'differentiated' ? "primary" : "outline"}
             size="sm"
-            className={viewingDifferentiated ? 
+            className={showInstructionType === 'differentiated' ? 
               "bg-teal hover:bg-teal/90 text-white" : 
               "border-teal text-teal hover:bg-teal/10 flex items-center gap-1"}
           >
             <Split className="h-4 w-4 mr-1" />
-            {viewingDifferentiated ? "Standard View" : "Simplified View"}
+            {showInstructionType === 'differentiated' ? "Standard View" : "Different Learning Styles"}
           </Button>
-        </div>
-      ) : (
+        )}
+      </div>
+      
+      {/* Generate simplified version button (if no differentiated or remedial content) */}
+      {!hasDifferentiatedContent && !remedialActivity && (
         <div className="mt-6 p-4 bg-orange/10 border border-orange/30 rounded-lg">
           <p className="text-gray-800 mb-2">Need a simpler explanation?</p>
           <Button

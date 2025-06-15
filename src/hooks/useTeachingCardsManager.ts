@@ -136,6 +136,20 @@ export function useTeachingCardsManager(
     onSave(updatedCards);
   };
 
+  // Toggle remedial visibility
+  const toggleRemedialVisibility = (cardId: string) => {
+    const updatedCards = selectedCards.map((card) => {
+      if (card.id === cardId && card.remedialActivity) {
+        return {
+          ...card,
+          isRemedialEnabled: !card.isRemedialEnabled,
+        };
+      }
+      return card;
+    });
+    onSave(updatedCards);
+  };
+
   // Attachment management
   const handleAddAttachment = (cardId: string) => {
     setCurrentCardForAttachment(cardId);
@@ -247,6 +261,7 @@ export function useTeachingCardsManager(
     handleCancelEdit,
     toggleCardMode,
     toggleDifferentiated,
+    toggleRemedialVisibility,
 
     // Attachment actions
     handleAddAttachment,

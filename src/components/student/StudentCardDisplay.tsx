@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "../ui/Button";
-import { Split, Loader2, Sparkles, Clock } from "lucide-react";
+import { Split, Loader2, Sparkles, Clock, BookText } from "lucide-react";
 import { generateDifferentiatedContent } from "../../lib/aiService";
 import { sanitizeHtml } from "../../lib/utils";
 import type { LessonCard } from "../../lib/types";
@@ -13,11 +13,13 @@ interface StudentCardDisplayProps {
 
 export function StudentCardDisplay({ card, level, extensionApproved = false }: StudentCardDisplayProps) {
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
+  const [viewingRemedial, setViewingRemedial] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] = useState(false);
   const [showExtensionActivity, setShowExtensionActivity] = useState(extensionApproved);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const hasDifferentiatedContent = card?.differentiatedContent ? true : false;
+  const hasRemedialContent = card?.remedialActivity && card?.isRemedialEnabled ? true : false;
   const hasExtensionActivity = card?.extensionActivity ? true : false;
 
   // Scroll to top when card changes
@@ -25,8 +27,9 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
     }
-    // Reset differentiated view when card changes
+    // Reset views when card changes
     setViewingDifferentiated(false);
+    setViewingRemedial(false);
   }, [card.id]);
   
   // Update extension visibility when approval changes
@@ -35,9 +38,17 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
   }, [extensionApproved]);
 
   const toggleDifferentiatedView = () => {
-    if (hasDifferentiatedContent) {
-      setViewingDifferentiated(!viewingDifferentiated);
+    if (viewingRemedial) {
+      setViewingRemedial(false);
     }
+    setViewingDifferentiated(!viewingDifferentiated);
+  };
+
+  const toggleRemedialView = () => {
+    if (viewingDifferentiated) {
+      setViewingDifferentiated(false);
+    }
+    setViewingRemedial(!viewingRemedial);
   };
 
   const handleGenerateDifferentiated = async () => {
@@ -64,12 +75,18 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
     }
   };
 
-  const displayContent =
-    viewingDifferentiated && card.differentiatedContent
-      ? card.differentiatedContent
-      : card.studentFriendly && card.originalContent
+  // Determine which content to display
+  const getDisplayContent = () => {
+    if (viewingRemedial && card.remedialActivity) {
+      return card.remedialActivity;
+    }
+    if (viewingDifferentiated && card.differentiatedContent) {
+      return card.differentiatedContent;
+    }
+    return card.studentFriendly && card.originalContent
       ? card.content
       : card.content;
+  };
 
   // Enhanced content renderer with proper heading levels
   const renderContent = () => {
@@ -84,7 +101,7 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
                    prose-li:text-gray-700 prose-li:my-1
                    prose-strong:font-semibold prose-strong:text-gray-800"
         dangerouslySetInnerHTML={{
-          __html: sanitizeHtml(displayContent),
+          __html: sanitizeHtml(getDisplayContent()),
         }}
       />
     );
@@ -105,8 +122,26 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
             )}
           </div>
 
-          {/* Differentiation Controls */}
+          {/* Display Options Controls */}
           <div className="flex gap-2">
+            {/* Remedial View Button */}
+            {hasRemedialContent && (
+              <Button
+                onClick={toggleRemedialView}
+                variant="outline"
+                size="sm"
+                className={`flex items-center gap-2 ${
+                  viewingRemedial
+                    ? "bg-purple-100 border-purple-200 text-purple-700"
+                    : ""
+                }`}
+              >
+                <BookText className="h-4 w-4" />
+                {viewingRemedial ? "Show Original" : "Show Simplified"}
+              </Button>
+            )}
+
+            {/* Differentiated View Button */}
             {hasDifferentiatedContent && (
               <Button
                 onClick={toggleDifferentiatedView}
@@ -119,11 +154,12 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
                 }`}
               >
                 <Split className="h-4 w-4" />
-                {viewingDifferentiated ? "Show Original" : "Show Simplified"}
+                {viewingDifferentiated ? "Show Original" : "Show Different Styles"}
               </Button>
             )}
 
-            {!hasDifferentiatedContent && (
+            {/* Generate Differentiated Button */}
+            {!hasDifferentiatedContent && !hasRemedialContent && (
               <Button
                 onClick={handleGenerateDifferentiated}
                 disabled={generatingDifferentiated}
@@ -168,15 +204,26 @@ export function StudentCardDisplay({ card, level, extensionApproved = false }: S
           </div>
         )}
 
-        {/* Differentiated Content Indicator */}
-        {viewingDifferentiated && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-700 font-medium">
-              📚 You're viewing simplified content designed for different
-              learning styles
-            </p>
-          </div>
-        )}
+        {/* Content Type Indicators */}
+        <div className="mt-4">
+          {/* Differentiated Content Indicator */}
+          {viewingDifferentiated && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700 font-medium">
+                📚 You're viewing content designed for different learning styles
+              </p>
+            </div>
+          )}
+
+          {/* Remedial Content Indicator */}
+          {viewingRemedial && (
+            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <p className="text-sm text-purple-700 font-medium">
+                📝 You're viewing a simplified version of this content
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Attachments */}
         {card.attachments && card.attachments.length > 0 && (

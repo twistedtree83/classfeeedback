@@ -45,6 +45,8 @@ export interface LessonCard {
   originalContent?: string;
   differentiatedContent?: string;
   isDifferentiated?: boolean;
+  remedialActivity?: string;     // New: simplified content for students needing additional support
+  isRemedialEnabled?: boolean;   // New: controls visibility/availability of remedial content
   attachments?: CardAttachment[];
   extensionActivity?: string; // Extension activity for fast finishers
 }

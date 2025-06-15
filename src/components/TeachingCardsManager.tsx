@@ -38,6 +38,8 @@ import {
   Users,
   Loader2,
   CheckSquare,
+  BookText,
+  HeartHandshake
 } from "lucide-react";
 
 interface TeachingCardsManagerProps {
@@ -97,7 +99,7 @@ export function TeachingCardsManager({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="create">
-        <TabsList className="w-full grid grid-cols-3 mb-4">
+        <TabsList className="w-full grid grid-cols-4 mb-4">
           <TabsTrigger value="create" className="flex items-center gap-1.5">
             <Palette className="h-4 w-4" />
             <span>Create</span>
@@ -106,46 +108,83 @@ export function TeachingCardsManager({
             <Sparkles className="h-4 w-4" />
             <span>AI Tools</span>
           </TabsTrigger>
+          <TabsTrigger value="support" className="flex items-center gap-1.5">
+            <HeartHandshake className="h-4 w-4" />
+            <span>Support</span>
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1.5">
             <Settings className="h-4 w-4" />
             <span>Options</span>
           </TabsTrigger>
         </TabsList>
         
+        {/* Create Cards Tab */}
         <TabsContent value="create" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Quick Add Cards</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardCreationToolbar
-                lesson={lesson}
-                successCriteria={aiTools.successCriteria}
-                criteriaMessage={aiTools.criteriaMessage?.text || ""}
-                intentionsMessage={aiTools.intentionsMessage?.text || ""}
-                generatingCriteria={aiTools.generatingCriteria}
-                improvingIntentions={aiTools.improvingIntentions}
-                processingAllCards={aiTools.processingAllCards}
-                onCreateObjectiveCard={createObjectiveCardHandler}
-                onCreateMaterialsCard={createMaterialsCardHandler}
-                onCreateTopicBackgroundCard={createTopicBackgroundCardHandler}
-                onCreateSectionCards={createSectionCardsHandler}
-                onAddCustomCard={cardManager.handleAddCustomCard}
-                onGenerateSuccessCriteria={aiTools.handleGenerateSuccessCriteria}
-                onImproveLearningIntentions={aiTools.handleImproveLearningIntentions}
-                onMakeAllStudentFriendly={aiTools.makeAllCardsStudentFriendly}
-                onCreateDifferentiatedCards={aiTools.createDifferentiatedCards}
-                onToggleDifferentiatedSelector={() => 
-                  cardManager.setShowDifferentiatedSelector(true)
-                }
-                onExpandActivities={() => 
-                  cardManager.setShowActivityExpander(true)
-                }
-              />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Button
+                  onClick={createObjectiveCardHandler}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-dark-purple/30 text-dark-purple hover:bg-dark-purple/10"
+                >
+                  <Target className="h-6 w-6 text-dark-purple" />
+                  <span className="text-sm font-medium">Learning Objectives</span>
+                </Button>
+
+                <Button
+                  onClick={createMaterialsCardHandler}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-harvest-gold/30 text-harvest-gold hover:bg-harvest-gold/10"
+                >
+                  <BookOpen className="h-6 w-6 text-harvest-gold" />
+                  <span className="text-sm font-medium">Materials</span>
+                </Button>
+
+                <Button
+                  onClick={createTopicBackgroundCardHandler}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-bice-blue/30 text-bice-blue hover:bg-bice-blue/10"
+                >
+                  <Lightbulb className="h-6 w-6 text-bice-blue" />
+                  <span className="text-sm font-medium">Topic Background</span>
+                </Button>
+
+                <Button
+                  onClick={createSectionCardsHandler}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-deep-sky-blue/30 text-deep-sky-blue hover:bg-deep-sky-blue/10"
+                >
+                  <BookMarked className="h-6 w-6 text-deep-sky-blue" />
+                  <span className="text-sm font-medium">All Sections</span>
+                </Button>
+
+                <Button
+                  onClick={cardManager.handleAddCustomCard}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-muted-foreground/30 text-muted-foreground hover:bg-muted/10"
+                >
+                  <FileEdit className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-sm font-medium">Custom Card</span>
+                </Button>
+                
+                <Button
+                  onClick={() => cardManager.setShowActivityExpander(true)}
+                  variant="outline" 
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-sea-green/30 text-sea-green hover:bg-sea-green/10"
+                >
+                  <Wand className="h-6 w-6 text-sea-green" />
+                  <span className="text-sm font-medium">Expand Activities</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
         
+        {/* AI Tools Tab */}
         <TabsContent value="ai" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -245,6 +284,80 @@ export function TeachingCardsManager({
           </Card>
         </TabsContent>
         
+        {/* Support Tab - New */}
+        <TabsContent value="support" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <HeartHandshake className="h-4 w-4 text-purple-600" />
+                Learning Support Tools
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Remedial Support</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Create simplified versions of content for students who need additional support. 
+                    These versions provide explicit, targeted instructions at a lower level of learning.
+                  </p>
+                  
+                  <Button
+                    onClick={aiTools.createAllRemedialActivities}
+                    disabled={aiTools.processingAllCards}
+                    variant="outline"
+                    className="w-full flex items-center gap-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+                  >
+                    {aiTools.processingAllCards ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BookText className="h-4 w-4" />
+                    )}
+                    {aiTools.processingAllCards
+                      ? "Generating..."
+                      : "Create Remedial Versions for All Cards"}
+                  </Button>
+                </div>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">How Support Content Works</h3>
+                  <div className="space-y-4 text-sm text-gray-600">
+                    <div className="flex gap-2 items-start">
+                      <div className="bg-green-100 text-green-700 p-1 rounded flex-shrink-0 mt-0.5">
+                        <UserCircle className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">Student-Friendly</p>
+                        <p>Easier language with the same content. Suitable for most students.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 items-start">
+                      <div className="bg-blue-100 text-blue-700 p-1 rounded flex-shrink-0 mt-0.5">
+                        <Split className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">Differentiated</p>
+                        <p>Multiple learning pathways for different learning styles and abilities.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 items-start">
+                      <div className="bg-purple-100 text-purple-700 p-1 rounded flex-shrink-0 mt-0.5">
+                        <BookText className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-800">Remedial Support</p>
+                        <p>Highly simplified, explicit instructions at a lower level for students needing significant support.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -276,6 +389,7 @@ export function TeachingCardsManager({
           editDuration={cardManager.editDuration}
           processingCardId={aiTools.processingCardId}
           differentiatingCardId={aiTools.differentiatingCardId}
+          generatingRemedialId={aiTools.generatingRemedialId}
           onDragEnd={cardManager.handleDragEnd}
           onEdit={cardManager.handleEditCard}
           onSave={cardManager.handleSaveEdit}
@@ -283,8 +397,10 @@ export function TeachingCardsManager({
           onRemove={cardManager.handleRemoveCard}
           onToggleMode={cardManager.toggleCardMode}
           onToggleDifferentiated={cardManager.toggleDifferentiated}
+          onToggleRemedial={cardManager.toggleRemedialVisibility}
           onMakeStudentFriendly={aiTools.makeCardStudentFriendly}
           onCreateDifferentiated={aiTools.createDifferentiatedCard}
+          onCreateRemedial={aiTools.createRemedialActivity}
           onAddAttachment={cardManager.handleAddAttachment}
           onDeleteAttachment={cardManager.handleDeleteAttachment}
           onTitleChange={cardManager.setEditTitle}

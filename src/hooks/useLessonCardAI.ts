@@ -4,6 +4,7 @@ import {
   generateSuccessCriteria,
   generateDifferentiatedContent,
   improveLearningIntentions,
+  generateRemedialActivity,
 } from "../lib/aiService";
 import type { LessonCard } from "../lib/types";
 import { supabase } from "../lib/supabase/client";
@@ -18,6 +19,7 @@ export function useLessonCardAI(
   const [generatingCriteria, setGeneratingCriteria] = useState(false);
   const [generatingDifferentiated, setGeneratingDifferentiated] =
     useState(false);
+  const [generatingRemedialId, setGeneratingRemedialId] = useState<string | null>(null);
   const [differentiatingCardId, setDifferentiatingCardId] = useState<
     string | null
   >(null);
@@ -149,6 +151,48 @@ export function useLessonCardAI(
       return false;
     } finally {
       setProcessingAllCards(false);
+    }
+  };
+
+  // Generate remedial activity for a card
+  const createRemedialActivity = async (cardId: string) => {
+    if (generatingRemedialId) return false;
+
+    setGeneratingRemedialId(cardId);
+
+    try {
+      const cardIndex = selectedCards.findIndex((card) => card.id === cardId);
+      if (cardIndex === -1) return false;
+
+      const card = selectedCards[cardIndex];
+
+      // Use the student-friendly content as base if available, otherwise use original
+      const contentToAdapt = card.studentFriendly && card.originalContent
+        ? card.content
+        : card.content;
+
+      // Generate remedial activity
+      const remedialActivity = await generateRemedialActivity(
+        contentToAdapt,
+        card.type,
+        lesson.level
+      );
+
+      // Update the card
+      const updatedCards = [...selectedCards];
+      updatedCards[cardIndex] = {
+        ...card,
+        remedialActivity,
+        isRemedialEnabled: true,
+      };
+
+      onSave(updatedCards);
+      return true;
+    } catch (error) {
+      console.error("Error creating remedial activity:", error);
+      return false;
+    } finally {
+      setGeneratingRemedialId(null);
     }
   };
 
@@ -394,12 +438,78 @@ export function useLessonCardAI(
     }
   };
 
+  // Create remedial activities for all cards
+  const createAllRemedialActivities = async () => {
+    if (processingAllCards || selectedCards.length === 0) return false;
+
+    setProcessingAllCards(true);
+
+    try {
+      // Process each card sequentially to avoid rate limits
+      let updatedCards = [...selectedCards];
+
+      for (let i = 0; i < updatedCards.length; i++) {
+        const card = updatedCards[i];
+
+        // Skip cards that already have remedial content
+        if (card.remedialActivity) continue;
+
+        // Use the student-friendly content as base if available, otherwise use original
+        const contentToAdapt =
+          card.studentFriendly && card.originalContent
+            ? card.content
+            : card.content;
+
+        // Generate remedial content
+        const remedialActivity = await generateRemedialActivity(
+          contentToAdapt,
+          card.type,
+          lesson.level
+        );
+
+        // Update the card
+        updatedCards[i] = {
+          ...card,
+          remedialActivity,
+          isRemedialEnabled: true,
+        };
+      }
+
+      onSave(updatedCards);
+      return true;
+    } catch (error) {
+      console.error("Error creating remedial activities:", error);
+      return false;
+    } finally {
+      setProcessingAllCards(false);
+    }
+  };
+
+  // Toggle remedial visibility for a card
+  const toggleRemedialVisibility = (cardId: string) => {
+    const cardIndex = selectedCards.findIndex((card) => card.id === cardId);
+    if (cardIndex === -1) return;
+
+    const card = selectedCards[cardIndex];
+    if (!card.remedialActivity) return;
+
+    // Toggle the isRemedialEnabled flag
+    const updatedCards = [...selectedCards];
+    updatedCards[cardIndex] = {
+      ...card,
+      isRemedialEnabled: !card.isRemedialEnabled,
+    };
+
+    onSave(updatedCards);
+  };
+
   return {
     // State
     processingCardId,
     processingAllCards,
     generatingCriteria,
     generatingDifferentiated,
+    generatingRemedialId,
     differentiatingCardId,
     improvingIntentions,
     successCriteria,
@@ -413,5 +523,8 @@ export function useLessonCardAI(
     handleImproveLearningIntentions,
     createDifferentiatedCard,
     createDifferentiatedCards,
+    createRemedialActivity,
+    createAllRemedialActivities,
+    toggleRemedialVisibility,
   };
 }

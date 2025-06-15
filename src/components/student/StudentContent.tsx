@@ -64,6 +64,7 @@ export function StudentContent({
   onRequestExtension,
 }: StudentContentProps) {
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
+  const [viewingRemedial, setViewingRemedial] = useState(false);
   
   // Check if current card has an extension activity
   useEffect(() => {
@@ -83,6 +84,20 @@ export function StudentContent({
     extensionApproved,
     hasExtensionActivity
   });
+
+  // Handle toggling remedial view
+  const handleToggleRemedial = () => {
+    setViewingRemedial(!viewingRemedial);
+    if (viewingDifferentiated) {
+      // Turn off differentiated view when enabling remedial
+      onToggleDifferentiatedView();
+    }
+  };
+
+  // Reset remedial view when card changes
+  useEffect(() => {
+    setViewingRemedial(false);
+  }, [currentCard?.id]);
 
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
@@ -105,6 +120,7 @@ export function StudentContent({
   }
 
   const hasDifferentiatedContent = currentCard?.differentiatedContent ? true : false;
+  const hasRemedialContent = currentCard?.remedialActivity && currentCard?.isRemedialEnabled ? true : false;
 
   return (
     <div className="min-h-screen bg-teal/5 flex flex-col">
@@ -146,6 +162,10 @@ export function StudentContent({
             onGenerateDifferentiated={onGenerateDifferentiated}
             lessonId={presentation?.lesson_id}
             level={presentation?.level}
+            remedialActivity={currentCard.remedialActivity}
+            isRemedialEnabled={hasRemedialContent}
+            viewingRemedial={viewingRemedial}
+            onToggleRemedialView={handleToggleRemedial}
           />
 
           <StudentFeedbackPanel
