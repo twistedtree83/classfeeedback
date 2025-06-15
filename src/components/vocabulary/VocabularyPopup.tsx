@@ -1,20 +1,27 @@
-import React, { useRef, useEffect } from 'react';
-import { BookOpen, X } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { BookOpen, X, RefreshCw, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { simplifyDefinition } from '@/lib/ai/vocabularyAnalysis';
 
 interface VocabularyPopupProps {
   word: string;
   definition: string;
   position: { x: number; y: number };
   onClose: () => void;
+  level?: string;
 }
 
 export function VocabularyPopup({
   word,
   definition,
   position,
-  onClose
+  onClose,
+  level = ""
 }: VocabularyPopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
+  const [isSimplified, setIsSimplified] = useState(false);
+  const [simplifiedDefinition, setSimplifiedDefinition] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Adjust position to make sure popup stays within viewport
   useEffect(() => {
@@ -43,7 +50,7 @@ export function VocabularyPopup({
       popupRef.current.style.left = `${adjustedX}px`;
       popupRef.current.style.top = `${adjustedY}px`;
     }
-  }, [position]);
+  }, [position, isSimplified, simplifiedDefinition]);
   
   // Handle escape key to close popup
   useEffect(() => {
@@ -58,6 +65,37 @@ export function VocabularyPopup({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);
+  
+  // Handle generating a simplified definition
+  const handleSimplify = async () => {
+    if (isGenerating) return;
+    
+    // If we already have a simplified definition, just toggle to it
+    if (simplifiedDefinition) {
+      setIsSimplified(true);
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      const simplified = await simplifyDefinition(word, definition, level);
+      setSimplifiedDefinition(simplified);
+      setIsSimplified(true);
+    } catch (error) {
+      console.error("Error simplifying definition:", error);
+      // Use the original definition if simplification fails
+      setSimplifiedDefinition(`${word} in simpler terms: ${definition}`);
+      setIsSimplified(true);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  // Toggle back to original definition
+  const handleShowOriginal = () => {
+    setIsSimplified(false);
+  };
   
   return (
     <div 
@@ -82,7 +120,40 @@ export function VocabularyPopup({
       </div>
       
       <div className="mt-2 text-sm text-gray-700">
-        {definition}
+        {isSimplified ? simplifiedDefinition : definition}
+      </div>
+      
+      <div className="mt-3 pt-2 border-t border-gray-100 flex justify-end">
+        {isSimplified ? (
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleShowOriginal}
+            className="text-xs h-7"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Show Original
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSimplify}
+            disabled={isGenerating}
+            className="text-xs bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 h-7"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Simplifying...
+              </>
+            ) : (
+              <>
+                I still don't understand
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );

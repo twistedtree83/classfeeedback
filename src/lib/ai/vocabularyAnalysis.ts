@@ -96,6 +96,74 @@ Example:
 }
 
 /**
+ * Generates a simpler explanation of a vocabulary term for students
+ * who need additional support
+ */
+export async function simplifyDefinition(
+  word: string,
+  currentDefinition: string,
+  level: string = ""
+): Promise<string> {
+  try {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY?.trim();
+
+    if (!apiKey) {
+      console.error("OpenAI API key is missing");
+      return generateFallbackSimplification(word, currentDefinition, level);
+    }
+
+    const prompt = `A student has indicated they need an even simpler explanation for the word "${word}".
+    
+Current definition: "${currentDefinition}"
+
+Please create an extremely simplified definition that:
+1. Uses only very basic vocabulary
+2. Is appropriate for ${level || "young students"}
+3. Includes a simple example if helpful
+4. Is 1-2 sentences maximum
+5. Explains the concept as if speaking to a much younger student
+
+Your response should contain ONLY the simplified definition, nothing else.`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo", // Using a less expensive model for simple definitions
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.3, // Lower temperature for more consistent results
+        max_tokens: 100, // Short response is sufficient
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Error generating simplified definition with AI");
+      return generateFallbackSimplification(word, currentDefinition, level);
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content?.trim();
+
+    if (!result) {
+      return generateFallbackSimplification(word, currentDefinition, level);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error simplifying definition:", error);
+    return generateFallbackSimplification(word, currentDefinition, level);
+  }
+}
+
+/**
  * Fallback function to generate basic vocabulary if AI analysis fails
  */
 function defaultVocabularyAnalysis(
@@ -145,4 +213,42 @@ function defaultVocabularyAnalysis(
   }
   
   return result.slice(0, 10); // Return maximum 10 words
+}
+
+/**
+ * Fallback function to generate a simplified definition if AI fails
+ */
+function generateFallbackSimplification(
+  word: string,
+  currentDefinition: string,
+  level: string = ""
+): string {
+  // Just provide a simpler version by shortening and simplifying
+  const simplifications: Record<string, string> = {
+    "process": "way to do something",
+    "analyze": "look at carefully",
+    "complex": "not simple",
+    "facilitate": "help make easier",
+    "implement": "put into use",
+    "comprehend": "understand",
+    "significant": "important",
+    "environment": "surroundings",
+    "various": "different",
+    "approximately": "about"
+  };
+  
+  // Replace common complex words with simpler ones
+  let simplified = currentDefinition;
+  Object.entries(simplifications).forEach(([complex, simple]) => {
+    const regex = new RegExp(`\\b${complex}\\b`, 'gi');
+    simplified = simplified.replace(regex, simple);
+  });
+  
+  // Truncate to keep it shorter
+  if (simplified.length > 60) {
+    simplified = simplified.substring(0, 60).trim() + "...";
+  }
+  
+  // Add a standard prefix
+  return `${word} means ${simplified} in simple words.`;
 }
