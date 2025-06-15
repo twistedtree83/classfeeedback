@@ -26,6 +26,38 @@ export function createObjectiveCard(
   };
 }
 
+// New function to create a card with a single learning intention
+export function createSingleObjectiveCard(
+  objective: string
+): LessonCard {
+  return {
+    id: crypto.randomUUID(),
+    type: "objective",
+    title: "Learning Intention",
+    content: `• ${objective}`,
+    duration: null,
+    sectionId: null,
+    activityIndex: null,
+    attachments: [],
+  };
+}
+
+// New function to create a card with a single success criterion
+export function createSingleSuccessCriterionCard(
+  criterion: string
+): LessonCard {
+  return {
+    id: crypto.randomUUID(),
+    type: "objective",
+    title: "Success Criterion",
+    content: `• ${criterion}`,
+    duration: null,
+    sectionId: null,
+    activityIndex: null,
+    attachments: [],
+  };
+}
+
 export function createMaterialsCard(lesson: ProcessedLesson): LessonCard {
   return {
     id: crypto.randomUUID(),

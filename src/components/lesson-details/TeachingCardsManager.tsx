@@ -43,6 +43,7 @@ import {
   Layers,
   LayoutGrid,
   Columns,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/utils";
@@ -60,9 +61,25 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { FileUploadModal } from "@/components/FileUploadModal";
 import { DifferentiatedCardsSelector } from "@/components/DifferentiatedCardsSelector";
 import { ActivityBulkExpander } from "@/components/ActivityBulkExpander";
+import { 
+  createSingleObjectiveCard, 
+  createSingleSuccessCriterionCard 
+} from "@/lib/cardFactory";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TeachingCardsManagerProps {
   lesson: ProcessedLesson;
@@ -141,6 +158,18 @@ export function TeachingCardsManager({
 
     onSave([...selectedCards, newCard]);
     openCardForEditing(newCard);
+  };
+
+  // Add individual objective
+  const handleAddSingleObjective = (objective: string) => {
+    const newCard = createSingleObjectiveCard(objective);
+    onSave([...selectedCards, newCard]);
+  };
+
+  // Add individual success criterion
+  const handleAddSingleCriterion = (criterion: string) => {
+    const newCard = createSingleSuccessCriterionCard(criterion);
+    onSave([...selectedCards, newCard]);
   };
 
   // Remove a card
@@ -314,6 +343,26 @@ export function TeachingCardsManager({
         id: crypto.randomUUID(),
         type: "objective",
         title: "Learning Intentions",
+        content,
+        duration: null,
+        sectionId: null,
+        activityIndex: null,
+        attachments: [],
+      },
+    ]);
+  };
+
+  // Create success criteria card
+  const createSuccessCriteriaCard = () => {
+    if (!lesson.success_criteria || lesson.success_criteria.length === 0) return;
+    
+    const content = lesson.success_criteria.map((sc) => `• ${sc}`).join("\n");
+    onSave([
+      ...selectedCards,
+      {
+        id: crypto.randomUUID(),
+        type: "objective",
+        title: "Success Criteria",
         content,
         duration: null,
         sectionId: null,
@@ -520,7 +569,7 @@ export function TeachingCardsManager({
           
           {!isExpanded && (
             <div className="p-3 flex-1 overflow-hidden text-xs line-clamp-3 text-gray-500">
-              {card.content.substring(0, 100) + (card.content.length > 100 ? '...' : '')}
+              {card.content.substring(0, 100).replace(/<[^>]*>/g, '') + (card.content.length > 100 ? '...' : '')}
             </div>
           )}
           
@@ -965,12 +1014,8 @@ export function TeachingCardsManager({
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="sorter">
+      <Tabs defaultValue="create">
         <TabsList className="w-full grid grid-cols-3 mb-4">
-          <TabsTrigger value="sorter" className="flex items-center gap-1.5">
-            <LayoutGrid className="h-4 w-4" />
-            <span>Card Sorter</span>
-          </TabsTrigger>
           <TabsTrigger value="create" className="flex items-center gap-1.5">
             <Palette className="h-4 w-4" />
             <span>Create</span>
@@ -979,77 +1024,11 @@ export function TeachingCardsManager({
             <Sparkles className="h-4 w-4" />
             <span>AI Tools</span>
           </TabsTrigger>
+          <TabsTrigger value="components" className="flex items-center gap-1.5">
+            <LayoutGrid className="h-4 w-4" />
+            <span>Components</span>
+          </TabsTrigger>
         </TabsList>
-        
-        {/* Card Sorter View */}
-        <TabsContent value="sorter" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium">Card Sorter</h2>
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={toggleAllCards}
-              >
-                {expandedCardIds.size === selectedCards.length ? (
-                  <Minimize2 className="h-4 w-4 mr-1" />
-                ) : (
-                  <Maximize2 className="h-4 w-4 mr-1" />
-                )}
-                {expandedCardIds.size === selectedCards.length ? "Collapse All" : "Expand All"}
-              </Button>
-              
-              <div className="flex rounded-md overflow-hidden">
-                <Button
-                  variant={cardSorterLayout === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCardSorterLayout('grid')}
-                  className="rounded-r-none"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={cardSorterLayout === 'list' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCardSorterLayout('list')}
-                  className="rounded-l-none"
-                >
-                  <Layers className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          {selectedCards.length === 0 ? (
-            <div className="text-center py-12 border border-dashed rounded-lg">
-              <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-600 mb-2">No Cards Yet</h3>
-              <p className="text-sm text-gray-500 mb-4">Create your first card to begin building your presentation.</p>
-              <Button onClick={handleAddCustomCard}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Custom Card
-              </Button>
-            </div>
-          ) : (
-            <div className={`mt-4 ${cardSorterLayout === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3' : 'space-y-3'}`}>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis]}
-              >
-                <SortableContext
-                  items={selectedCards.map((card) => card.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {selectedCards.map((card, index) => (
-                    <SortableCard key={card.id} card={card} index={index} />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-          )}
-        </TabsContent>
         
         {/* Create Cards Tab */}
         <TabsContent value="create" className="space-y-4">
@@ -1065,7 +1044,16 @@ export function TeachingCardsManager({
                   className="flex flex-col items-center gap-2 h-auto py-4 text-center border-dark-purple/30 text-dark-purple hover:bg-dark-purple/10"
                 >
                   <Target className="h-6 w-6 text-dark-purple" />
-                  <span className="text-sm font-medium">Learning Objectives</span>
+                  <span className="text-sm font-medium">All Learning Objectives</span>
+                </Button>
+
+                <Button
+                  onClick={createSuccessCriteriaCard}
+                  variant="outline"
+                  className="flex flex-col items-center gap-2 h-auto py-4 text-center border-success/30 text-success hover:bg-success/10"
+                >
+                  <CheckSquare className="h-6 w-6 text-success" />
+                  <span className="text-sm font-medium">All Success Criteria</span>
                 </Button>
 
                 <Button
@@ -1106,6 +1094,115 @@ export function TeachingCardsManager({
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Individual Components</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="learning-intentions">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span>Individual Learning Intentions</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2 pb-3">
+                      {lesson.objectives.map((objective, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1 mr-2 text-sm">
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(objective) }} />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-shrink-0"
+                            onClick={() => handleAddSingleObjective(objective)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {lesson.success_criteria && lesson.success_criteria.length > 0 && (
+                  <AccordionItem value="success-criteria">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-success" />
+                        <span>Individual Success Criteria</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 pt-2 pb-3">
+                        {lesson.success_criteria.map((criterion, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50">
+                            <div className="flex-1 mr-2 text-sm">
+                              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(criterion) }} />
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-shrink-0"
+                              onClick={() => handleAddSingleCriterion(criterion)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                <AccordionItem value="materials">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-accent" />
+                      <span>Individual Materials</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 pt-2 pb-3">
+                      {lesson.materials.map((material, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50">
+                          <div className="flex-1 mr-2 text-sm">
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }} />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-shrink-0"
+                            onClick={() => 
+                              onSave([...selectedCards, {
+                                id: crypto.randomUUID(),
+                                type: "material",
+                                title: "Required Material",
+                                content: `• ${material}`,
+                                duration: null,
+                                sectionId: null,
+                                activityIndex: null,
+                                attachments: [],
+                              }])
+                            }
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         {/* AI Tools Tab */}
@@ -1113,7 +1210,7 @@ export function TeachingCardsManager({
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Wand2 className="h-4 w-4 text-accent" />
+                <Wand className="h-4 w-4 text-accent" />
                 AI Enhancement Tools
               </CardTitle>
             </CardHeader>
@@ -1168,11 +1265,239 @@ export function TeachingCardsManager({
                   <Users className="h-4 w-4" />
                   Create Differentiated Cards
                 </Button>
+                
+                <Button
+                  onClick={() => setShowActivityExpander(true)}
+                  variant="outline" 
+                  className="flex items-center gap-2 border-sea-green/30 text-sea-green hover:bg-sea-green/10"
+                >
+                  <Wand className="h-4 w-4" />
+                  Bulk Expand Activities
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+        
+        {/* Components Tab */}
+        <TabsContent value="components" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                Lesson Components
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Browse and add individual elements from your lesson
+              </p>
+              
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="intentions">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      Learning Intentions ({lesson.objectives.length})
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 py-2">
+                      {lesson.objectives.map((objective, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 border rounded-lg bg-primary/5">
+                          <div className="flex-1 mr-3">
+                            <p className="text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(objective) }}></p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleAddSingleObjective(objective)}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                      <div className="pt-2">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="w-full"
+                          onClick={createObjectiveCard}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Add All Learning Intentions
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                {lesson.success_criteria && lesson.success_criteria.length > 0 && (
+                  <AccordionItem value="criteria">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="h-4 w-4 text-success" />
+                        Success Criteria ({lesson.success_criteria.length})
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2 py-2">
+                        {lesson.success_criteria.map((criterion, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 border rounded-lg bg-success/5">
+                            <div className="flex-1 mr-3">
+                              <p className="text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(criterion) }}></p>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleAddSingleCriterion(criterion)}
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Add
+                            </Button>
+                          </div>
+                        ))}
+                        <div className="pt-2">
+                          <Button 
+                            size="sm" 
+                            variant="default" 
+                            className="w-full"
+                            onClick={createSuccessCriteriaCard}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Add All Success Criteria
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+                
+                <AccordionItem value="materials">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-accent" />
+                      Materials ({lesson.materials.length})
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 py-2">
+                      {lesson.materials.map((material, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 border rounded-lg bg-accent/5">
+                          <div className="flex-1 mr-3">
+                            <p className="text-sm" dangerouslySetInnerHTML={{ __html: sanitizeHtml(material) }}></p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => 
+                              onSave([...selectedCards, {
+                                id: crypto.randomUUID(),
+                                type: "material",
+                                title: "Material",
+                                content: `• ${material}`,
+                                duration: null,
+                                sectionId: null,
+                                activityIndex: null,
+                                attachments: [],
+                              }])
+                            }
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                      <div className="pt-2">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="w-full"
+                          onClick={createMaterialsCard}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Add All Materials
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Cards Container */}
+      <div className="max-h-[calc(100vh-25rem)] overflow-y-auto pr-2">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium">Card Sorter</h2>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={toggleAllCards}
+            >
+              {expandedCardIds.size === selectedCards.length ? (
+                <Minimize2 className="h-4 w-4 mr-1" />
+              ) : (
+                <Maximize2 className="h-4 w-4 mr-1" />
+              )}
+              {expandedCardIds.size === selectedCards.length ? "Collapse All" : "Expand All"}
+            </Button>
+            
+            <div className="flex rounded-md overflow-hidden">
+              <Button
+                variant={cardSorterLayout === 'grid' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCardSorterLayout('grid')}
+                className="rounded-r-none"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={cardSorterLayout === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCardSorterLayout('list')}
+                className="rounded-l-none"
+              >
+                <Layers className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {selectedCards.length === 0 ? (
+          <div className="text-center py-12 border border-dashed rounded-lg">
+            <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-lg font-medium text-gray-600 mb-2">No Cards Yet</h3>
+            <p className="text-sm text-gray-500 mb-4">Create your first card to begin building your presentation.</p>
+            <Button onClick={handleAddCustomCard}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Custom Card
+            </Button>
+          </div>
+        ) : (
+          <div className={`${cardSorterLayout === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3' : 'space-y-3'}`}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <SortableContext
+                items={selectedCards.map((card) => card.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {selectedCards.map((card, index) => (
+                  <SortableCard key={card.id} card={card} index={index} />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </div>
+        )}
+      </div>
 
       {/* Card Editor Dialog */}
       {CardEditorDialog()}

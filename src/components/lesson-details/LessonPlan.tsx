@@ -22,6 +22,12 @@ import { sanitizeHtml } from "@/lib/utils";
 import type { ProcessedLesson } from "@/lib/types";
 import { ActivityExpandButton } from "../activity/ActivityExpandButton";
 import { ActivityExpander } from "../ActivityExpander";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface LessonPlanProps {
   lesson: ProcessedLesson;
@@ -123,37 +129,69 @@ export function LessonPlan({
                     .map((objective, index) => (
                       <li
                         key={index}
-                        className="flex items-start gap-3 p-3 bg-muted rounded-lg"
+                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group"
                       >
                         <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                        <span
-                          className="text-foreground"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeHtml(objective),
-                          }}
-                        ></span>
+                        <div className="flex-1">
+                          <span
+                            className="text-foreground"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeHtml(objective),
+                            }}
+                          ></span>
+                          
+                          {/* Individual add button */}
+                          {onAddToTeaching && (
+                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToTeaching("objective", {
+                                    title: "Learning Intention",
+                                    content: `• ${objective}`,
+                                  });
+                                }}
+                                className="text-xs h-7"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Teaching
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                 </ul>
 
                 {onAddToTeaching && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const content = lesson.objectives
-                        .map((obj) => `• ${obj}`)
-                        .join("\n");
-                      onAddToTeaching("objective", {
-                        title: "Learning Intentions",
-                        content,
-                      });
-                    }}
-                    className="mt-4"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Teaching
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const content = lesson.objectives
+                              .map((obj) => `• ${obj}`)
+                              .join("\n");
+                            onAddToTeaching("objective", {
+                              title: "Learning Intentions",
+                              content,
+                            });
+                          }}
+                          className="mt-4"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add All Intentions
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Add all learning intentions as a single card
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
 
                 {/* Success Criteria */}
@@ -170,35 +208,67 @@ export function LessonPlan({
                           .map((criteria, index) => (
                             <li
                               key={index}
-                              className="flex items-start gap-3 p-2 bg-background/40 rounded-lg"
+                              className="flex items-start gap-3 p-2 bg-background/40 rounded-lg group"
                             >
                               <div className="w-2 h-2 bg-success rounded-full mt-2 flex-shrink-0"></div>
-                              <span
-                                className="text-foreground text-sm"
-                                dangerouslySetInnerHTML={{
-                                  __html: sanitizeHtml(criteria),
-                                }}
-                              ></span>
+                              <div className="flex-1">
+                                <span
+                                  className="text-foreground text-sm"
+                                  dangerouslySetInnerHTML={{
+                                    __html: sanitizeHtml(criteria),
+                                  }}
+                                ></span>
+                                
+                                {/* Individual add button for success criterion */}
+                                {onAddToTeaching && (
+                                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onAddToTeaching("objective", {
+                                          title: "Success Criterion",
+                                          content: `• ${criteria}`,
+                                        });
+                                      }}
+                                      className="text-xs h-7"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add to Teaching
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </li>
                           ))}
                       </ul>
                       {onAddToTeaching && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            onAddToTeaching("objective", {
-                              title: "Success Criteria",
-                              content: (lesson.success_criteria || [])
-                                .map((sc) => `• ${sc}`)
-                                .join("\n"),
-                            })
-                          }
-                          className="mt-3"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add to Teaching
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  onAddToTeaching("objective", {
+                                    title: "Success Criteria",
+                                    content: (lesson.success_criteria || [])
+                                      .map((sc) => `• ${sc}`)
+                                      .join("\n"),
+                                  })
+                                }
+                                className="mt-3"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add All Criteria
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Add all success criteria as a single card
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   )}
@@ -264,34 +334,66 @@ export function LessonPlan({
                     .map((material, index) => (
                       <li
                         key={index}
-                        className="flex items-start gap-3 p-3 bg-muted rounded-lg"
+                        className="flex items-start gap-3 p-3 bg-muted rounded-lg group"
                       >
                         <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                        <span
-                          className="text-foreground"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeHtml(material),
-                          }}
-                        ></span>
+                        <div className="flex-1">
+                          <span
+                            className="text-foreground"
+                            dangerouslySetInnerHTML={{
+                              __html: sanitizeHtml(material),
+                            }}
+                          ></span>
+                          
+                          {/* Individual add button for material */}
+                          {onAddToTeaching && (
+                            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAddToTeaching("material", {
+                                    title: "Material",
+                                    content: `• ${material}`,
+                                  });
+                                }}
+                                className="text-xs h-7"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Teaching
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                 </ul>
                 {onAddToTeaching && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      onAddToTeaching("material", {
-                        title: "Required Materials",
-                        content: lesson.materials
-                          .map((mat) => `• ${mat}`)
-                          .join("\n"),
-                      })
-                    }
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Teaching
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            onAddToTeaching("material", {
+                              title: "Required Materials",
+                              content: lesson.materials
+                                .map((mat) => `• ${mat}`)
+                                .join("\n"),
+                            })
+                          }
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add All Materials
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Add all materials as a single card
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </AccordionContent>
