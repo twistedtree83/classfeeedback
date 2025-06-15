@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { analyzeVocabulary } from '@/lib/ai/vocabularyAnalysis';
 import { VocabularyPopup } from './VocabularyPopup';
 import { sanitizeHtml } from '@/lib/utils';
+import { getVocabularyTermsForLesson, saveVocabularyTerms } from '@/lib/supabase/vocabulary';
 
 interface VocabularyHighlighterProps {
   content: string;
@@ -29,7 +30,67 @@ export function VocabularyHighlighter({
       setIsAnalyzing(true);
       try {
         console.log('Analyzing vocabulary for content...');
-        const vocabTerms = await analyzeVocabulary(content, level);
+        
+        let vocabTerms: Array<{ word: string; definition: string }> = [];
+        
+        // Try to fetch existing vocabulary from database first
+        if (lessonId) {
+          try {
+            console.log('Fetching existing vocabulary terms for lesson:', lessonId);
+            const existingTerms = await getVocabularyTermsForLesson(lessonId);
+            
+            if (existingTerms && existingTerms.length > 0) {
+              console.log('Found existing vocabulary terms:', existingTerms.length);
+              // Convert DB terms to the format we need
+              const dbTerms = existingTerms.map(term => ({
+                word: term.word,
+                definition: term.definition
+              }));
+              
+              // Use these terms as our initial set
+              vocabTerms = dbTerms;
+            }
+          } catch (err) {
+            console.error('Error fetching vocabulary terms from database:', err);
+          }
+        }
+        
+        // If we don't have enough terms from the database, analyze with AI
+        if (vocabTerms.length < 15) {
+          console.log('Getting more vocabulary terms from AI analysis');
+          const aiTerms = await analyzeVocabulary(content, level, 25);
+          
+          // Create a map of existing terms to avoid duplicates
+          const existingTermsMap = new Map(vocabTerms.map(term => [term.word.toLowerCase(), term]));
+          
+          // Add new terms from AI that aren't already in our list
+          for (const term of aiTerms) {
+            if (!existingTermsMap.has(term.word.toLowerCase())) {
+              vocabTerms.push(term);
+              existingTermsMap.set(term.word.toLowerCase(), term);
+            }
+          }
+          
+          // Save new terms to database if we have a lessonId
+          if (lessonId) {
+            try {
+              console.log('Saving new vocabulary terms to database');
+              // Only save terms that came from AI and weren't in the database
+              const newTerms = aiTerms.filter(term => 
+                !existingTermsMap.has(term.word.toLowerCase()) || 
+                existingTermsMap.get(term.word.toLowerCase())?.definition !== term.definition
+              );
+              
+              if (newTerms.length > 0) {
+                await saveVocabularyTerms(lessonId, newTerms);
+                console.log('Saved', newTerms.length, 'new terms to database');
+              }
+            } catch (err) {
+              console.error('Error saving vocabulary terms to database:', err);
+            }
+          }
+        }
+        
         console.log('Identified vocabulary terms:', vocabTerms);
         setVocabulary(vocabTerms);
         
@@ -55,7 +116,7 @@ export function VocabularyHighlighter({
     };
     
     analyzeContent();
-  }, [content, level]);
+  }, [content, level, lessonId]);
   
   // Set up event listeners for term clicks
   useEffect(() => {
@@ -115,6 +176,7 @@ export function VocabularyHighlighter({
           definition={activeWord.definition}
           position={position}
           onClose={() => setActiveWord(null)}
+          level={level}
         />
       )}
     </div>
