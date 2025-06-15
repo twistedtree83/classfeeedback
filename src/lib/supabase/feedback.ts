@@ -99,25 +99,56 @@ export const submitTeachingFeedback = async (
       card_index: cardIndex
     });
     
-    const { data, error } = await supabase
+    // First, check if a record already exists
+    let existingQuery = supabase
       .from('teaching_feedback')
-      .upsert({
-        presentation_id: presentationId,
-        student_name: studentName,
-        feedback_type: feedbackType,
-        content: content,
-        card_index: cardIndex !== undefined ? cardIndex : null
-      }, {
-        onConflict: 'presentation_id,student_name,card_index',
-        ignoreDuplicates: false
-      });
+      .select('id')
+      .eq('presentation_id', presentationId)
+      .eq('student_name', studentName);
+    
+    if (cardIndex !== undefined) {
+      existingQuery = existingQuery.eq('card_index', cardIndex);
+    } else {
+      existingQuery = existingQuery.is('card_index', null);
+    }
+    
+    const { data: existing, error: selectError } = await existingQuery.maybeSingle();
+    
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('Error checking existing teaching feedback:', selectError);
+      return false;
+    }
+    
+    let result;
+    
+    if (existing) {
+      // Update existing record
+      result = await supabase
+        .from('teaching_feedback')
+        .update({
+          feedback_type: feedbackType,
+          content: content,
+        })
+        .eq('id', existing.id);
+    } else {
+      // Insert new record
+      result = await supabase
+        .from('teaching_feedback')
+        .insert({
+          presentation_id: presentationId,
+          student_name: studentName,
+          feedback_type: feedbackType,
+          content: content,
+          card_index: cardIndex !== undefined ? cardIndex : null
+        });
+    }
 
-    if (error) {
-      console.error('Error submitting teaching feedback:', error);
+    if (result.error) {
+      console.error('Error submitting teaching feedback:', result.error);
       return false;
     }
 
-    console.log('Teaching feedback submitted successfully:', data);
+    console.log('Teaching feedback submitted successfully:', result.data);
     return true;
   } catch (err) {
     console.error('Exception submitting teaching feedback:', err);
