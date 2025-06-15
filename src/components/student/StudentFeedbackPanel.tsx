@@ -198,7 +198,7 @@ export function StudentFeedbackPanel({
         )}
 
         {/* Extension Activity Button */}
-        {showExtensionButton && !extensionRequested && (
+        {showExtensionButton && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <Button
               onClick={handleRequestExtension}

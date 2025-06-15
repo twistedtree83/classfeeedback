@@ -13,7 +13,7 @@ import { FeedbackChartView } from "../feedback/FeedbackChartView";
 import { FeedbackQuestionsView } from "../feedback/FeedbackQuestionsView";
 import { FeedbackStudentsView } from "../feedback/FeedbackStudentsView";
 import { FeedbackListView } from "../feedback/FeedbackListView";
-import { ExtensionRequestsView } from "../teacher/feedback/ExtensionRequestsView";
+import { ExtensionRequestsView } from "./feedback/ExtensionRequestsView";
 
 interface TeachingFeedbackPanelProps {
   presentationId: string;

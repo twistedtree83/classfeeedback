@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFeedbackSubmission } from './useFeedbackSubmission';
 import { useStudentSession } from './useStudentSession';
 import { getStudentExtensionRequestStatus, submitExtensionRequest } from '../lib/supabase';
@@ -51,11 +51,19 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     const checkExtensionStatus = async () => {
       if (presentation?.id && currentCard && currentCard.extensionActivity && presentation.current_card_index !== undefined) {
         try {
+          console.log("Checking extension request status for:", {
+            presentationId: presentation.id,
+            studentName,
+            cardIndex: presentation.current_card_index
+          });
+          
           const status = await getStudentExtensionRequestStatus(
             presentation.id,
             studentName,
             presentation.current_card_index
           );
+          
+          console.log("Extension request status:", status);
           
           if (status === 'pending') {
             setExtensionRequested(true);
@@ -65,7 +73,8 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
             setExtensionRequested(true);
             setExtensionPending(false);
             setExtensionApproved(true);
-          } else if (status === 'rejected') {
+          } else {
+            // If no record found or status is rejected, reset states
             setExtensionRequested(false);
             setExtensionPending(false);
             setExtensionApproved(false);
@@ -77,7 +86,36 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     };
     
     checkExtensionStatus();
-  }, [presentation?.id, presentation?.current_card_index, currentCard, studentName]);
+    
+    // Set up polling for extension request status changes
+    let intervalId: number;
+    if (extensionRequested && extensionPending && presentation?.id && presentation.current_card_index !== undefined) {
+      intervalId = window.setInterval(async () => {
+        try {
+          const status = await getStudentExtensionRequestStatus(
+            presentation.id,
+            studentName,
+            presentation.current_card_index
+          );
+          
+          if (status === 'approved') {
+            setExtensionPending(false);
+            setExtensionApproved(true);
+          } else if (status === 'rejected') {
+            setExtensionRequested(false);
+            setExtensionPending(false);
+            setExtensionApproved(false);
+          }
+        } catch (error) {
+          console.error('Error polling extension request status:', error);
+        }
+      }, 5000);
+    }
+    
+    return () => {
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [currentCard, presentation?.id, presentation?.current_card_index, studentName, extensionRequested, extensionPending]);
 
   // Scroll to top when card changes
   useEffect(() => {
@@ -101,36 +139,6 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
       setNewMessageCount(prev => prev + 1);
     }
   }, [newMessage, showMessagePanel]);
-
-  // Set up polling for extension request status
-  useEffect(() => {
-    if (!extensionRequested || !extensionPending || !presentation?.id) return;
-    
-    const checkInterval = setInterval(async () => {
-      try {
-        const status = await getStudentExtensionRequestStatus(
-          presentation.id,
-          studentName,
-          presentation.current_card_index
-        );
-        
-        if (status === 'approved') {
-          setExtensionPending(false);
-          setExtensionApproved(true);
-          clearInterval(checkInterval);
-        } else if (status === 'rejected') {
-          setExtensionRequested(false);
-          setExtensionPending(false);
-          setExtensionApproved(false);
-          clearInterval(checkInterval);
-        }
-      } catch (error) {
-        console.error('Error checking extension status:', error);
-      }
-    }, 5000);
-    
-    return () => clearInterval(checkInterval);
-  }, [extensionRequested, extensionPending, presentation?.id, studentName, presentation?.current_card_index]);
 
   const handleToggleDifferentiatedView = () => {
     setViewingDifferentiated(!viewingDifferentiated);
@@ -167,14 +175,22 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
   };
 
-  const handleExtensionRequest = async () => {
-    if (!presentation?.id || presentation.current_card_index === undefined) return;
+  const handleExtensionRequest = useCallback(async () => {
+    if (!presentation?.id || presentation.current_card_index === undefined) {
+      console.error("Cannot request extension activity - missing presentation data");
+      return;
+    }
     
     setExtensionRequested(true);
     setExtensionPending(true);
     
     try {
-      // Submit the extension request
+      console.log("Submitting extension request:", {
+        presentationId: presentation.id,
+        studentName,
+        cardIndex: presentation.current_card_index
+      });
+      
       const result = await submitExtensionRequest(
         presentation.id,
         studentName,
@@ -185,14 +201,13 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
         throw new Error('Failed to submit extension request');
       }
       
-      // In a real implementation, we'd wait for the teacher to approve/reject
-      console.log('Extension request submitted:', result);
+      console.log("Extension request submitted successfully:", result);
     } catch (error) {
       console.error('Error requesting extension activity:', error);
       setExtensionRequested(false);
       setExtensionPending(false);
     }
-  };
+  }, [presentation?.id, presentation?.current_card_index, studentName]);
 
   const toggleMessagePanel = () => {
     setShowMessagePanel(prev => !prev);
