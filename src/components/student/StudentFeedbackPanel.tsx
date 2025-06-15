@@ -5,7 +5,6 @@ import { ThumbsUp, ThumbsDown, Clock, Send, CheckCircle2, Sparkles, Loader2 } fr
 import {
   submitTeachingFeedback,
   submitTeachingQuestion,
-  submitExtensionRequest
 } from "../../lib/supabase";
 
 interface StudentFeedbackPanelProps {
@@ -41,56 +40,38 @@ export function StudentFeedbackPanel({
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [requestingExtension, setRequestingExtension] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Reset state when moving to a new card
   useEffect(() => {
     setFeedbackSubmitted(null);
     setFeedbackCooldown(false);
     setShowSuccessMessage(false);
-    setError(null);
   }, [currentCardIndex]);
 
   const handleFeedback = async (type: string) => {
     if (feedbackCooldown) return;
 
     setFeedbackCooldown(true);
-    setError(null);
-    
-    try {
-      console.log('[Student] Submitting feedback:', {
-        presentationId, 
-        studentName, 
-        type, 
-        currentCardIndex
-      });
-      
-      const success = await submitTeachingFeedback(
-        presentationId,
-        studentName,
-        type,
-        currentCardIndex
-      );
+    const success = await submitTeachingFeedback(
+      presentationId,
+      studentName,
+      type,
+      currentCardIndex
+    );
 
-      if (success) {
-        setFeedbackSubmitted(type);
-        setShowSuccessMessage(true);
-        onFeedbackSubmitted?.(type);
+    if (success) {
+      setFeedbackSubmitted(type);
+      setShowSuccessMessage(true);
+      onFeedbackSubmitted?.(type);
 
-        setTimeout(() => {
-          setShowSuccessMessage(false);
-        }, 2000);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 2000);
 
-        setTimeout(() => {
-          setFeedbackCooldown(false);
-        }, 3000);
-      } else {
-        setError("Failed to submit feedback. Please try again.");
+      setTimeout(() => {
         setFeedbackCooldown(false);
-      }
-    } catch (err) {
-      console.error('[Student] Error submitting feedback:', err);
-      setError("An error occurred. Please try again.");
+      }, 3000);
+    } else {
       setFeedbackCooldown(false);
     }
   };
@@ -100,71 +81,42 @@ export function StudentFeedbackPanel({
     if (!question.trim() || submittingQuestion) return;
 
     setSubmittingQuestion(true);
-    setError(null);
-    
-    try {
-      console.log("[Student] Submitting question:", {
-        presentationId,
-        studentName,
-        question: question.trim(),
-        currentCardIndex
-      });
+    console.log("Submitting question:", question);
 
-      const success = await submitTeachingQuestion(
-        presentationId,
-        studentName,
-        question.trim(),
-        currentCardIndex
-      );
+    const success = await submitTeachingQuestion(
+      presentationId,
+      studentName,
+      question.trim(),
+      currentCardIndex
+    );
 
-      if (success) {
-        console.log("[Student] Question submitted successfully");
-        setQuestion("");
-        onQuestionSubmitted?.();
-      } else {
-        setError("Failed to submit question. Please try again.");
-      }
-    } catch (err) {
-      console.error("[Student] Failed to submit question:", err);
-      setError("An error occurred while submitting your question.");
-    } finally {
-      setSubmittingQuestion(false);
+    if (success) {
+      console.log("Question submitted successfully");
+      setQuestion("");
+      onQuestionSubmitted?.();
+    } else {
+      console.error("Failed to submit question");
     }
+
+    setSubmittingQuestion(false);
   };
 
   const handleRequestExtension = async () => {
     if (requestingExtension || extensionRequested) return;
     
     setRequestingExtension(true);
-    setError(null);
     
     try {
-      console.log('[Student] Requesting extension activity:', {
-        presentationId,
-        studentName,
-        currentCardIndex
-      });
-      
-      // Submit the actual extension request to the database
-      const result = await submitExtensionRequest(
-        presentationId,
-        studentName,
-        currentCardIndex
-      );
-      
-      if (!result) {
-        throw new Error('Failed to submit extension request');
-      }
-      
-      console.log('[Student] Extension request submitted successfully:', result);
-      
-      if (onExtensionRequested) {
-        onExtensionRequested();
-      }
+      // In a real implementation, we would call an API to save the extension request
+      // For now, we'll simulate the request with a setTimeout
+      setTimeout(() => {
+        if (onExtensionRequested) {
+          onExtensionRequested();
+        }
+        setRequestingExtension(false);
+      }, 1000);
     } catch (error) {
-      console.error("[Student] Error requesting extension:", error);
-      setError("Failed to request extension activity. Please try again.");
-    } finally {
+      console.error("Error requesting extension:", error);
       setRequestingExtension(false);
     }
   };
@@ -177,12 +129,6 @@ export function StudentFeedbackPanel({
           <ThumbsUp className="h-5 w-5 text-green-600" />
           How are you doing?
         </h3>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
 
         {showSuccessMessage && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
@@ -297,17 +243,8 @@ export function StudentFeedbackPanel({
             disabled={!question.trim() || submittingQuestion}
             className="w-full flex items-center gap-2"
           >
-            {submittingQuestion ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4" />
-                Send Question
-              </>
-            )}
+            <Send className="h-4 w-4" />
+            {submittingQuestion ? "Sending..." : "Send Question"}
           </Button>
         </form>
       </div>

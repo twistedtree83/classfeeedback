@@ -86,6 +86,11 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
     // Reset differentiated view when card changes
     setViewingDifferentiated(false);
+    
+    // Reset extension states when changing cards
+    setExtensionRequested(false);
+    setExtensionPending(false);
+    setExtensionApproved(false);
   }, [presentation?.current_card_index]);
 
   // Reset message count when panel is opened

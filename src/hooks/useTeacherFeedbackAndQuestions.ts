@@ -23,7 +23,6 @@ export function useTeacherFeedbackAndQuestions(
   const [hasNewExtensionRequests, setHasNewExtensionRequests] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscriptions, setSubscriptions] = useState<Array<{unsubscribe: () => void}>>([]);
 
   // Load initial feedback, questions, and extension requests
   useEffect(() => {
@@ -32,18 +31,11 @@ export function useTeacherFeedbackAndQuestions(
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load all data in parallel
         const [feedbackData, questionsData, extensionData] = await Promise.all([
           getTeachingFeedbackForPresentation(presentationId, cardIndex),
           getTeachingQuestionsForPresentation(presentationId),
           getExtensionRequestsForPresentation(presentationId)
         ]);
-
-        console.log('[Teacher] Initial data loaded:', {
-          feedbackCount: feedbackData.length,
-          questionsCount: questionsData.length,
-          extensionsCount: extensionData.length
-        });
 
         setFeedback(feedbackData);
         setQuestions(questionsData);
@@ -53,7 +45,7 @@ export function useTeacherFeedbackAndQuestions(
         setHasNewQuestions(questionsData.some(q => !q.answered));
         setHasNewExtensionRequests(extensionData.some(e => e.status === 'pending'));
       } catch (err) {
-        console.error("[Teacher] Error loading initial data:", err);
+        console.error("Error loading feedback, questions, and extension requests:", err);
         setError("Failed to load feedback and questions");
       } finally {
         setLoading(false);
@@ -61,83 +53,59 @@ export function useTeacherFeedbackAndQuestions(
     };
 
     loadData();
-    
-    // Clean up previous subscriptions
-    return () => {
-      console.log('[Teacher] Cleaning up previous subscriptions');
-      subscriptions.forEach(sub => sub.unsubscribe());
-    };
   }, [presentationId, cardIndex]);
 
-  // Set up subscriptions for realtime updates
+  // Subscribe to real-time feedback
   useEffect(() => {
     if (!presentationId) return;
 
-    console.log('[Teacher] Setting up realtime subscriptions');
-    const newSubscriptions = [];
-
-    // Feedback subscription
     const feedbackSubscription = subscribeToTeachingFeedback(
       presentationId,
       (newFeedback) => {
-        console.log('[Teacher] New feedback received:', newFeedback);
-        
         // If cardIndex is specified, only add feedback for that card
         if (cardIndex !== undefined && newFeedback.card_index !== cardIndex) {
           return;
         }
-        
-        setFeedback(prev => {
-          // Check if this is an update to existing feedback
-          const existingIndex = prev.findIndex(f => 
-            f.student_name === newFeedback.student_name && 
-            f.card_index === newFeedback.card_index
-          );
-          
-          if (existingIndex >= 0) {
-            // Update existing feedback
-            const updated = [...prev];
-            updated[existingIndex] = newFeedback;
-            return updated;
-          }
-          
-          // Add new feedback
-          return [newFeedback, ...prev];
-        });
-      }
+        setFeedback((prev) => [newFeedback, ...prev]);
+      },
+      cardIndex
     );
-    newSubscriptions.push(feedbackSubscription);
 
-    // Questions subscription
-    const questionsSubscription = subscribeToTeachingQuestions(
+    return () => {
+      feedbackSubscription.unsubscribe();
+    };
+  }, [presentationId, cardIndex]);
+
+  // Subscribe to real-time questions
+  useEffect(() => {
+    if (!presentationId) return;
+
+    const questionSubscription = subscribeToTeachingQuestions(
       presentationId,
       (newQuestion) => {
-        console.log('[Teacher] New question received:', newQuestion);
-        
-        setQuestions(prev => {
-          // Check if this is a new question
-          const questionExists = prev.some(q => q.id === newQuestion.id);
-          
-          if (!questionExists) {
-            // It's a new question, set the flag for notification
-            setHasNewQuestions(true);
-            // Add to the list
-            return [newQuestion, ...prev];
-          } else {
-            // Update the existing question
-            return prev.map(q => q.id === newQuestion.id ? newQuestion : q);
-          }
-        });
-      }
+        // If cardIndex is specified, only add questions for that card
+        if (cardIndex !== undefined && newQuestion.card_index !== cardIndex) {
+          return;
+        }
+        setQuestions((prev) => [newQuestion, ...prev]);
+        setHasNewQuestions(true);
+      },
+      cardIndex
     );
-    newSubscriptions.push(questionsSubscription);
+
+    return () => {
+      questionSubscription.unsubscribe();
+    };
+  }, [presentationId, cardIndex]);
+  
+  // Subscribe to extension requests
+  useEffect(() => {
+    if (!presentationId) return;
     
-    // Extension requests subscription
     const extensionSubscription = subscribeToExtensionRequests(
       presentationId,
       (newRequest) => {
-        console.log('[Teacher] Extension request received:', newRequest);
-        
+        // Handle new or updated extension requests
         setExtensionRequests(prev => {
           // Check if this is an update to an existing request
           const existingIndex = prev.findIndex(r => r.id === newRequest.id);
@@ -148,7 +116,7 @@ export function useTeacherFeedbackAndQuestions(
             updated[existingIndex] = newRequest;
             return updated;
           } else {
-            // It's a new request
+            // Add new request
             if (newRequest.status === 'pending') {
               setHasNewExtensionRequests(true);
             }
@@ -157,24 +125,16 @@ export function useTeacherFeedbackAndQuestions(
         });
       }
     );
-    newSubscriptions.push(extensionSubscription);
-
-    // Update subscriptions state
-    setSubscriptions(newSubscriptions);
     
-    // Clean up on unmount or when dependencies change
     return () => {
-      console.log('[Teacher] Cleaning up realtime subscriptions');
-      newSubscriptions.forEach(sub => sub.unsubscribe());
+      extensionSubscription.unsubscribe();
     };
-  }, [presentationId, cardIndex]);
+  }, [presentationId]);
 
   // Handler for marking questions as answered
   const handleMarkAsAnswered = async (questionId: string) => {
     try {
-      console.log('[Teacher] Marking question as answered:', questionId);
       const success = await markQuestionAsAnswered(questionId);
-      
       if (success) {
         // Update local state
         setQuestions((prevQuestions) =>
@@ -182,21 +142,18 @@ export function useTeacherFeedbackAndQuestions(
             q.id === questionId ? { ...q, answered: true } : q
           )
         );
-        
         // Check if there are still new questions
         const newQuestionsExist = questions.some(
           (q) => !q.answered && q.id !== questionId
         );
-        
         if (!newQuestionsExist) {
           setHasNewQuestions(false);
         }
-        
         return true;
       }
       return false;
     } catch (error) {
-      console.error("[Teacher] Error marking question as answered:", error);
+      console.error("Error marking question as answered:", error);
       return false;
     }
   };
@@ -204,12 +161,8 @@ export function useTeacherFeedbackAndQuestions(
   // Handler for approving extension requests
   const handleApproveExtension = async (requestId: string) => {
     try {
-      console.log("[Teacher] Approving extension request:", requestId);
       const success = await approveExtensionRequest(requestId);
-      
       if (success) {
-        console.log("[Teacher] Extension request approved successfully");
-        
         // Update local state
         setExtensionRequests(prev => 
           prev.map(request => 
@@ -223,7 +176,6 @@ export function useTeacherFeedbackAndQuestions(
         const pendingExists = extensionRequests.some(
           r => r.status === 'pending' && r.id !== requestId
         );
-        
         if (!pendingExists) {
           setHasNewExtensionRequests(false);
         }
@@ -232,7 +184,7 @@ export function useTeacherFeedbackAndQuestions(
       }
       return false;
     } catch (error) {
-      console.error('[Teacher] Error approving extension request:', error);
+      console.error('Error approving extension request:', error);
       return false;
     }
   };
@@ -240,12 +192,8 @@ export function useTeacherFeedbackAndQuestions(
   // Handler for rejecting extension requests
   const handleRejectExtension = async (requestId: string) => {
     try {
-      console.log("[Teacher] Rejecting extension request:", requestId);
       const success = await rejectExtensionRequest(requestId);
-      
       if (success) {
-        console.log("[Teacher] Extension request rejected successfully");
-        
         // Update local state
         setExtensionRequests(prev => 
           prev.map(request => 
@@ -259,7 +207,6 @@ export function useTeacherFeedbackAndQuestions(
         const pendingExists = extensionRequests.some(
           r => r.status === 'pending' && r.id !== requestId
         );
-        
         if (!pendingExists) {
           setHasNewExtensionRequests(false);
         }
@@ -268,7 +215,7 @@ export function useTeacherFeedbackAndQuestions(
       }
       return false;
     } catch (error) {
-      console.error('[Teacher] Error rejecting extension request:', error);
+      console.error('Error rejecting extension request:', error);
       return false;
     }
   };
@@ -286,31 +233,6 @@ export function useTeacherFeedbackAndQuestions(
   
   // Pending extension requests count
   const pendingExtensionCount = extensionRequests.filter(r => r.status === 'pending').length;
-  
-  // Get pending extension requests for the current card
-  const getCurrentCardPendingExtensions = () => {
-    if (cardIndex === undefined) return [];
-    
-    return extensionRequests.filter(req => 
-      req.status === 'pending' && req.card_index === cardIndex
-    );
-  };
-  
-  // Map student feedback for the current card
-  const studentFeedbackMap = feedback.reduce((map, item) => {
-    // Only include feedback for the current card if filtering is enabled
-    if (cardIndex !== undefined && item.card_index !== cardIndex) {
-      return map;
-    }
-    
-    // Add or update the student's feedback
-    map[item.student_name] = {
-      feedback_type: item.feedback_type,
-      timestamp: item.created_at
-    };
-    
-    return map;
-  }, {});
 
   return {
     feedback,
@@ -328,7 +250,6 @@ export function useTeacherFeedbackAndQuestions(
     handleRejectExtension,
     clearHasNewQuestions: () => setHasNewQuestions(false),
     clearHasNewExtensionRequests: () => setHasNewExtensionRequests(false),
-    pendingExtensionRequests: getCurrentCardPendingExtensions(),
-    studentFeedbackMap
+    studentFeedbackMap: {} // This needs to be properly implemented
   };
 }

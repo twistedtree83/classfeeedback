@@ -1,11 +1,19 @@
 import React from "react";
-import { MessageSquare, BarChart3, List, Bell, Users } from "lucide-react";
+import { 
+  MessageSquare, 
+  BarChart3, 
+  List, 
+  Bell, 
+  Users,
+  Sparkles
+} from "lucide-react";
 import { Button } from "./ui/Button";
-import { useTeachingFeedback } from "../hooks/useTeachingFeedback";
+import { useTeacherFeedbackAndQuestions } from "../hooks/useTeacherFeedbackAndQuestions";
 import { FeedbackChartView } from "./feedback/FeedbackChartView";
 import { FeedbackQuestionsView } from "./feedback/FeedbackQuestionsView";
 import { FeedbackStudentsView } from "./feedback/FeedbackStudentsView";
 import { FeedbackListView } from "./feedback/FeedbackListView";
+import { ExtensionRequestsView } from "./teacher/feedback/ExtensionRequestsView";
 
 interface TeachingFeedbackPanelProps {
   presentationId: string;
@@ -16,20 +24,24 @@ export function TeachingFeedbackPanel({
   presentationId,
   currentCardIndex,
 }: TeachingFeedbackPanelProps) {
+  const [view, setView] = React.useState<"chart" | "list" | "questions" | "students" | "extensions">("chart");
+  const [filterCurrentCard, setFilterCurrentCard] = React.useState(true);
+
   const {
     feedback,
     questions,
-    view,
-    setView,
+    extensionRequests,
     loading,
-    newQuestionAlert,
-    filterCurrentCard,
-    setFilterCurrentCard,
+    newQuestionsCount,
+    pendingExtensionCount,
+    hasNewQuestions,
+    hasNewExtensionRequests,
     studentFeedbackMap,
     feedbackCounts,
-    newQuestionsCount,
     handleMarkAsAnswered,
-  } = useTeachingFeedback(presentationId, currentCardIndex);
+    handleApproveExtension,
+    handleRejectExtension
+  } = useTeacherFeedbackAndQuestions(presentationId, currentCardIndex);
 
   if (loading) {
     return (
@@ -45,10 +57,14 @@ export function TeachingFeedbackPanel({
     <div className="w-full bg-white rounded-xl">
       <h2 className="text-xl font-bold text-teal mb-3">
         Live Feedback
-        {newQuestionAlert && (
+        {(hasNewQuestions || hasNewExtensionRequests) && (
           <span className="inline-flex items-center ml-2 px-2 py-0.5 rounded text-xs font-medium bg-coral/10 text-coral">
             <Bell className="h-3 w-3 mr-1" />
-            New Question
+            {hasNewQuestions && hasNewExtensionRequests 
+              ? "New Requests" 
+              : hasNewQuestions 
+              ? "New Questions" 
+              : "New Extension Requests"}
           </span>
         )}
       </h2>
@@ -108,6 +124,23 @@ export function TeachingFeedbackPanel({
             </span>
           )}
         </Button>
+        <Button
+          variant={view === "extensions" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setView("extensions")}
+          className={`relative ${
+            view === "extensions"
+              ? "bg-teal hover:bg-teal/90 text-white"
+              : "border-teal text-teal hover:bg-teal/10"
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          {pendingExtensionCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {pendingExtensionCount}
+            </span>
+          )}
+        </Button>
       </div>
 
       {/* Filter Toggle */}
@@ -150,6 +183,16 @@ export function TeachingFeedbackPanel({
         <FeedbackQuestionsView
           questions={questions}
           onMarkAsAnswered={handleMarkAsAnswered}
+          filterCurrentCard={filterCurrentCard}
+          currentCardIndex={currentCardIndex}
+        />
+      )}
+      
+      {view === "extensions" && (
+        <ExtensionRequestsView
+          extensionRequests={extensionRequests}
+          onApprove={handleApproveExtension}
+          onReject={handleRejectExtension}
           filterCurrentCard={filterCurrentCard}
           currentCardIndex={currentCardIndex}
         />
