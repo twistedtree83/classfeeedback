@@ -215,7 +215,7 @@ export function StudentFeedbackPanel({
           </div>
         )}
 
-        {extensionRequested && !extensionApproved && (
+        {extensionRequested && extensionPending && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2 text-yellow-700">
               <Clock className="h-4 w-4" />

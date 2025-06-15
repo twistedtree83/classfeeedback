@@ -8,6 +8,12 @@ export const submitExtensionRequest = async (
   cardIndex: number
 ): Promise<ExtensionRequest | null> => {
   try {
+    console.log('Submitting extension request:', {
+      presentation_id: presentationId,
+      student_name: studentName,
+      card_index: cardIndex
+    });
+    
     const { data, error } = await supabase
       .from('extension_requests')
       .insert({

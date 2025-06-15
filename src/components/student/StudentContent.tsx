@@ -75,24 +75,34 @@ export function StudentContent({
   }, [currentCard]);
 
   // Handle extension activity request
-  const handleExtensionRequest = () => {
+  const handleExtensionRequest = async () => {
     setExtensionRequested(true);
     setExtensionPending(true);
     
-    // In a real implementation, we would send a request to the backend
-    // For now, we'll simulate a pending state that would wait for teacher approval
-    
-    // Mock API call to request extension
-    console.log(`Student ${studentName} requested extension activity for card index ${presentation?.current_card_index}`);
-    
-    // For demonstration purposes, after 5 seconds we'll simulate the teacher approving the request
-    // In a real implementation, this would happen through a real-time subscription
-    setTimeout(() => {
-      if (extensionRequested) {
-        setExtensionPending(false);
-        setExtensionApproved(true);
+    try {
+      // Submit the extension request to the server
+      if (presentation?.id) {
+        const { submitExtensionRequest } = await import("../../lib/supabase");
+        await submitExtensionRequest(
+          presentation.id,
+          studentName,
+          presentation.current_card_index
+        );
       }
-    }, 5000);
+      
+      // For demonstration purposes, we'll simulate the teacher approving the request after 5 seconds
+      // In a real implementation, this would happen through a real-time subscription
+      setTimeout(() => {
+        if (extensionRequested) {
+          setExtensionPending(false);
+          setExtensionApproved(true);
+        }
+      }, 5000);
+    } catch (error) {
+      console.error('Error requesting extension activity:', error);
+      setExtensionRequested(false);
+      setExtensionPending(false);
+    }
   };
 
   // Show waiting room when lesson hasn't started yet
