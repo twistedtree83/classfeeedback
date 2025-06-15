@@ -53,26 +53,33 @@ export function StudentFeedbackPanel({
     if (feedbackCooldown) return;
 
     setFeedbackCooldown(true);
-    const success = await submitTeachingFeedback(
-      presentationId,
-      studentName,
-      type,
-      currentCardIndex
-    );
+    setError(null);
 
-    if (success) {
-      setFeedbackSubmitted(type);
-      setShowSuccessMessage(true);
-      onFeedbackSubmitted?.(type);
+    try {
+      const success = await submitTeachingFeedback(
+        presentationId,
+        studentName,
+        type,
+        currentCardIndex
+      );
 
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 2000);
+      if (success) {
+        setFeedbackSubmitted(type);
+        setShowSuccessMessage(true);
+        onFeedbackSubmitted?.(type);
 
-      setTimeout(() => {
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 2000);
+
+        setTimeout(() => {
+          setFeedbackCooldown(false);
+        }, 3000);
+      } else {
         setFeedbackCooldown(false);
-      }, 3000);
-    } else {
+      }
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
       setFeedbackCooldown(false);
     }
   };
@@ -103,7 +110,7 @@ export function StudentFeedbackPanel({
   };
 
   const handleRequestExtension = async () => {
-    if (requestingExtension || extensionRequested) return;
+    if (requestingExtension) return;
     
     setRequestingExtension(true);
     

@@ -190,7 +190,7 @@ export function StudentContent({
         </div>
       )}
 
-      <main className="flex-1 flex">
+      <main className="flex-1 flex" ref={contentRef}>
         <div className="flex-1 p-6 max-w-4xl mx-auto w-full">
           <LessonContentDisplay
             title={currentCard.title}

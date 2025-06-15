@@ -206,6 +206,7 @@ export function createActivityCard(
     duration: null,
     sectionId: sectionId,
     activityIndex: activityIndex,
+    extensionActivity: "Complete an extension of this activity by applying the concept to a new context or problem.",
     attachments: [],
   };
 }
