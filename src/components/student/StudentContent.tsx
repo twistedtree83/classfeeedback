@@ -64,6 +64,9 @@ export function StudentContent({
   const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Ensure newMessage is properly handled
+  const safeNewMessage = newMessage || null;
   
   // Check if current card has an extension activity
   useEffect(() => {
