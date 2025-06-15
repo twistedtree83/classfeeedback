@@ -23,6 +23,7 @@ interface LessonContentDisplayProps {
   isRemedialEnabled?: boolean;
   viewingRemedial?: boolean;
   onToggleRemedialView?: () => void;
+  hasRemedialAssignment?: boolean;
 }
 
 export function LessonContentDisplay({
@@ -42,7 +43,8 @@ export function LessonContentDisplay({
   remedialActivity,
   isRemedialEnabled = false,
   viewingRemedial = false,
-  onToggleRemedialView
+  onToggleRemedialView,
+  hasRemedialAssignment = false
 }: LessonContentDisplayProps) {
   const [showInstructionType, setShowInstructionType] = useState<'standard' | 'simplified' | 'differentiated'>('standard');
 
@@ -172,7 +174,7 @@ export function LessonContentDisplay({
       </div>
       
       {/* Generate simplified version button (if no differentiated or remedial content) */}
-      {!hasDifferentiatedContent && !remedialActivity && (
+      {!hasDifferentiatedContent && !remedialActivity && !hasRemedialAssignment && (
         <div className="mt-6 p-4 bg-orange/10 border border-orange/30 rounded-lg">
           <p className="text-gray-800 mb-2">Need a simpler explanation?</p>
           <Button
@@ -193,6 +195,16 @@ export function LessonContentDisplay({
               </>
             )}
           </Button>
+        </div>
+      )}
+      
+      {/* Remedial Assignment Indicator */}
+      {hasRemedialAssignment && !remedialActivity && (
+        <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-purple-800 flex items-center">
+            <BookText className="h-5 w-5 mr-2" />
+            <span>Your teacher has assigned you simplified content, but it's not available for this card yet.</span>
+          </p>
         </div>
       )}
     </div>

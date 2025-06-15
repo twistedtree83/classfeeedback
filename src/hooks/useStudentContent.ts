@@ -1,17 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFeedbackSubmission } from './useFeedbackSubmission';
 import { useStudentSession } from './useStudentSession';
-import { getStudentExtensionRequestStatus, submitExtensionRequest } from '../lib/supabase';
+import { 
+  getStudentExtensionRequestStatus, 
+  submitExtensionRequest, 
+  checkStudentRemedialStatus 
+} from '../lib/supabase';
 
 export function useStudentContent(sessionCode: string, studentName: string, avatarUrl: string) {
   // UI state for interaction
   const [viewingDifferentiated, setViewingDifferentiated] = useState(false);
+  const [viewingRemedial, setViewingRemedial] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [extensionRequested, setExtensionRequested] = useState(false);
   const [extensionPending, setExtensionPending] = useState(false);
   const [extensionApproved, setExtensionApproved] = useState(false);
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
+  const [hasRemedialAssignment, setHasRemedialAssignment] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Use existing custom hooks for session data and feedback
@@ -121,6 +127,53 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
   }, [currentCard, presentation?.id, presentation?.current_card_index, studentName]);
 
+  // Check if student has been assigned remedial content for this card
+  useEffect(() => {
+    if (!presentation?.id || !studentName || !currentCard) return;
+    
+    const checkRemedialAssignment = async () => {
+      try {
+        console.log("Checking remedial assignment for:", {
+          presentationId: presentation.id,
+          studentName,
+          cardId: currentCard.id
+        });
+        
+        // Check if student has remedial assignment for this card
+        const cardSpecificAssignment = await checkStudentRemedialStatus(
+          presentation.id,
+          studentName,
+          currentCard.id
+        );
+        
+        // Check if student has general remedial assignment (all cards)
+        const generalAssignment = await checkStudentRemedialStatus(
+          presentation.id,
+          studentName
+        );
+        
+        const hasAssignment = cardSpecificAssignment || generalAssignment;
+        console.log("Student remedial assignment status:", hasAssignment);
+        
+        setHasRemedialAssignment(hasAssignment);
+        
+        // If student has remedial assignment and remedial content is available, 
+        // automatically show the remedial version
+        if (hasAssignment && currentCard.remedialActivity && currentCard.isRemedialEnabled) {
+          setViewingRemedial(true);
+          // Turn off differentiated view if it's active
+          if (viewingDifferentiated) {
+            setViewingDifferentiated(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking remedial assignment:', error);
+      }
+    };
+    
+    checkRemedialAssignment();
+  }, [currentCard, presentation?.id, studentName, viewingDifferentiated]);
+
   // Scroll to top when card changes
   useEffect(() => {
     if (contentRef.current) {
@@ -128,6 +181,7 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     }
     // Reset differentiated view when card changes
     setViewingDifferentiated(false);
+    setViewingRemedial(false);
   }, [presentation?.current_card_index]);
 
   // Reset message count when panel is opened
@@ -182,7 +236,19 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
   }, [extensionRequested, extensionPending, presentation?.id, studentName, presentation?.current_card_index]);
 
   const handleToggleDifferentiatedView = () => {
+    if (viewingRemedial) {
+      // Turn off remedial view if turning on differentiated
+      setViewingRemedial(false);
+    }
     setViewingDifferentiated(!viewingDifferentiated);
+  };
+  
+  const handleToggleRemedialView = () => {
+    if (viewingDifferentiated) {
+      // Turn off differentiated view if turning on remedial
+      setViewingDifferentiated(false);
+    }
+    setViewingRemedial(!viewingRemedial);
   };
   
   const handleGenerateDifferentiated = async () => {
@@ -279,6 +345,7 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     
     // Local state
     viewingDifferentiated,
+    viewingRemedial,
     generatingDifferentiated,
     showMessagePanel,
     newMessageCount,
@@ -287,9 +354,11 @@ export function useStudentContent(sessionCode: string, studentName: string, avat
     extensionPending,
     extensionApproved,
     hasExtensionActivity,
+    hasRemedialAssignment,
     
     // Methods
     handleToggleDifferentiatedView,
+    handleToggleRemedialView,
     handleGenerateDifferentiated,
     handleExtensionRequest,
     toggleMessagePanel

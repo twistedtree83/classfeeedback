@@ -88,6 +88,15 @@ export {
   getVocabularyTermById,
 } from "./vocabulary";
 
+// Re-export remedial assignments functions
+export {
+  assignRemedialContent,
+  removeRemedialAssignment,
+  getRemedialAssignmentsForPresentation,
+  checkStudentRemedialStatus,
+  subscribeToRemedialAssignments,
+} from "./remedialAssignments";
+
 // Re-export utility functions
 export { generateRandomName } from "./utils";
 

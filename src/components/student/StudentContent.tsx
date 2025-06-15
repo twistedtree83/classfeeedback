@@ -19,6 +19,7 @@ interface StudentContentProps {
   newMessageCount: number;
   showMessagePanel: boolean;
   viewingDifferentiated: boolean;
+  viewingRemedial: boolean;
   generatingDifferentiated: boolean;
   successMessage: string | null;
   lessonStarted: boolean;
@@ -27,9 +28,11 @@ interface StudentContentProps {
   extensionRequested: boolean;
   extensionPending: boolean;
   extensionApproved: boolean;
+  hasRemedialAssignment: boolean;
   presentation?: LessonPresentation | null;
   onToggleMessagePanel: () => void;
   onToggleDifferentiatedView: () => void;
+  onToggleRemedialView: () => void;
   onGenerateDifferentiated: () => Promise<void>;
   onSendFeedback: (type: string) => Promise<void>;
   onSendQuestion: (question: string) => Promise<boolean>;
@@ -47,6 +50,7 @@ export function StudentContent({
   newMessageCount,
   showMessagePanel,
   viewingDifferentiated,
+  viewingRemedial,
   generatingDifferentiated,
   successMessage,
   lessonStarted,
@@ -55,16 +59,17 @@ export function StudentContent({
   extensionRequested,
   extensionPending,
   extensionApproved,
+  hasRemedialAssignment,
   presentation,
   onToggleMessagePanel,
   onToggleDifferentiatedView,
+  onToggleRemedialView,
   onGenerateDifferentiated,
   onSendFeedback,
   onSendQuestion,
   onRequestExtension,
 }: StudentContentProps) {
   const [hasExtensionActivity, setHasExtensionActivity] = useState(false);
-  const [viewingRemedial, setViewingRemedial] = useState(false);
   
   // Check if current card has an extension activity
   useEffect(() => {
@@ -82,22 +87,10 @@ export function StudentContent({
     extensionRequested,
     extensionPending,
     extensionApproved,
-    hasExtensionActivity
+    hasExtensionActivity,
+    viewingRemedial,
+    hasRemedialAssignment
   });
-
-  // Handle toggling remedial view
-  const handleToggleRemedial = () => {
-    setViewingRemedial(!viewingRemedial);
-    if (viewingDifferentiated) {
-      // Turn off differentiated view when enabling remedial
-      onToggleDifferentiatedView();
-    }
-  };
-
-  // Reset remedial view when card changes
-  useEffect(() => {
-    setViewingRemedial(false);
-  }, [currentCard?.id]);
 
   // Show waiting room when lesson hasn't started yet
   if (!lessonStarted) {
@@ -165,7 +158,8 @@ export function StudentContent({
             remedialActivity={currentCard.remedialActivity}
             isRemedialEnabled={hasRemedialContent}
             viewingRemedial={viewingRemedial}
-            onToggleRemedialView={handleToggleRemedial}
+            onToggleRemedialView={onToggleRemedialView}
+            hasRemedialAssignment={hasRemedialAssignment}
           />
 
           <StudentFeedbackPanel

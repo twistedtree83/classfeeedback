@@ -91,6 +91,8 @@ export interface LessonCard {
   originalContent?: string;
   differentiatedContent?: string;
   isDifferentiated?: boolean;
+  remedialActivity?: string;
+  isRemedialEnabled?: boolean;
   attachments?: CardAttachment[];
   extensionActivity?: string;
 }
@@ -111,5 +113,14 @@ export interface VocabularyTerm {
   lesson_id: string;
   word: string;
   definition: string;
+  created_at: string;
+}
+
+// Remedial assignments
+export interface RemedialAssignment {
+  id: string;
+  presentation_id: string;
+  student_name: string;
+  card_id?: string;
   created_at: string;
 }

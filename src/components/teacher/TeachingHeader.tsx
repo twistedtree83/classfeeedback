@@ -1,16 +1,17 @@
 import React from 'react';
-import { MessageSquare, Menu, X, Bell } from 'lucide-react';
+import { MessageSquare, Menu, X, Bell, BookText } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 interface TeachingHeaderProps {
   sessionCode: string;
   lessonTitle?: string;
   hasNewQuestions: boolean;
-  hasNewExtensionRequests?: boolean; // Add this prop
+  hasNewExtensionRequests?: boolean;
   pendingCount: number;
   showSidebar: boolean;
   onToggleSidebar: () => void;
   onOpenMessageModal: () => void;
+  onOpenRemedialModal: () => void;
   onEndSession: () => void;
 }
 
@@ -18,11 +19,12 @@ export function TeachingHeader({
   sessionCode,
   lessonTitle,
   hasNewQuestions,
-  hasNewExtensionRequests = false, // Default to false
+  hasNewExtensionRequests = false,
   pendingCount,
   showSidebar,
   onToggleSidebar,
   onOpenMessageModal,
+  onOpenRemedialModal,
   onEndSession
 }: TeachingHeaderProps) {
   // Determine if there are any new notifications
@@ -61,12 +63,22 @@ export function TeachingHeader({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2 w-10">
+          <div className="flex items-center space-x-2 w-20 justify-end">
+            <Button
+              variant="outline"
+              onClick={onOpenRemedialModal}
+              size="sm"
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
+              title="Assign remedial content to students"
+            >
+              <BookText className="h-5 w-5" />
+            </Button>
+            
             <Button
               variant="outline"
               onClick={onOpenMessageModal}
               size="sm"
-              className="ml-auto border-coral text-coral hover:bg-coral/10"
+              className="border-coral text-coral hover:bg-coral/10"
             >
               <MessageSquare className="h-5 w-5" />
             </Button>

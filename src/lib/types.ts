@@ -45,8 +45,8 @@ export interface LessonCard {
   originalContent?: string;
   differentiatedContent?: string;
   isDifferentiated?: boolean;
-  remedialActivity?: string;     // New: simplified content for students needing additional support
-  isRemedialEnabled?: boolean;   // New: controls visibility/availability of remedial content
+  remedialActivity?: string;     // Simplified content for students needing additional support
+  isRemedialEnabled?: boolean;   // Controls visibility/availability of remedial content
   attachments?: CardAttachment[];
   extensionActivity?: string; // Extension activity for fast finishers
 }
@@ -81,5 +81,13 @@ export interface ExtensionRequest {
   student_name: string;
   card_index: number;
   status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
+export interface RemedialAssignment {
+  id: string;
+  presentation_id: string;
+  student_name: string;
+  card_id?: string; // If null, applies to all cards
   created_at: string;
 }

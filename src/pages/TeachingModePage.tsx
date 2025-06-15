@@ -10,6 +10,7 @@ import { useTeacherParticipants } from "../hooks/useTeacherParticipants";
 import { useTeacherFeedbackAndQuestions } from "../hooks/useTeacherFeedbackAndQuestions";
 import { useTeacherMessaging } from "../hooks/useTeacherMessaging";
 import { endLessonPresentation } from "../lib/supabase";
+import { RemedialAssignmentModal } from "@/components/teacher/RemedialAssignmentModal";
 
 export function TeachingModePage() {
   const { code } = useParams<{ code: string }>();
@@ -17,6 +18,7 @@ export function TeachingModePage() {
 
   // State for sidebar visibility
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showRemedialModal, setShowRemedialModal] = useState(false);
 
   // Custom hooks for managing different aspects of the teaching mode
   const {
@@ -134,6 +136,7 @@ export function TeachingModePage() {
         showSidebar={showSidebar}
         onToggleSidebar={handleToggleSidebar}
         onOpenMessageModal={openMessageModal}
+        onOpenRemedialModal={() => setShowRemedialModal(true)}
         onEndSession={handleEndSession}
       />
 
@@ -177,6 +180,13 @@ export function TeachingModePage() {
         onClose={closeMessageModal}
         onSendMessage={handleSendMessage}
         isSending={isSending}
+      />
+
+      <RemedialAssignmentModal
+        isOpen={showRemedialModal}
+        onClose={() => setShowRemedialModal(false)}
+        presentation={presentation}
+        sessionCode={presentation.session_code}
       />
     </div>
   );
