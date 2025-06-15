@@ -2,22 +2,7 @@ import React from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  X,
-  GripVertical,
-  Edit,
-  Save,
-  Sparkles,
-  Split,
-  UserCircle,
-  Paperclip,
-  Trash2,
-  Users,
-  Loader2,
-  RefreshCw,
-  BookText,
-  Toggle
-} from "lucide-react";
+import { X, GripVertical, Edit, Save, Sparkles, Split, UserCircle, Paperclip, Trash2, Users, Loader2, RefreshCw, BookText, ToggleLeft as Toggle } from "lucide-react";
 import { sanitizeHtml } from "../../lib/utils";
 import { AttachmentDisplay } from "../AttachmentDisplay";
 import {
