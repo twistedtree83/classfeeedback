@@ -16,11 +16,13 @@ export const submitExtensionRequest = async (
     
     const { data, error } = await supabase
       .from('extension_requests')
-      .insert({
+      .upsert({
         presentation_id: presentationId,
         student_name: studentName,
         card_index: cardIndex,
         status: 'pending'
+      }, {
+        onConflict: 'presentation_id,student_name,card_index'
       })
       .select()
       .single();
@@ -133,6 +135,8 @@ export const getStudentExtensionRequestStatus = async (
       .eq('presentation_id', presentationId)
       .eq('student_name', studentName)
       .eq('card_index', cardIndex)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) {
