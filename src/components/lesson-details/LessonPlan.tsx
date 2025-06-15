@@ -681,5 +681,3 @@ export function LessonPlan({
     </Card>
   );
 }
-
-import { CheckSquare } from 'lucide-react';
