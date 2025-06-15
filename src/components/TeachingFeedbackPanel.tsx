@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   MessageSquare, 
   BarChart3, 
@@ -8,6 +8,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Button } from "./ui/Button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTeacherFeedbackAndQuestions } from "../hooks/useTeacherFeedbackAndQuestions";
 import { FeedbackChartView } from "./feedback/FeedbackChartView";
 import { FeedbackQuestionsView } from "./feedback/FeedbackQuestionsView";
@@ -24,8 +25,8 @@ export function TeachingFeedbackPanel({
   presentationId,
   currentCardIndex,
 }: TeachingFeedbackPanelProps) {
-  const [view, setView] = React.useState<"chart" | "list" | "questions" | "students" | "extensions">("chart");
-  const [filterCurrentCard, setFilterCurrentCard] = React.useState(true);
+  const [view, setView] = useState<"chart" | "list" | "questions" | "students" | "extensions">("chart");
+  const [filterCurrentCard, setFilterCurrentCard] = useState(true);
 
   const {
     feedback,
